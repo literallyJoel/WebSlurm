@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="WEB_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/composer" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/defuse/php-encryption" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/fig/http-message-util" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/firebase/php-jwt" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/lcobucci/clock" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/lcobucci/jwt" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/league/event" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/league/oauth2-server" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/league/uri" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/league/uri-interfaces" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/nikic/fast-route" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/paragonie/random_compat" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/clock" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/container" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/http-factory" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/http-message" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/http-server-handler" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/http-server-middleware" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/log" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/ralouphie/getallheaders" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/slim/psr7" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/slim/slim" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/symfony/polyfill-php80" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>

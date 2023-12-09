@@ -1,0 +1,10 @@
+{
+    "require": {
+        "slim/slim": "4.*",
+        "slim/psr7": "^1.6",
+        "firebase/php-jwt": "^6.9",
+        "league/oauth2-server": "^8.5",
+      "ext-sqlite3": "*",
+        "ext-pdo": "*"
+    }
+}
