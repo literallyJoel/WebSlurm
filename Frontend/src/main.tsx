@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
-import { Query, QueryClient, QueryClientProvider } from "react-query";
+import { QueryClient, QueryClientProvider } from "react-query";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import CreateAccountScreen from "./pages/accounts/createAccount/CreateAccount.tsx";
 import Login from "./pages/auth/login/Login.tsx";
