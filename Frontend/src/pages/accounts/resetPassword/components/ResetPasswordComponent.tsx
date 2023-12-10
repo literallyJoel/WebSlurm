@@ -1,37 +1,45 @@
 import { Label } from "@/shadui/ui/label";
 import { Input } from "@/shadui/ui/input";
 import { Button } from "@/shadui/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/shadui/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/shadui/ui/card";
 import { useState } from "react";
-import { validateEmail, validatePassword } from "@/helpers/validation";
+import { validatePassword } from "@/helpers/validation";
 import { useMutation } from "react-query";
-import { LoginObject, login } from "@/helpers/auth";
+import { updateAccount } from "@/helpers/accountsHelper";
 
-interface props{
-    isRequired: boolean;
+interface props {
+  isRequired: boolean;
 }
 
-export default function ResetPasswordComponent({isRequired}: props) {
+export default function ResetPasswordComponent({ isRequired }: props) {
   const [pass, setPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [isPassValid, setIsPassValid] = useState(true);
-  
+  const updatePasswordRequest = useMutation(
+    "updatePassword",
+    (password: string) => {
+      return updateAccount({ pass: password });
+    }
+  );
+
   function validateInput(): void {
     if (!validatePassword(pass)) {
       setIsPassValid(false);
+    } else {
+      updatePasswordRequest.mutate(pass, {
+        onSuccess: () => {
+          window.location.href = "/";
+        },
+      });
     }
   }
   return (
     <Card className="max-w-2xl w-4/12 mx-auto">
       <CardHeader>
         <CardTitle>Reset Password</CardTitle>
-        <Label className={`text-xs text-red-500 ${isRequired ? "" : "hidden"}`}>An administrator has required you to reset your password.</Label>
+        <Label className={`text-xs text-red-500 ${isRequired ? "" : "hidden"}`}>
+          An administrator has required you to reset your password.
+        </Label>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
