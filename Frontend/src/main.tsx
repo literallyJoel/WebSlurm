@@ -8,7 +8,7 @@ import Login from "./pages/accounts/login/Login.tsx";
 import ResetPassword from "./pages/accounts/resetPassword/ResetPassword.tsx";
 import AuthProvider from "./providers/auth/AuthProvider.tsx";
 import Home from "./pages/home/Home.tsx";
-import AccountPanel from "./pages/accounts/accountPanel/AccountPanel.tsx";
+import UpdateAccount from "./pages/accounts/updateAccount/UpdateAccount.tsx";
 //=======================================//
 //=============Router Code==============//
 //=====================================//
@@ -18,7 +18,7 @@ This defines all the client-side routes for front-end navigation
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
-  { path: "/accounts/settings", element: <AccountPanel /> },
+  { path: "/accounts/settings", element: <UpdateAccount /> },
   {
     path: "/accounts/create",
     element: <CreateAccountScreen />,

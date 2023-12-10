@@ -88,6 +88,90 @@ class Users
         }
     }
 
-    
 
-}
+    public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $body = json_decode($request->getBody());
+        $name = $body->name ?? null;
+        $email = $body->email ?? null;
+        $password = $body->pass ?? null;
+        $privLevel = $body->role ?? null;
+        $userID = $body->userID ?? null;
+        $decodedToken = $request->getAttribute("decoded") ?? null;
+
+        if ($userID !== null) {
+            if ($decodedToken->$privLevel !== 1 && $decodedToken->$userID !== $userID) {
+                $response->getBody()->write("Bad Request");
+                return $response->withStatus(400);
+            }
+        }
+
+        if ($decodedToken === null) {
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $validator = new Validator();
+
+        if (!$validator->validateAccountUpdate($body, $email, $name, $password, $privLevel)) {
+            $response->getBody()->write("Bad Request");
+            return $response->withStatus(400);
+        }
+
+        $dbFile = __DIR__ . "/../data/db.db";
+        $pdo = new PDO("sqlite:$dbFile");
+
+        try {
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare("UPDATE users SET " .
+                (!is_null($email) ? "userEmail = :userEmail, " : "") .
+                (!is_null($privLevel) ? "privLevel = :privLevel, " : "") .
+                (!is_null($name) ? "userName = :userName" : "") .
+                (!is_null($password) ? "userPwHash = :userPwHash" : "") .
+                " WHERE userID = :userID");
+
+            //Bind parameters
+            if (!is_null($email)) {
+                $stmt->bindParam(':userEmail', $userEmail);
+            }
+
+            if (!is_null($privLevel)) {
+                $stmt->bindParam(':privLevel', $privLevel);
+            }
+
+            if (!is_null($name)) {
+                $stmt->bindParam(':userName', $userName);
+            }
+
+            if (!is_null($password)) {
+                $userPwHash = password_hash($password, PASSWORD_BCRYPT);
+                $stmt->bindParam("userPwHash", $userPwHash);
+            }
+
+            if(!is_null($userID)){
+                $stmt->bindParam("userID", $userID);
+            }else{
+                $stmt->bindParam("userID", $decodedToken->userID);
+            }
+
+            //Execute the statement
+            $stmt->execute();
+
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            $pdo->rollBack();
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $success = $pdo->commit();
+
+        if ($success) {
+            $response->getBody()->write(json_encode(["userID" => $userID, "message" => "Successfully updated user with ID: $userID", "OK" => true]));
+            return $response->withStatus(201);
+        } else {
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+    }
+}   

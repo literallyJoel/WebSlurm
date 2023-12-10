@@ -33,9 +33,9 @@ import {
 } from "@/helpers/validation";
 import { UseMutationResult } from "react-query";
 import type {
-  createAccountResponse,
+  CreateAccountResponse,
   NewAccountObject,
-} from "@/helpers/accountCreation";
+} from "@/helpers/accountsHelper";
 
 //=======================================//
 //================Props=================//
@@ -47,7 +47,7 @@ be accessed there.
 */
 interface props {
   createAccount: UseMutationResult<
-    createAccountResponse,
+    CreateAccountResponse,
     unknown,
     NewAccountObject,
     unknown

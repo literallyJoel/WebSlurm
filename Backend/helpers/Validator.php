@@ -40,5 +40,25 @@ class Validator
         return $isValid;
     }
 
+    public function validateAccountUpdate($body, $email, $name, $password){
+        $isValid = true;
+        $isValid = $isValid && $body !== null;
+        if(!$isValid){error_log("failed on body");return false;}
+        
+        if($email !== null){
+            $isValid = $isValid && $this->validateEmail($email);
+            if(!$isValid){error_log("failed on email");return false;}
+        }
+        if($name !== null){
+            $isValid = $isValid && $this->validateName($name);
+            if(!$isValid){error_log("failed on name");return false;}
+        }
+        if($password !== null){
+            $isValid = $isValid && $this->validatePassword($password);
+            if(!$isValid){error_log("failed on password");return false;}
+        }
 
+        return $isValid;
+
+    }
 }

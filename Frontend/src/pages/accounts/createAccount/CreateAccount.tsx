@@ -1,6 +1,6 @@
 import Nav from "../../components/Nav";
 import { useMutation } from "react-query";
-import { createAccount, NewAccountObject } from "@/helpers/accountCreation";
+import { createAccount, NewAccountObject } from "@/helpers/accountsHelper";
 import { CreateAccountView } from "./components/CreateAccountView";
 import { CreationFailedView } from "./components/FailureView";
 import { CreationSuccessView } from "./components/SuccessView";
@@ -48,9 +48,7 @@ const CreateAccountScreen = (): JSX.Element => {
     } else if (_createAccount.isSuccess) {
       return (
         <CreationSuccessView
-          generatedPass={
-            _createAccount.data.generatedPass ?? undefined
-          }
+          generatedPass={_createAccount.data.generatedPass ?? undefined}
         />
       );
     } else {

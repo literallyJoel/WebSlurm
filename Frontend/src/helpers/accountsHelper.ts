@@ -17,13 +17,34 @@ export type NewAccountObject = {
 };
 
 /*
+Defines the shape of the response sent by 
+the server after updating an account
+*/
+export type UpdateAccountResponse = {
+  userID: string;
+  message: string;
+  ok: boolean;
+};
+/*
 Defines the type for the server response when an account creation request is sent.
 There is always a code and a message, but only a generatedPass if one is requested.
 */
-export type createAccountResponse = {
+export type CreateAccountResponse = {
   message: string;
   userID: string;
   generatedPass?: string;
+};
+
+/*
+Defines the object that is used for updating account information, 
+it gets passed from the frontend to the helper function
+*/
+export type UpdateAccountObject = {
+  name?: string;
+  id?: string;
+  email?: string;
+  pass?: string;
+  role?: number;
 };
 
 //=======================================//
@@ -41,7 +62,7 @@ export async function createAccount(
   email: string,
   role: number,
   generatePass: true
-): Promise<createAccountResponse>;
+): Promise<CreateAccountResponse>;
 //=======Password Provided========//
 export async function createAccount(
   name: string,
@@ -49,7 +70,7 @@ export async function createAccount(
   role: number,
   generatePass: false,
   password: string
-): Promise<createAccountResponse>;
+): Promise<CreateAccountResponse>;
 //=======Function Definition======//
 export async function createAccount(
   name: string,
@@ -57,7 +78,7 @@ export async function createAccount(
   role: number,
   generatePass: boolean,
   password?: string
-): Promise<createAccountResponse> {
+): Promise<CreateAccountResponse> {
   if (generatePass === true) {
     return (
       await fetch("/api/users/create", {
@@ -92,4 +113,29 @@ export async function createAccount(
       })
     ).json();
   }
+}
+
+//=======================================//
+//=======Update Account Function========//
+//=====================================//
+/*
+The update account function takes an object,
+and calls the backend to update the users account
+*/
+
+export async function updateAccount(
+  updateAccountObject: UpdateAccountObject
+): Promise<UpdateAccountResponse> {
+  const pass = updateAccountObject.pass;
+
+  if (pass) {
+    updateAccountObject.pass = crypto.SHA512(pass).toString();
+  }
+
+  return (
+    await fetch("/api/users/update", {
+      method: "POST",
+      body: JSON.stringify(updateAccountObject),
+    })
+  ).json();
 }
