@@ -102,7 +102,14 @@ export default function UpdateAccount() {
             {isEditingName ? (
               <div className="flex flex-col gap-2">
                 <Label htmlFor="name">Name</Label>
-
+                <Label
+                  htmlFor="confirmPass"
+                  className={`text-xs text-red-500 ${
+                    isNameValid ? "hidden" : ""
+                  }`}
+                >
+                  Please enter a name.
+                </Label>
                 <Input
                   id="name"
                   placeholder="name"
@@ -128,6 +135,14 @@ export default function UpdateAccount() {
             {isEditingEmail ? (
               <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Email</Label>
+                <Label
+                  htmlFor="confirmPass"
+                  className={`text-xs text-red-500 ${
+                    isEmailValid ? "hidden" : ""
+                  }`}
+                >
+                  Please enter a valid email address.
+                </Label>
                 <Input
                   type="email"
                   id="email"
