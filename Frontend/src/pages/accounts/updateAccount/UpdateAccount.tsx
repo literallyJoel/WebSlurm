@@ -36,6 +36,7 @@ export default function UpdateAccount() {
   const [password, setPassword] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [isPassValid, setIsPassValid] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const updateUserRequest = useMutation(
     "updateUser",
@@ -69,6 +70,8 @@ export default function UpdateAccount() {
     }
     return valid;
   };
+
+  const deleteAccount = () => {};
 
   const updateUser = () => {
     if (validateEntry()) {
@@ -218,12 +221,13 @@ export default function UpdateAccount() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button className="w-full">Save Changes</Button>
+          <Button className="w-full" onClick={() => updateUser()}>Save Changes</Button>
         </CardFooter>
         <CardContent className="space-y-4">
           <Button
             className="w-full text-red-500 border-red-500"
             variant="outline"
+            onClick={() => setShowDeleteModal(true)}
           >
             Delete Account
           </Button>
@@ -232,6 +236,38 @@ export default function UpdateAccount() {
           </Button>
         </CardContent>
       </Card>
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <Card className="w-full max-w-md border-2 border-uol">
+            <CardHeader>
+              <CardTitle>Confirm Deletion</CardTitle>
+              <span className="text-sm text-red-500">Completing this action will delete your account. This cannot be undone.</span>
+            </CardHeader>
+            <CardContent>
+              <Label htmlFor="password">Enter Your Password</Label>
+              <Input
+                className="mt-2"
+                type="password"
+                id="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </CardContent>
+            <CardFooter className="flex flex-row">
+              <Button variant="destructive" onClick={deleteAccount}>Confirm</Button>
+              <Button
+                className="ml-auto"
+                variant="outline"
+                onClick={() => setShowDeleteModal(false)}
+              >
+                Cancel
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </>
   );
 }

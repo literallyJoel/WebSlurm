@@ -34,6 +34,46 @@ class Auth
         return $response->withStatus(200);
     }
     
+    public function verifyPass(ServerREquestInterface $request, ResponseInterface $response):ResponseInterface{
+        $decoded = $request->getAttribute("decoded") ?? null;
+        $body = json_decode($request->getBody());
+        if(is_null($decoded)){
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $password = $body->password;
+        $dbFile = __DIR__ . "/../data/db.db";
+        $pdo = new PDO("sqlite:$dbFile");
+        try{
+            $stmt = $pdo->prepare("SELECT * from Users WHERE userID = :userID");
+            $stmt->bindParam(":userID", $decoded->userID);
+            $ok = $stmt->execute();
+        }catch(Exception $e){
+            error_log($e->getMessage());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        if(!$ok){
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if($user){
+            $userPWHash = $user["userPwHash"];
+            if(password_verify($password, $userPWHash)){
+                $response->getBody()->write("OK");
+                return $response->withStatus(200);
+            }
+        }
+
+        $response->getBody()->write("Unauthorized");
+        return $response->withStatus(401);
+    }
+
     public function login(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         $body = json_decode($request->getBody());
@@ -47,17 +87,15 @@ class Auth
         $dbFile = __DIR__ . "/../data/db.db";
         $pdo = new PDO("sqlite:$dbFile");
         try {
-            $pdo->beginTransaction();
             $stmt = $pdo->prepare("SELECT * FROM Users WHERE userEmail = :email");
             $stmt->bindParam(":email", $email);
-            $stmt->execute();
+            $ok = $stmt->execute();
         } catch (Exception $e) {
             error_log($e->getMessage());
-            $pdo->rollBack();
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
-        $ok = $pdo->commit();
+      
         if (!$ok) {
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
@@ -66,7 +104,6 @@ class Auth
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user) {
-            error_log($user["userName"]);
             $userPWHash = $user["userPWHash"];
 
             if (password_verify($password, $userPWHash)) {

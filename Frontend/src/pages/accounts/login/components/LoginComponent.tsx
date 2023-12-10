@@ -12,6 +12,7 @@ import { useState } from "react";
 import { validateEmail } from "@/helpers/validation";
 import { useMutation } from "react-query";
 import { LoginObject, login } from "@/helpers/auth";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface props {
   isExpired: boolean;
@@ -20,7 +21,6 @@ export default function LoginComponent({ isExpired }: props) {
   const [userEmail, setUserEmail] = useState("");
   const [pass, setPass] = useState("");
   const [isUserEmailValid, setIsUserEmailValid] = useState(true);
-
   const callLogin = useMutation((loginObject: LoginObject) => {
     return login(loginObject);
   });
@@ -39,6 +39,16 @@ export default function LoginComponent({ isExpired }: props) {
         {
           onSuccess: (data) => {
             localStorage.setItem("token", data.token);
+
+            if (window.location.pathname === "/auth/login") {
+              /*
+              We shouold be using the navigate hook here, but it 
+              complains we're no in a router component, even though we are.
+              */
+              window.location.href = "/";
+            } else {
+              window.location.reload();
+            }
           },
         }
       );

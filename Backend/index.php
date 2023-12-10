@@ -47,7 +47,10 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
 
     //Create User
     $app->post("/api/users/create", [\Users::class, 'create'])->add(new RequiresAuthentication());
-
+    //Update User
+    $app->post("/api/users/update", [\Users::class, 'update'])->add(new RequiresAuthentication());
+    //Delete User
+    $app->post("/api/users/delete", [\Users::class, 'delete'])->add(new RequiresAuthentication());
 
     //======================================//
     //================Auth=================//
@@ -60,7 +63,9 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $app->post("/api/auth/logout", [Auth::class, 'logout'])->add(new RequiresAuthentication());
     //Verify User Token
     $app->post("/api/auth/verify", [Auth::class, 'verify'])->add(new RequiresAuthentication());
-    $app->run();
+    //Verify password (used for account updates and deletions)
+    $app->post("/api/auth/verifypass", [Auth::class, 'verifyPass'])->add(new RequiresAuthentication());
+    $app->run();    
 }
 
 

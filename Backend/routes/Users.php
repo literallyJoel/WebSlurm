@@ -100,7 +100,7 @@ class Users
         $decodedToken = $request->getAttribute("decoded") ?? null;
 
         if ($userID !== null) {
-            if ($decodedToken->$privLevel !== 1 && $decodedToken->$userID !== $userID) {
+            if ($decodedToken->privLevel !== 1 && $decodedToken->userID !== $userID) {
                 $response->getBody()->write("Bad Request");
                 return $response->withStatus(400);
             }
@@ -168,6 +168,64 @@ class Users
 
         if ($success) {
             $response->getBody()->write(json_encode(["userID" => $userID, "message" => "Successfully updated user with ID: $userID", "OK" => true]));
+            return $response->withStatus(201);
+        } else {
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+    }
+
+    public function delete(ServerRequestInterface $request, ResponseInterface $response, array $args){
+        $body = json_decode($request->getBody());
+        $userID = $body->userID ?? null;
+        $decodedToken = $request->getAttribute("decoded") ?? null;
+
+        if ($userID !== null) {
+            if ($decodedToken->privLevel !== 1 && $decodedToken->userID !== $userID) {
+                $response->getBody()->write("Bad Request");
+                return $response->withStatus(400);
+            }
+        }
+
+        if ($decodedToken === null) {
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $dbFile = __DIR__ . "/../data/db.db";
+        $pdo = new PDO("sqlite:$dbFile");
+
+        try {
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare("DELETE FROM users WHERE userID = :userID");
+            $cleanupTokens = $pdo->prepare("DELETE FROM userCancelledTokens WHERE userID = :userID");
+            $cleanupCommands = $pdo->prepare("UPDATE slurmCommands SET userID = '0' WHERE userID = :userID");
+
+            if(is_null($userID)){
+                $userID = $decodedToken->userID;
+            }
+            
+            $stmt->bindParam("userID", $userID);
+            $cleanupTokens->bindParam("userID", $userID);
+            $cleanupCommands->bindParam("userID", $userID);
+            
+            
+            //Execute the statement
+            $cleanupCommands->execute();
+            $cleanupTokens->execute();
+            $stmt->execute();
+
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            $pdo->rollBack();
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $success = $pdo->commit();
+
+        if ($success) {
+            $response->getBody()->write(json_encode(["userID" => $userID, "message" => "Successfully deleted user with ID: $userID", "OK" => true]));
             return $response->withStatus(201);
         } else {
             $response->getBody()->write("Internal Server Error");

@@ -34,7 +34,7 @@ class Database
                 $db->exec('CREATE TABLE IF NOT EXISTS slurmCommands (
                 commandID INTEGER PRIMARY KEY NOT NULL,
                 commandName TEXT NOT NULL,
-                userID UUID,
+                userID TEXT,
                 FOREIGN KEY(userID) REFERENCES users(userID)
             )');
 

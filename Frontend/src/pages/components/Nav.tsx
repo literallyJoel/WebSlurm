@@ -1,7 +1,7 @@
 import { RiAccountCircleFill } from "react-icons/ri";
 import { useContext, useState } from "react";
 import { AuthContext } from "@/providers/auth/AuthProvider";
-
+import { Link } from "react-router-dom";
 const Nav = (): JSX.Element => {
   const { getUser, logout } = useContext(AuthContext);
   const user = getUser();
@@ -32,20 +32,26 @@ const Nav = (): JSX.Element => {
           {isDropdownOpen && (
             <div className="absolute -right-16 mt-2 top-6 w-40 bg-white p-2 rounded shadow-md">
               <div className="text-center text-uol font-bold">{user.name}</div>
-
-              <div className="text-center cursor-pointer text-blue-500 hover:underline">
-                Account Settings
+              <div className="text-center">
+                <Link
+                  to="/accounts/settings"
+                  className="text-uol hover:underline"
+                >
+                  Account Settings
+                </Link>
               </div>
               {user.role === 1 && (
-                <div className="text-center cursor-pointer text-blue-500 hover:underline">
-                  Admin Settings
+                <div className="text-center">
+                  <div className="text-uol hover:underline">Admin Settings</div>
                 </div>
               )}
-              <div
-                onClick={handleLogout}
-                className="text-center cursor-pointer text-blue-500 hover:underline"
-              >
-                Logout
+              <div className="text-center">
+                <div
+                  onClick={handleLogout}
+                  className="text-uol hover:underline cursor-pointer"
+                >
+                  Logout
+                </div>
               </div>
             </div>
           )}
