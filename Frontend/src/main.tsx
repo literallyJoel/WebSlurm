@@ -4,7 +4,7 @@ import "./index.css";
 import { Query, QueryClient, QueryClientProvider } from "react-query";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import CreateAccountScreen from "./pages/accounts/createAccount/CreateAccount.tsx";
-import Login from "./pages/accounts/login/Login.tsx";
+import Login from "./pages/auth/login/Login.tsx";
 import ResetPassword from "./pages/accounts/resetPassword/ResetPassword.tsx";
 import AuthProvider from "./providers/auth/AuthProvider.tsx";
 import Home from "./pages/home/Home.tsx";

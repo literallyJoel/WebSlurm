@@ -1,7 +1,7 @@
 import { ReactNode, useState, createContext } from "react";
 import { jwtDecode } from "jwt-decode";
 import { logout as logoutHelper, type User } from "@/helpers/auth";
-import Login from "@/pages/accounts/login/Login";
+import Login from "@/pages/auth/login/Login";
 import { decodedToken, verifyToken } from "@/helpers/authProvider";
 import { useMutation, useQuery } from "react-query";
 import ResetPassword from "@/pages/accounts/resetPassword/ResetPassword";
