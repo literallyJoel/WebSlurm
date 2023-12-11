@@ -95,8 +95,8 @@ export const CreationSuccessView = ({ generatedPass }: props): JSX.Element => {
         )}
       </CardContent>
       <CardFooter className="justify-center">
-        <Button className="w-5/12 border-uol border-2 rounded-xl shadow-2xl hover:text-white hover:bg-uol hover:shadow-inner">
-          Back
+        <Button onClick={() =>{window.location.pathname = "/"}} className="w-5/12 border-uol border-2 rounded-xl shadow-2xl hover:text-white hover:bg-uol hover:shadow-inner">
+          Back to home
         </Button>
       </CardFooter>
     </Card>

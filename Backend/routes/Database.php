@@ -30,6 +30,13 @@ class Database
                 requiresPasswordReset BOOLEAN NOT NULL
             )');
 
+                /*
+                This exists as a default user. It has no email or password so cannot be accessed,
+                and has standard user permissions in any case. Used so when a user is removed,
+                the commands they created can remain.
+                */
+                $db->exec('INSERT INTO users (userID, userName, privLevel) VALUES ("default", "default", 0');
+
                 // Create the slurmCommands table
                 $db->exec('CREATE TABLE IF NOT EXISTS slurmCommands (
                 commandID INTEGER PRIMARY KEY NOT NULL,
@@ -54,12 +61,14 @@ class Database
                 commandID INTEGER,
                 FOREIGN KEY(commandID) REFERENCES slurmCommands(commandID)
             )');
-                // Create cancelled tokens table.
-                $db->exec('CREATE TABLE IF NOT EXISTS userCancelledTokens (
-                    tokenID TEXT PRIMARY KEY NOT NULL,
-                    userID TEXT,
-                    FOREIGN KEY(userID) REFERENCES users(userID)
-            )');
+                
+
+                //Create the all tokens table. This is so we can disable tokens if needed.
+                $db->exec('CREATE TABLE IF NOT EXISTS userTokens(
+                        tokenID TEXT PRIMARY KEY NOT NULL,
+                        userID TEXT,
+                        FOREIGN KEY(userID) REFERENCES users(userID)
+             )');
 
                 $db->close();
             }

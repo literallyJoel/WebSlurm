@@ -5,13 +5,23 @@ function isTokenValid($decoded): bool
 {
     $valid = true;
     $valid = $valid && isset($decoded->exp);
-    error_log("exp set: " . $valid);
-    error_log(time());
-    error_log($decoded->exp);
+
+    
+    if(!$valid){
+        error_log("Failed on exp set");
+        return false;
+    }
+
     $valid = $valid && time() < $decoded->exp;
-    error_log("exp past: " . $valid);
+    if(!$valid){
+        error_log("Failed on exp");
+        return false;
+    }
     $valid = $valid && !(isTokenCancelled($decoded));
-    error_log("is cancelled: " . $valid); 
+    if(!$valid){
+        error_log("Failed on cancelled");
+        return false;
+    }
     return $valid;
 }
 
@@ -24,7 +34,7 @@ function isTokenCancelled($decoded): bool
 
     if ($tokenID) {
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare("SELECT * FROM userCancelledTokens WHERE userID = :userID AND tokenID = :tokenID");
+        $stmt = $pdo->prepare("SELECT * FROM userTokens WHERE userID = :userID AND tokenID = :tokenID");
         $stmt->bindParam(":userID", $userID);
         $stmt->bindParam(":tokenID", $tokenID);
         $ok = $stmt->execute();
@@ -34,10 +44,10 @@ function isTokenCancelled($decoded): bool
 
         $token = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($token) {
-            return true;
+            return false;
         }
 
-        return false;
+        return true;
     }
 
     return true;
@@ -53,9 +63,10 @@ function decodeJWT($token)
 
     
     $token = substr($token, 7);
-    error_log("Token: " . $token);
     
+    error_log("TOKEN: " . $token);
     $key = new \Firebase\JWT\Key("thisShouldBeAnEnvironmentVariable", "HS256");
-
-    return JWT::decode($token, $key);
+    $decoded = JWT::decode($token, $key);
+    error_log("DECODED: " . print_r($decoded));
+    return $decoded;
 }

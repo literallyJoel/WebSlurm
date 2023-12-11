@@ -9,14 +9,14 @@ class Auth
     {
     }
 
-    private function generateJWT($email, $name, $userID, $userPrivLevel, $requiresPasswordReset): string
+    private function generateJWT($tokenID, $email, $name, $userID, $userPrivLevel, $requiresPasswordReset): string
     {
-        $tokenID = uniqid("", true);
+       
         $secretKey = "thisShouldBeAnEnvironmentVariable";
         $expirationTime = time() + 86400; //24 hours
         return JWT::encode([
-            'exp' => $expirationTime,
             'tokenID' => $tokenID,
+            'exp' => $expirationTime,
             'userID' => $userID,
             'email' => $email,
             'name' => $name,
@@ -32,6 +32,46 @@ class Auth
         //This function has a middleware that verifies the token, so if we get here, the token is valid.
         $response->getBody()->write("OK");
         return $response->withStatus(200);
+    }
+
+    public function disableAllUserTokens(ServerRequestInterface $request, ResponseInterface $response):ResponseInterface{
+        $decoded = $request->getAttribute("decoded") ?? null;
+        $body = json_decode($request->getBody());
+        $providedID = $body->userID ?? null;
+        $userID = $decoded->userID ?? null;
+
+        if(!is_null($providedID)){
+            if($decoded->privLevel !== 1){
+                $response->getBody()->write("Unauthorized");
+                return $response->withStatus(401);
+            }
+        }
+
+
+
+        $dbFile = __DIR__ . "/../data/db.db";
+        $pdo = new PDO("sqlite:$dbFile");
+
+        try{
+            $pdo->beginTransaction();
+            $stmt = $pdo->prepare("DELETE FROM userTokens WHERE userID = :userID");
+            $stmt->bindParam(":userID", is_null($providedID) ? $userID : $providedID);
+            $stmt->execute();
+        }catch(Exception $e){
+            error_log($e->getMessage());
+            $pdo->rollBack();
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $success = $pdo->commit();
+        if($success){
+            $response->getBody()->write("OK");
+            return $response->withStatus(200);
+        }
+
+        $response->getBody()->write("Internal Server Error");
+        return $response->withStatus(500);
     }
     
     public function verifyPass(ServerREquestInterface $request, ResponseInterface $response):ResponseInterface{
@@ -65,12 +105,12 @@ class Auth
         if($user){
             $userPWHash = $user["userPwHash"];
             if(password_verify($password, $userPWHash)){
-                $response->getBody()->write("OK");
+                $response->getBody()->write(json_encode(["ok" => true]));
                 return $response->withStatus(200);
             }
         }
 
-        $response->getBody()->write("Unauthorized");
+        $response->getBody()->write(json_encode(["ok" => false]));
         return $response->withStatus(401);
     }
 
@@ -107,7 +147,20 @@ class Auth
             $userPWHash = $user["userPWHash"];
 
             if (password_verify($password, $userPWHash)) {
-                $token = $this->generateJWT($email, $user["userName"], $user["userID"], $user["privLevel"], $user["requiresPasswordReset"]);
+                $tokenID = uniqid("", true);
+                $token = $this->generateJWT($tokenID, $email, $user["userName"], $user["userID"], $user["privLevel"], $user["requiresPasswordReset"]);
+            
+            try{
+                $pdo->beginTransaction();
+                $newTokenStmt = $pdo->prepare("INSERT INTO userTokens (tokenID, userID) VALUES (:tokenID, :userID)");
+                $newTokenStmt->bindParam(":tokenID", $tokenID);
+                $newTokenStmt->bindParam(":userID", $user["userID"]);
+                $newTokenStmt->execute();
+            }catch(Exception $e){
+                $pdo->rollBack();
+                error_log($e->getMessage());
+            }
+                $pdo->commit();
                 $response->getBody()->write(json_encode(["token" => $token]));
                 return $response->withStatus(200);
             }
@@ -131,7 +184,7 @@ class Auth
 
         try {
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare("INSERT INTO userCancelledTokens (tokenID, userID) VALUES (:tokenID, :userID)");
+            $stmt = $pdo->prepare("DELETE FROM userTokens WHERE tokenID = :tokenID AND userID = :userID");
             $stmt->bindParam("tokenID", $decoded->tokenID);
             $stmt->bindParam("userID", $decoded->userID);
 

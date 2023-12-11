@@ -72,6 +72,19 @@ const AuthProvider = ({ children }: props): JSX.Element => {
       },
     });
   };
+
+  //If we're in development mode, we expose the account creation screen outside of auth
+  //This is to make testing easier - in production accounts are created by admins.
+  if (
+    (!process.env.NODE_ENV || process.env.NODE_ENV === "development") &&
+    window.location.pathname === "/accounts/create"
+  ) {
+    return (
+      <AuthContext.Provider value={{ getUser, getToken, logout }}>
+        {children}
+      </AuthContext.Provider>
+    );
+  }
   //Return login screen if there is no token
   if (!token) {
     console.log("No token");

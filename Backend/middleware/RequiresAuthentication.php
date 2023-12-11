@@ -10,8 +10,8 @@ class RequiresAuthentication
     public function __invoke(Request $request, RequestHandler $handler): Response
     {
         $token = $request->getHeaderLine("Authorization");
-        error_log("Token: " . $token);
         $decoded = decodeJWT($token);
+        error_log("Decoded: " . print_r($decoded));
         $isAllowed = isTokenValid($decoded);
 
         if ($isAllowed) {

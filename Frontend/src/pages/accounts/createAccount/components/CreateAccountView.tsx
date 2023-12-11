@@ -5,7 +5,7 @@
 The ShadCN/UI library has been used for many of the UI elements, which are imported helper
 https://ui.shadcn.com/docs
 */
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   CardTitle,
   CardHeader,
@@ -52,8 +52,14 @@ interface props {
     NewAccountObject,
     unknown
   >;
+  setCurrentView: React.Dispatch<
+    React.SetStateAction<"failure" | "success" | "form">
+  >;
 }
-export const CreateAccountView = ({ createAccount }: props): JSX.Element => {
+export const CreateAccountView = ({
+  createAccount,
+  setCurrentView,
+}: props): JSX.Element => {
   //=======================================//
   //==========Form Input Storage==========//
   //=====================================//
@@ -112,13 +118,23 @@ export const CreateAccountView = ({ createAccount }: props): JSX.Element => {
     }
 
     if (valid) {
-      createAccount.mutate({
-        name: userName,
-        email: userEmail,
-        generatedPass: generateRandom,
-        role: privLevel,
-        password: pass,
-      });
+      createAccount.mutate(
+        {
+          name: userName,
+          email: userEmail,
+          generatedPass: generateRandom,
+          role: privLevel,
+          password: pass,
+        },
+        {
+          onSuccess: () => {
+            setCurrentView("success");
+          },
+          onError: () => {
+            setCurrentView("failure");
+          },
+        }
+      );
     }
   }
   //=======================================//

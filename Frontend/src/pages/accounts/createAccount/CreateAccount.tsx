@@ -4,8 +4,17 @@ import { createAccount, NewAccountObject } from "@/helpers/accountsHelper";
 import { CreateAccountView } from "./components/CreateAccountView";
 import { CreationFailedView } from "./components/FailureView";
 import { CreationSuccessView } from "./components/SuccessView";
+import { useEffect, useState } from "react";
 
 const CreateAccountScreen = (): JSX.Element => {
+  /*
+  Controls what screen should be shown. This can be done directly using the result
+  of the backend call, but this makes creating a back button easier.
+  */
+  const [currentView, setCurrentView] = useState<
+    "success" | "failure" | "form"
+  >("form");
+
   //=======================================//
   //============Backend Call==============//
   //=====================================//
@@ -43,16 +52,21 @@ const CreateAccountScreen = (): JSX.Element => {
   This controls which of these views is shown to the user
   */
   const CurrentView = () => {
-    if (_createAccount.isError) {
-      return <CreationFailedView />;
-    } else if (_createAccount.isSuccess) {
+    if (currentView === "failure") {
+      return <CreationFailedView setView={setCurrentView} />;
+    } else if (currentView === "success") {
       return (
         <CreationSuccessView
-          generatedPass={_createAccount.data.generatedPass ?? undefined}
+          generatedPass={_createAccount.data?.generatedPass ?? undefined}
         />
       );
     } else {
-      return <CreateAccountView createAccount={_createAccount} />;
+      return (
+        <CreateAccountView
+          createAccount={_createAccount}
+          setCurrentView={setCurrentView}
+        />
+      );
     }
   };
 

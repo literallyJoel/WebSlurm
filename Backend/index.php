@@ -8,7 +8,6 @@ require __DIR__ . "/routes/Database.php";
 require __DIR__ . "/routes/Users.php";
 require __DIR__ . "/middleware/RequiresAuthentication.php";
 
-error_log($_SERVER['REQUEST_URI']);
 //Redirect to React App if not an API route
 if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $buildPath = __DIR__ . "/build";
@@ -36,26 +35,31 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
 
     //================GET=================//
 
-    //Setup Database
+    //Setup Database - eventually this'll be behind auth but for now it's easier
     $app->get("/api/db/setup", [Database::class, 'setup']);
 
 
     //======================================//
     //================Users================//
 
-    //================POST================//
 
+    //================POST================//
     //Create User
-    $app->post("/api/users/create", [\Users::class, 'create'])->add(new RequiresAuthentication());
+    $app->post("/api/users/create", [\Users::class, 'create']);
+
+   //================PUT=================//
     //Update User
-    $app->post("/api/users/update", [\Users::class, 'update'])->add(new RequiresAuthentication());
+    $app->put("/api/users/update", [\Users::class, 'update'])->add(new RequiresAuthentication());
+
+    //==============DELETE==============//
     //Delete User
-    $app->post("/api/users/delete", [\Users::class, 'delete'])->add(new RequiresAuthentication());
+    $app->delete("/api/users/delete", [\Users::class, 'delete'])->add(new RequiresAuthentication());
 
-    //======================================//
-    //================Auth=================//
 
-    //================POST================//
+    //====================================//
+    //===============Auth================//
+
+    //===============POST===============//
 
     //Login User
     $app->post("/api/auth/login", [Auth::class, 'login']);
@@ -65,6 +69,8 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $app->post("/api/auth/verify", [Auth::class, 'verify'])->add(new RequiresAuthentication());
     //Verify password (used for account updates and deletions)
     $app->post("/api/auth/verifypass", [Auth::class, 'verifyPass'])->add(new RequiresAuthentication());
+    //Disabled all of a users tokens
+    $app->post("/api/auth/disabletokens", [Auth::class, 'disableTokens'])->add(new RequiresAuthentication());
     $app->run();    
 }
 

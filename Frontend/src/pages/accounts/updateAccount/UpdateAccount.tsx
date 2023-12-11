@@ -21,11 +21,14 @@ import {
 import {
   UpdateAccountObject,
   updateAccount as updateAccountHelper,
+  deleteAccount as deleteAccountHelper,
 } from "@/helpers/accountsHelper";
 import { useMutation } from "react-query";
+import { verifyPass } from "@/helpers/auth";
 export default function UpdateAccount() {
-  const { getUser } = useContext(AuthContext);
+  const { getUser, getToken } = useContext(AuthContext);
   const user = getUser();
+  const token = getToken();
   const [isEditingName, setIsEditingName] = useState(false);
   const [name, setName] = useState(user.name);
   const [isNameValid, setIsNameValid] = useState(true);
@@ -44,6 +47,18 @@ export default function UpdateAccount() {
       return updateAccountHelper(updatedUser);
     }
   );
+
+  type verfiyPasswordObject = { token: string; password: string };
+  const verifyPasswordRequest = useMutation(
+    "verifyPassword",
+    (verifyPasswordObj: verfiyPasswordObject) => {
+      return verifyPass(verifyPasswordObj.password, verifyPasswordObj.token);
+    }
+  );
+
+  const deleteAccountRequest = useMutation("deleteAccount", (token: string) => {
+    return deleteAccountHelper(token);
+  });
 
   const validateEntry = (): boolean => {
     let valid = true;
@@ -70,8 +85,6 @@ export default function UpdateAccount() {
     }
     return valid;
   };
-
-  const deleteAccount = () => {};
 
   const updateUser = () => {
     if (validateEntry()) {
@@ -221,7 +234,9 @@ export default function UpdateAccount() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button className="w-full" onClick={() => updateUser()}>Save Changes</Button>
+          <Button className="w-full" onClick={() => updateUser()}>
+            Save Changes
+          </Button>
         </CardFooter>
         <CardContent className="space-y-4">
           <Button
@@ -242,7 +257,10 @@ export default function UpdateAccount() {
           <Card className="w-full max-w-md border-2 border-uol">
             <CardHeader>
               <CardTitle>Confirm Deletion</CardTitle>
-              <span className="text-sm text-red-500">Completing this action will delete your account. This cannot be undone.</span>
+              <span className="text-sm text-red-500">
+                Completing this action will delete your account. This cannot be
+                undone.
+              </span>
             </CardHeader>
             <CardContent>
               <Label htmlFor="password">Enter Your Password</Label>
@@ -256,7 +274,27 @@ export default function UpdateAccount() {
               />
             </CardContent>
             <CardFooter className="flex flex-row">
-              <Button variant="destructive" onClick={deleteAccount}>Confirm</Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  verifyPasswordRequest.mutate(
+                    { token: token, password: password },
+                    {
+                      onSettled: (isVerified) => {
+                        if (isVerified?.ok) {
+                          deleteAccountRequest.mutate(token, {
+                            onSuccess: () => {
+                              window.location.reload();
+                            },
+                          });
+                        }
+                      },
+                    }
+                  );
+                }}
+              >
+                Confirm
+              </Button>
               <Button
                 className="ml-auto"
                 variant="outline"

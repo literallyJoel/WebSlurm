@@ -14,9 +14,13 @@ import {
 } from "@/shadui/ui/card";
 import { Button } from "@/shadui/ui/button";
 import { MdErrorOutline } from "react-icons/md";
+import React from "react";
 
+interface props {
+  setView: React.Dispatch<React.SetStateAction<"failure" | "success" | "form">>;
+}
 
-export const CreationFailedView = (): JSX.Element => {
+export const CreationFailedView = ({ setView }: props): JSX.Element => {
   //=======================================//
   //===============UI Code================//
   //=====================================//
@@ -30,7 +34,10 @@ export const CreationFailedView = (): JSX.Element => {
         <span>Something went wrong. Please try again later.</span>
       </CardContent>
       <CardFooter className="justify-center">
-        <Button className="w-5/12 border-uol border-2 rounded-xl shadow-2xl hover:text-white hover:bg-uol hover:shadow-inner">
+        <Button
+          onClick={() => setView("form")}
+          className="w-5/12 border-uol border-2 rounded-xl shadow-2xl hover:text-white hover:bg-uol hover:shadow-inner"
+        >
           Back
         </Button>
       </CardFooter>

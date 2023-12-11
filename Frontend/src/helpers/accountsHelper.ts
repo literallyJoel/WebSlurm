@@ -134,8 +134,24 @@ export async function updateAccount(
 
   return (
     await fetch("/api/users/update", {
-      method: "POST",
+      method: "PUT",
       body: JSON.stringify(updateAccountObject),
     })
   ).json();
+}
+
+//=======================================//
+//=======Delete Account Function========//
+//=====================================//
+/*
+The delete account function takes the users token,
+and potentially a user ID for admin actions,
+and calls for account deletion on the backend
+*/
+export async function deleteAccount(token: string, userID?: string) {
+  return await fetch("/api/users/delete", {
+    method: "DELETE",
+    body: JSON.stringify({ userID: userID }),
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
