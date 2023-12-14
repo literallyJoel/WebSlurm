@@ -9,6 +9,9 @@ import ResetPassword from "./pages/accounts/resetPassword/ResetPassword.tsx";
 import AuthProvider from "./providers/auth/AuthProvider.tsx";
 import Home from "./pages/home/Home.tsx";
 import UpdateAccount from "./pages/accounts/updateAccount/UpdateAccount.tsx";
+import AdminFrame from "./pages/admin/AdminFrame.tsx";
+import JobSettings from "./pages/admin/jobs/JobSettings.tsx";
+import NewJob from "./pages/admin/jobs/NewJob.tsx";
 //=======================================//
 //=============Router Code==============//
 //=====================================//
@@ -25,6 +28,14 @@ const router = createBrowserRouter([
   },
   { path: "/accounts/reset", element: <ResetPassword isRequired={false} /> },
   { path: "/auth/login", element: <Login isExpired={false} /> },
+  {
+    path: "/admin",
+    element: <AdminFrame />,
+    children: [
+      { path: "/admin/jobs", element: <JobSettings /> },
+      { path: "/admin/jobs/new", element: <NewJob /> },
+    ],
+  },
 ]);
 
 const queryClient = new QueryClient();

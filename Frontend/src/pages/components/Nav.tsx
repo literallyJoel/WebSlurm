@@ -18,7 +18,9 @@ const Nav = (): JSX.Element => {
   return (
     <nav className="bg-uol">
       <div className="container mx-auto flex justify-between items-center h-12">
-        <div className="text-white font-bold text-xl">WebSlurm</div>
+        <a href="/" className="text-white font-bold text-xl">
+          WebSlurm
+        </a>
         <div
           className={`${
             user.id === "" && user.id === "" && "hidden"
@@ -42,7 +44,12 @@ const Nav = (): JSX.Element => {
               </div>
               {user.role === 1 && (
                 <div className="text-center">
-                  <div className="text-uol hover:underline">Admin Settings</div>
+                  <Link
+                    to="/admin"
+                    className="text-uol hover:underline cursor-pointer"
+                  >
+                    Admin Settings
+                  </Link>
                 </div>
               )}
               <div className="text-center">
