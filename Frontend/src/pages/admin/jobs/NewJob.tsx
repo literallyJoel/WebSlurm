@@ -48,7 +48,11 @@ const NewJob = (): JSX.Element => {
             <Input id="job-name" placeholder="Enter the job name" />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="bash-code">Bash Script</Label>
+            <Label htmlFor="bash-code">Bash Script</Label> <br/>
+            <Label className="text-sm text-red-500">
+              The application will assume this code is trusted. It is your
+              responsibility to upload a safe script.
+            </Label>
             <Editor
               height="300px"
               language="bash"
@@ -59,8 +63,10 @@ const NewJob = (): JSX.Element => {
           </div>
         </CardContent>
         <CardFooter className="justify-between">
-            <Button onClick={openModal}>Add Parameter</Button>
-            <Button className="bg-emerald-600 hover:bg-emerald-800">Create Job Type</Button>
+          <Button onClick={openModal}>Add Parameter</Button>
+          <Button className="bg-emerald-600 hover:bg-emerald-800">
+            Create Job Type
+          </Button>
         </CardFooter>
       </Card>
 
