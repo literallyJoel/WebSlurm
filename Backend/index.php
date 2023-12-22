@@ -71,6 +71,18 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $app->post("/api/auth/verifypass", [Auth::class, 'verifyPass'])->add(new RequiresAuthentication());
     //Disabled all of a users tokens
     $app->post("/api/auth/disabletokens", [Auth::class, 'disableTokens'])->add(new RequiresAuthentication());
+
+    //====================================//
+    //=============Job Types=============//
+
+    //===============POST===============//
+
+    //Create Job Type
+    $app->post("/api/jobtypes/create", [JobTypes::class, 'create'])->add(new RequiresAdmin());
+
+
+
+
     $app->run();    
 }
 

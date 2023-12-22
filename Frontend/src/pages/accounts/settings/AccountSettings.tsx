@@ -9,9 +9,9 @@ import {
 import { Label } from "@/shadui/ui/label";
 import { Input } from "@/shadui/ui/input";
 import { Button } from "@/shadui/ui/button";
-import Nav from "@/pages/components/Nav";
+import Nav from "@/components/Nav";
 import { useContext, useState } from "react";
-import { AuthContext } from "@/providers/auth/AuthProvider";
+import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { MdEdit } from "react-icons/md";
 import {
   validateEmail,
@@ -22,10 +22,10 @@ import {
   UpdateAccountObject,
   updateAccount as updateAccountHelper,
   deleteAccount as deleteAccountHelper,
-} from "@/helpers/accountsHelper";
+} from "@/pages/accounts/accounts";
 import { useMutation } from "react-query";
-import { verifyPass } from "@/helpers/auth";
-export default function UpdateAccount() {
+import { verifyPass } from "@/pages/auth/auth";
+const AccountSettings = (): JSX.Element => {
   const { getUser, getToken } = useContext(AuthContext);
   const user = getUser();
   const token = getToken();
@@ -98,7 +98,7 @@ export default function UpdateAccount() {
       }
 
       if (isEditingPassword && password !== "" && confirmPass !== "") {
-        updatedUser.pass = password;
+        updatedUser.password = password;
       }
 
       updateUserRequest.mutate(updatedUser);
@@ -308,4 +308,6 @@ export default function UpdateAccount() {
       )}
     </>
   );
-}
+};
+
+export default AccountSettings;

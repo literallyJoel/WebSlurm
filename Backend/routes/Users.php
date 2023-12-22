@@ -29,7 +29,7 @@ class Users
         $body = json_decode($request->getBody());
         $name = $body->name ?? null;
         $email = $body->email ?? null;
-        $privLevel = $body->role ?? null;
+        $role = $body->role ?? null;
         $generatePass = $body->generatePass ?? null;
         $password = $body->password ?? null;
 
@@ -37,7 +37,7 @@ class Users
         $userID = uniqid("", true);
 
         $validator = new Validator();
-        if (!$validator->validateAccountCreation($body, $email, $name, $password, $generatePass, $privLevel)) {
+        if (!$validator->validateAccountCreation($body, $email, $name, $password, $generatePass, $role)) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
         }
@@ -54,14 +54,14 @@ class Users
 
         try {
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare("INSERT INTO users (userID, userName, userEmail, userPWHash, privLevel, requiresPasswordReset)
-            VALUES (:userID, :userName, :userEmail, :userPwHash, :privLevel, :requiresPasswordReset)");
+            $stmt = $pdo->prepare("INSERT INTO users (userID, userName, userEmail, userPWHash, role, requiresPasswordReset)
+            VALUES (:userID, :userName, :userEmail, :userPwHash, :role, :requiresPasswordReset)");
 
             $stmt->bindParam(":userID", $userID);
             $stmt->bindParam(":userName", $name);
             $stmt->bindParam(":userEmail", $email);
             $stmt->bindParam(":userPwHash", $userPWHash);
-            $stmt->bindParam(":privLevel", $privLevel);
+            $stmt->bindParam(":role", $role);
             $stmt->bindParam(":requiresPasswordReset", $generatePass);
 
             $stmt->execute();
@@ -95,12 +95,12 @@ class Users
         $name = $body->name ?? null;
         $email = $body->email ?? null;
         $password = $body->pass ?? null;
-        $privLevel = $body->role ?? null;
+        $role = $body->role ?? null;
         $userID = $body->userID ?? null;
         $decodedToken = $request->getAttribute("decoded") ?? null;
 
         if ($userID !== null) {
-            if ($decodedToken->privLevel !== 1 && $decodedToken->userID !== $userID) {
+            if ($decodedToken->role !== 1 && $decodedToken->userID !== $userID) {
                 $response->getBody()->write("Bad Request");
                 return $response->withStatus(400);
             }
@@ -113,7 +113,7 @@ class Users
 
         $validator = new Validator();
 
-        if (!$validator->validateAccountUpdate($body, $email, $name, $password, $privLevel)) {
+        if (!$validator->validateAccountUpdate($body, $email, $name, $password, $role)) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
         }
@@ -125,7 +125,7 @@ class Users
             $pdo->beginTransaction();
             $stmt = $pdo->prepare("UPDATE users SET " .
                 (!is_null($email) ? "userEmail = :userEmail, " : "") .
-                (!is_null($privLevel) ? "privLevel = :privLevel, " : "") .
+                (!is_null($role) ? "role = :role, " : "") .
                 (!is_null($name) ? "userName = :userName" : "") .
                 (!is_null($password) ? "userPwHash = :userPwHash" : "") .
                 " WHERE userID = :userID");
@@ -135,8 +135,8 @@ class Users
                 $stmt->bindParam(':userEmail', $userEmail);
             }
 
-            if (!is_null($privLevel)) {
-                $stmt->bindParam(':privLevel', $privLevel);
+            if (!is_null($role)) {
+                $stmt->bindParam(':role', $role);
             }
 
             if (!is_null($name)) {
@@ -181,7 +181,7 @@ class Users
         $decodedToken = $request->getAttribute("decoded") ?? null;
 
         if ($userID !== null) {
-            if ($decodedToken->privLevel !== 1 && $decodedToken->userID !== $userID) {
+            if ($decodedToken->role !== 1 && $decodedToken->userID !== $userID) {
                 $response->getBody()->write("Bad Request");
                 return $response->withStatus(400);
             }

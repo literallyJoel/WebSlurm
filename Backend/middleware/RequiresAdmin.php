@@ -1,9 +1,9 @@
 <?php
 
-use Firebase\JWT\JWT;
+use Firebase\JWT\ExpiredException;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Message\ResponseInterface;
 use Slim\Psr7\Response;
 include __DIR__ . "/helpers/AuthHelper.php";
 class RequiresAdmin
@@ -11,21 +11,27 @@ class RequiresAdmin
 
 
 
-    public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): \Psr\Http\Message\ResponseInterface
+    public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $token = $request->getHeaderLine("Authorization");
-        $decoded = decodeJWT($token);
-        $isAllowed = isTokenValid($decoded);
+        try {
+            $token = $request->getHeaderLine("Authorization");
+            $decoded = decodeJWT($token);
+            $isAllowed = isTokenValid($decoded);
 
-        $privLevel = $decoded->privLevel;
+            $role = $decoded->role;
 
-        if ($isAllowed && $privLevel === 1) {
-            $request = $request->withAttribute("decoded", $decoded);
-            return $handler->handle($request);
+            if ($isAllowed && $role === 1) {
+                $request = $request->withAttribute("decoded", $decoded);
+                return $handler->handle($request);
+            }
+
+            $response = new Response();
+            $response->getBody()->write("Unauthorized");
+            return $response->withStatus(401);
+        } catch (ExpiredException $e) {
+            $response = new Response();
+            $response->getBody()->write("Token Expired");
+            return $response->withStatus(401);
         }
-
-        $response = new Response();
-        $response->getBody()->write("Unauthorized");
-        return $response->withStatus(401);
     }
 }

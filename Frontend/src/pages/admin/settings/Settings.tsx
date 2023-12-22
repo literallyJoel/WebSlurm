@@ -1,9 +1,7 @@
-import { CardHeader, CardContent, Card } from "@/shadui/ui/card";
-import { Button } from "@/shadui/ui/button";
-import Nav from "../components/Nav";
+import Nav from "@/components/Nav";
 import { Link, Outlet } from "react-router-dom";
 
-export default function AdminFrame() {
+const AdminSettings = (): JSX.Element => {
   return (
     <>
       <Nav />
@@ -43,4 +41,6 @@ export default function AdminFrame() {
       </div>
     </>
   );
-}
+};
+
+export default AdminSettings;

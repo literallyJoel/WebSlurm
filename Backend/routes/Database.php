@@ -26,7 +26,7 @@ class Database
                 userName TEXT,
                 userEmail TEXT,
                 userPWHash TEXT,
-                privLevel INTEGER NOT NULL,
+                role INTEGER NOT NULL,
                 requiresPasswordReset BOOLEAN NOT NULL
             )');
 
@@ -35,23 +35,25 @@ class Database
                 and has standard user permissions in any case. Used so when a user is removed,
                 the commands they created can remain.
                 */
-                $db->exec('INSERT INTO users (userID, userName, privLevel) VALUES ("default", "default", 0');
+                $db->exec('INSERT INTO users (userID, userName, role) VALUES ("default", "default", 0');
 
                 // Create the slurmCommands table
-                $db->exec('CREATE TABLE IF NOT EXISTS slurmCommands (
-                commandID INTEGER PRIMARY KEY NOT NULL,
-                commandName TEXT NOT NULL,
+                $db->exec('CREATE TABLE IF NOT EXISTS jobTypes(
+                jobTypeID INTEGER PRIMARY KEY NOT NULL,
+                jobName TEXT NOT NULL,
+                script TEXT NOT NULL,
                 userID TEXT,
                 FOREIGN KEY(userID) REFERENCES users(userID)
             )');
 
                 // Create the slurmCommandParams table
-                $db->exec('CREATE TABLE IF NOT EXISTS slurmCommandParams (
+                $db->exec('CREATE TABLE IF NOT EXISTS jobTypeParams(
                 paramID INTEGER PRIMARY KEY NOT NULL,
                 paramName TEXT NOT NULL,
                 paramType INTEGER NOT NULL,
-                commandID INTEGER,
-                FOREIGN KEY(commandID) REFERENCES slurmCommands(commandID)
+                defaultValue TEXT,
+                jobTypeID INTEGER,
+                FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID)
             )');
 
                 // Create the Jobs table
@@ -59,7 +61,7 @@ class Database
                 jobID TEXT PRIMARY KEY NOT NULL,
                 jobComplete BOOLEAN NOT NULL,
                 commandID INTEGER,
-                FOREIGN KEY(commandID) REFERENCES slurmCommands(commandID)
+                FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID)
             )');
                 
 

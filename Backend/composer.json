@@ -5,6 +5,7 @@
         "firebase/php-jwt": "^6.9",
         "league/oauth2-server": "^8.5",
       "ext-sqlite3": "*",
-        "ext-pdo": "*"
+        "ext-pdo": "*",
+      "ext-json": "*"
     }
 }

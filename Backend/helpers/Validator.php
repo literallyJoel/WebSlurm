@@ -23,7 +23,7 @@ class Validator
         return strlen($password) !== 0;
     }
 
-    public function validateAccountCreation($body, $email, $name, $password, $generatePass, $privLevel)
+    public function validateAccountCreation($body, $email, $name, $password, $generatePass, $role): bool
     {
 
         $isValid = true;
@@ -35,12 +35,13 @@ class Validator
         if(!$isValid){error_log("failed on name");return false;}
         $isValid = $isValid && ($generatePass || $this->validatePassword($password));
         if(!$isValid){error_log("failed on password");return false;}
-        $isValid = $isValid && ($privLevel === 0 || $privLevel === 1);
-        if(!$isValid){error_log("failed on privLevel");return false;}
+        $isValid = $isValid && ($role === 0 || $role === 1);
+        if(!$isValid){error_log("failed on role");return false;}
         return $isValid;
     }
 
-    public function validateAccountUpdate($body, $email, $name, $password){
+    public function validateAccountUpdate($body, $email, $name, $password): bool
+    {
         $isValid = true;
         $isValid = $isValid && $body !== null;
         if(!$isValid){error_log("failed on body");return false;}
@@ -60,5 +61,12 @@ class Validator
 
         return $isValid;
 
+    }
+
+    public function validateJobTypeCreation($body, $name, $parameters): bool
+    {
+        if($body === null){error_log("failed on body");return false;}
+        if(!$this->validateName($name)){error_log("failed on name");return false;}
+        return true;
     }
 }

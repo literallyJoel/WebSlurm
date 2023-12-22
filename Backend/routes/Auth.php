@@ -20,7 +20,7 @@ class Auth
             'userID' => $userID,
             'email' => $email,
             'name' => $name,
-            'privLevel' => $userPrivLevel,
+            'role' => $userPrivLevel,
             'requiresPasswordReset' => $requiresPasswordReset,
             'local' => true
         ],
@@ -41,7 +41,7 @@ class Auth
         $userID = $decoded->userID ?? null;
 
         if(!is_null($providedID)){
-            if($decoded->privLevel !== 1){
+            if($decoded->role !== 1){
                 $response->getBody()->write("Unauthorized");
                 return $response->withStatus(401);
             }
@@ -148,7 +148,7 @@ class Auth
 
             if (password_verify($password, $userPWHash)) {
                 $tokenID = uniqid("", true);
-                $token = $this->generateJWT($tokenID, $email, $user["userName"], $user["userID"], $user["privLevel"], $user["requiresPasswordReset"]);
+                $token = $this->generateJWT($tokenID, $email, $user["userName"], $user["userID"], $user["role"], $user["requiresPasswordReset"]);
             
             try{
                 $pdo->beginTransaction();

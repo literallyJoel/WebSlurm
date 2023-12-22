@@ -1,29 +1,61 @@
+import Nav from "@/components/Nav";
+import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { useContext } from "react";
-import Nav from "../components/Nav";
-import { TaskView } from "./components/TaskView";
-import { AuthContext } from "@/providers/auth/AuthProvider";
+import TaskView from "./components/TaskView";
 import { Button } from "@/shadui/ui/button";
-export default function Home() {
-  const {getUser} = useContext(AuthContext);
+
+const Home = (): JSX.Element => {
+  const { getUser } = useContext(AuthContext);
   const user = getUser();
 
   const _runningJobsTest = [
-    { taskName: "Task1", taskID: "234234", startTime: "09/12/23 13:15" },
-    { taskName: "Task2", taskID: "234234", startTime: "09/12/23 14:15" },
-    { taskName: "Task3", taskID: "234234", startTime: "09/12/23 15:15" },
+    { name: "Task1", id: "234234", startTime: new Date(2023, 10, 12, 15, 33) },
+    { name: "Task2", id: "234234", startTime: new Date(2023, 11, 17, 12, 33) },
+    { name: "Task3", id: "234234", startTime: new Date(2023, 11, 22, 17, 0) },
   ];
 
   const _completedJobsTest = [
-    { taskName: "Task4", taskID: "234234", startTime: "09/12/23 13:15" },
-    { taskName: "Task5", taskID: "234234", startTime: "09/12/23 14:15" },
-    { taskName: "Task6", taskID: "234234", startTime: "09/12/23 15:15" },
+    {
+      name: "Task4",
+      id: "234234",
+      startTime: new Date(2023, 11, 12, 15, 33),
+      endTime: new Date(2023, 11, 14, 15, 33),
+    },
+    {
+      name: "Task5",
+      id: "234234",
+      startTime: new Date(2023, 12, 17, 12, 33),
+      endTime: new Date(2023, 11, 14, 15, 33),
+    },
+    {
+      name: "Task6",
+      id: "234234",
+      startTime: new Date(2023, 10, 16, 17, 33),
+      endTime: new Date(2023, 11, 14, 15, 33),
+    },
   ];
 
   const _failedJobsTest = [
-    { taskName: "Task7", taskID: "234234", startTime: "09/12/23 13:15" },
-    { taskName: "Task8", taskID: "234234", startTime: "09/12/23 14:15" },
-    { taskName: "Task9", taskID: "234234", startTime: "09/12/23 15:15" },
+    {
+      name: "Task7",
+      id: "234234",
+      startTime: new Date(2023, 11, 12, 15, 33),
+      endTime: new Date(2023, 10, 16, 17, 2),
+    },
+    {
+      name: "Task8",
+      id: "234234",
+      startTime: new Date(2023, 12, 17, 12, 33),
+      endTime: new Date(2023, 10, 16, 17, 2),
+    },
+    {
+      name: "Task9",
+      id: "234234",
+      startTime: new Date(2023, 10, 16, 17, 33),
+      endTime: new Date(2023, 10, 16, 17, 2),
+    },
   ];
+
   return (
     <div className="flex flex-col w-full min-h-screen">
       <Nav />
@@ -47,4 +79,6 @@ export default function Home() {
       </div>
     </div>
   );
-}
+};
+
+export default Home;

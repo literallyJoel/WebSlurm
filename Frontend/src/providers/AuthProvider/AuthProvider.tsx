@@ -1,9 +1,13 @@
 import { ReactNode, useState, createContext } from "react";
 import { jwtDecode } from "jwt-decode";
-import { logout as logoutHelper, type User } from "@/helpers/auth";
-import Login from "@/pages/auth/login/Login";
-import { decodedToken, verifyToken } from "@/helpers/authProvider";
+import {
+  logout as logoutHelper,
+  type User,
+  type DecodedToken,
+  verifyToken,
+} from "@/pages/auth/auth";
 import { useMutation, useQuery } from "react-query";
+import Login from "@/pages/auth/login/Login";
 import ResetPassword from "@/pages/accounts/resetPassword/ResetPassword";
 interface props {
   children: ReactNode;
@@ -18,34 +22,31 @@ export const AuthContext = createContext({
   },
   logout: () => {},
 });
+
 const AuthProvider = ({ children }: props): JSX.Element => {
   //Grabs the token from local storage
   const [token, setToken] = useState<string | null>(
     localStorage.getItem("token")
   );
-
   //Decodes the token
-  const [decoded, setDecoded] = useState<decodedToken | null>(
+  const [decoded, setDecoded] = useState<DecodedToken | null>(
     token ? jwtDecode(token) : null
   );
-
-  //Checks with the backend if the token is valid
-  const isTokenValid = useQuery("tokenValidation", () =>
-    verifyToken(token ?? "")
-  );
-
+  //Checks with the backend that the token is valid
+  const isTokenValid = useQuery("isTokenValid", () => verifyToken(token ?? ""));
+  //Used to log out a user
   const serverLogout = useMutation((_token: string) => {
     return logoutHelper(_token);
   });
 
-  //Used to retrieve the user object from other components
+  //Used to retreive the user object from other components
   const getUser = (): User => {
     if (decoded) {
       const user = {
         id: decoded.userID,
         name: decoded.name,
         email: decoded.email,
-        role: decoded.privLevel,
+        role: decoded.role,
       };
       return user;
     }
@@ -53,16 +54,11 @@ const AuthProvider = ({ children }: props): JSX.Element => {
     return { id: "", name: "", email: "", role: -1 };
   };
 
-  //Used to retrieve the token from other components
   const getToken = (): string => {
-    if (token) {
-      return token;
-    } else {
-      return "";
-    }
+    return token ?? "";
   };
 
-  //Logsout the user by disabling the token on the backend and removing the token from local stroage
+  //Logs out the user by disabling the token on the backend and removing it from local storage
   const logout = () => {
     serverLogout.mutate(token ?? "", {
       onSuccess: () => {
@@ -73,8 +69,6 @@ const AuthProvider = ({ children }: props): JSX.Element => {
     });
   };
 
-  //If we're in development mode, we expose the account creation screen outside of auth
-  //This is to make testing easier - in production accounts are created by admins.
   if (
     (!process.env.NODE_ENV || process.env.NODE_ENV === "development") &&
     window.location.pathname === "/accounts/create"
@@ -85,43 +79,29 @@ const AuthProvider = ({ children }: props): JSX.Element => {
       </AuthContext.Provider>
     );
   }
-  //Return login screen if there is no token
-  if (!token) {
-    console.log("No token");
+
+  if (!token || !decoded) {
     return <Login isExpired={false} />;
   }
 
-  //Not yet fully implmented, in theory will be used to differentiate between local and LDAP accounts
   if (decoded && decoded.local) {
-    //Checks if the token is valid using the isTokenValid query from above
-    if (isTokenValid.data !== true) {
-      console.log("token is invalid");
-      //If the token is invalid, return the login screen.
-      return (
-        <>
-          <Login isExpired={false} />
-        </>
-      );
+    if (isTokenValid.data?.ok !== true) {
+      if (isTokenValid.data?.err === 4011) {
+        console.log("expired");
+        return <Login isExpired={true} />;
+      }
+      console.log("invalid");
+      console.log(isTokenValid.data?.err);
+      return <Login isExpired={false} />;
     }
 
-    const now = Math.floor(Date.now() / 1000);
-    //Checks if the token is expired
-    if (decoded.exp < now) {
-      console.log("Token is exipred");
+    if (decoded.exp < Math.floor(Date.now() / 1000)) {
       return <Login isExpired={true} />;
     }
 
-    //Checks if the uesr must reset their password
     if (decoded.requiresPasswordReset) {
-      console.log("Requires Reset");
       return <ResetPassword isRequired={true} />;
     }
-  }
-
-  //There's no situation where this should be the case, but better to cover edge cases.
-  if (!decoded) {
-    console.log("No decoded");
-    return <Login isExpired={false} />;
   }
 
   return (

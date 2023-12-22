@@ -43,7 +43,7 @@ export type UpdateAccountObject = {
   name?: string;
   id?: string;
   email?: string;
-  pass?: string;
+  password?: string;
   role?: number;
 };
 
@@ -126,10 +126,10 @@ and calls the backend to update the users account
 export async function updateAccount(
   updateAccountObject: UpdateAccountObject
 ): Promise<UpdateAccountResponse> {
-  const pass = updateAccountObject.pass;
+  const pass = updateAccountObject.password;
 
   if (pass) {
-    updateAccountObject.pass = crypto.SHA512(pass).toString();
+    updateAccountObject.password = crypto.SHA512(pass).toString();
   }
 
   return (

@@ -1,19 +1,12 @@
 import { RiAccountCircleFill } from "react-icons/ri";
 import { useContext, useState } from "react";
-import { AuthContext } from "@/providers/auth/AuthProvider";
+import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { Link } from "react-router-dom";
+
 const Nav = (): JSX.Element => {
   const { getUser, logout } = useContext(AuthContext);
   const user = getUser();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
-  const handleDropdownToggle = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
-  const handleLogout = () => {
-    logout();
-  };
 
   return (
     <nav className="bg-uol">
@@ -21,6 +14,7 @@ const Nav = (): JSX.Element => {
         <a href="/" className="text-white font-bold text-xl">
           WebSlurm
         </a>
+
         <div
           className={`${
             user.id === "" && user.id === "" && "hidden"
@@ -29,7 +23,7 @@ const Nav = (): JSX.Element => {
           <RiAccountCircleFill
             className="text-white hover:text-slate-400 cursor-pointer"
             size={30}
-            onClick={handleDropdownToggle}
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           />
           {isDropdownOpen && (
             <div className="absolute -right-16 mt-2 top-6 w-40 bg-white p-2 rounded shadow-md">
@@ -54,7 +48,7 @@ const Nav = (): JSX.Element => {
               )}
               <div className="text-center">
                 <div
-                  onClick={handleLogout}
+                  onClick={() => logout()}
                   className="text-uol hover:underline cursor-pointer"
                 >
                   Logout

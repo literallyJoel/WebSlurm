@@ -1,20 +1,28 @@
 //This contains functions for validating inputs
-
+import type { Parameter } from "@/pages/admin/settings/JobTypes/jobTypes";
 //=======================================//
 //================Users=================//
 //=====================================//
-
-export function validateEmail(email: string): boolean {
-  //Uses regex to validate emails
+export const validateEmail = (email: string): boolean => {
   return /[^\s@]+@[^\s@]+\.[^\s@]+/g.test(email);
-}
+};
 
-export function validateName(name: string) {
+export const validateName = (name: string) => {
   //Hard to validate names, so we just ensure something is in there
   return name.length !== 0;
-}
+};
 
-export function validatePassword(password: string) {
+export const validatePassword = (password: string) => {
   //Ensures password is at least 8 characters, contains a letter, a numer, and a special char.
   return /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(password);
-}
+};
+
+export const validateParameters = (parameters: Parameter[]): number[] => {
+  const invalidIndices: number[] = [];
+  parameters.forEach((parameter, index) => {
+    if (parameter.type === "Undefined") {
+      invalidIndices.push(index);
+    }
+  });
+  return invalidIndices;
+};
