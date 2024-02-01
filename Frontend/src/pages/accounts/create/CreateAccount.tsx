@@ -25,6 +25,7 @@ import {
 } from "@/shadui/ui/select";
 import { Checkbox } from "@/shadui/ui/checkbox";
 import { Button } from "@/shadui/ui/button";
+import { SelectTrigger, SelectValue } from "@radix-ui/react-select";
 
 const CreateAccount = (): JSX.Element => {
   const [name, setName] = useState("");
@@ -149,13 +150,29 @@ const CreateAccount = (): JSX.Element => {
 
               <div className="space-y-2 flex flex-col">
                 <Label htmlFor="role">Role</Label>
-                <Select required onValueChange={(e) => setRole(parseInt(e))}>
+                <Select
+                  required
+                  value={`${role}`}
+                  onValueChange={(e) => {
+                    setRole(Number.parseInt(e));
+                  }}
+                >
+                  <SelectTrigger className="border border-[#E2E8F0] h-10 rounded-md relative">
+                    <SelectValue placeholder="Select a parameter type" />
+                    {/* Displays a dropdown arrow. */}
+                    <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                      <svg
+                        className="h-4 w-4 fill-current text-gray-500"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M10 12l-6-6-1.414 1.414L10 14.828l7.414-7.414L16 6z"></path>
+                      </svg>
+                    </div>
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectGroup>
-                      <SelectLabel>Roles</SelectLabel>
-                      <SelectItem value="0">User</SelectItem>
-                      <SelectItem value="1">Admin</SelectItem>
-                    </SelectGroup>
+                    <SelectItem value="0">User</SelectItem>
+                    <SelectItem value="1">Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -9,7 +9,7 @@ export type Job = {
 export type Parameter = {
   name: string;
   type: ParameterType;
-  default: string | number | boolean | undefined;
+  defaultValue: string | number | boolean | undefined;
 };
 
 export type ParameterType = "String" | "Number" | "Boolean" | "Undefined";
@@ -41,7 +41,7 @@ export const updateParamaterList = (
       parameterList.push({
         name: extractedName,
         type: "Undefined",
-        default: undefined,
+        defaultValue: undefined,
       });
       parameterSet.add(extractedName);
     }
@@ -56,25 +56,93 @@ export const updateParamaterList = (
 };
 
 export type CreateJobResponse = { jobTypeID: string };
-export type JobType = {
+export type JobTypeCreation = {
   parameters: Parameter[];
   script: string;
   name: string;
   token: string;
 };
+
+export type JobType = {
+  id: number;
+  parameters: Parameter[];
+  script: string;
+  name: string;
+  createdBy: string;
+  createdByName: string;
+};
+
+export type JobTypeUpdate = {
+  id: number;
+  parameters: Parameter[];
+  script: string;
+  name: string;
+  token: string;
+};
+
 export const createJobType = async (
-  jobType: JobType
+  jobType: JobTypeCreation
 ): Promise<CreateJobResponse> => {
+  console.log(jobType.token);
   return (
-    await fetch("api/jobtypes/create", {
+    await fetch("/api/jobtypes/create", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${jobType.token}, Content-Type: application/json`,
+        Authorization: `Bearer ${jobType.token}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         parameters: jobType.parameters,
         name: jobType.name,
+        script: jobType.script,
       }),
     })
   ).json();
+};
+
+export const getJobTypes = async (token: string): Promise<JobType[]> => {
+  return (
+    await fetch("/api/jobtypes", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+  ).json();
+};
+
+export const getJobType = async (
+  token: string,
+  id: string
+): Promise<JobType> => {
+  return (
+    await fetch(`/api/jobtypes/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+  ).json();
+};
+
+export const updateJobType = async (
+  jobType: JobTypeUpdate
+): Promise<{ ok: boolean }> => {
+  return await fetch(`/api/jobtypes/${jobType.id}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${jobType.token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(jobType),
+  });
+};
+
+export const deleteJobType = async (jobTypeID: string, token: string) => {
+  return await fetch(`/api/jobtypes/${jobTypeID}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };

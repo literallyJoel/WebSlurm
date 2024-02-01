@@ -7,7 +7,7 @@ require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . "/routes/Database.php";
 require __DIR__ . "/routes/Users.php";
 require __DIR__ . "/middleware/RequiresAuthentication.php";
-
+require __DIR__ . "/middleware/RequiresAdmin.php";
 //Redirect to React App if not an API route
 if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $buildPath = __DIR__ . "/build";
@@ -78,12 +78,21 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     //===============POST===============//
 
     //Create Job Type
-    $app->post("/api/jobtypes/create", [JobTypes::class, 'create'])->add(new RequiresAdmin());
+    $app->post("/api/jobtypes/create", [JobTypes::class, 'create'] )->add(new RequiresAdmin());
+    $app->get("/api/jobtypes", [JobTypes::class, 'getAll'])->add(new RequiresAuthentication());
+    $app->get("/api/jobtypes/{jobTypeID}", [JobTypes::class, 'getById'])->add(new RequiresAuthentication());
+    $app->put("/api/jobtypes/{jobTypeID}", [JobTypes::class, 'updateById'])->add(new RequiresAdmin());
+    $app->delete("/api/jobtypes/{jobTypeID}", [JobTypes::class, 'deleteById'])->add(new RequiresAdmin());
 
 
+    //====================================//
+    //===============Jobs================//
 
+    //===============POST===============//
+    $app->post("/api/jobs/create", [Jobs::class, 'create'])->add(new RequiresAuthentication());
+    $app->get("/api/jobtest", [Jobs::class, 'jobTest'])->add(new RequiresAuthentication());
 
-    $app->run();    
+    $app->run();
 }
 
 

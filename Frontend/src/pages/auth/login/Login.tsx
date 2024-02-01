@@ -21,6 +21,7 @@ const Login = ({ isExpired }: props): JSX.Element => {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [isEmailValid, setIsEmailValid] = useState(true);
+  const [isAccountError, setIsAccountError] = useState(false);
   const callLogin = useMutation((loginObject: LoginObject) => {
     return login(loginObject);
   });
@@ -38,6 +39,16 @@ const Login = ({ isExpired }: props): JSX.Element => {
               ? (window.location.href = "/")
               : window.location.reload();
           },
+          onSettled(data, error, variables, context) {
+            console.log("yeet");
+            if (error) {
+              setIsAccountError(true);
+              console.log(error);
+            }
+
+            const response = context as { response: { status: number } };
+            console.log("ye: ", response.response.status);
+          },
         }
       );
     }
@@ -51,9 +62,16 @@ const Login = ({ isExpired }: props): JSX.Element => {
           <CardHeader>
             <CardTitle>Login</CardTitle>
             <Label
-              className={`text-xs text-red-500 ${isExpired ? "" : "hidden"}`}
+              className={`text-xs text-red-500 ${isExpired && !isAccountError ? "" : "hidden"}`}
             >
               Your session has expired. Please login again.
+            </Label>
+            <Label
+              className={`text-xs text-red-500 ${
+                isAccountError ? "" : "hidden"
+              }`}
+            >
+              Your email or password is incorrect. Please try again.
             </Label>
           </CardHeader>
           <CardContent>

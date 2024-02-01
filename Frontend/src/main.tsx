@@ -14,6 +14,12 @@ import { QueryClient, QueryClientProvider } from "react-query";
 import AuthProvider from "./providers/AuthProvider/AuthProvider.tsx";
 import AdminSettings from "./pages/admin/settings/Settings.tsx";
 import NewJobType from "./pages/admin/settings/JobTypes/NewJobType/NewJobType.tsx";
+import JobTypes from "./pages/admin/settings/JobTypes/JobTypes.tsx";
+import {
+  loader as updateJobTypeLoader,
+  UpdateJobType,
+} from "./pages/admin/settings/JobTypes/UpdateJobTypes/UpdateJobTypes.tsx";
+import CreateJob from "./pages/jobs/CreateJob/CreateJob.tsx";
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
@@ -29,7 +35,19 @@ const router = createBrowserRouter([
   {
     path: "/admin",
     element: <AdminSettings />,
-    children: [{ path: "/admin/jobtypes/new", element: <NewJobType /> }],
+    children: [
+      { path: "/admin/jobtypes/new", element: <NewJobType /> },
+      { path: "/admin/jobtypes", element: <JobTypes /> },
+      {
+        path: "/admin/jobtypes/:id",
+        element: <UpdateJobType />,
+        loader: updateJobTypeLoader,
+      },
+    ],
+  },
+  {
+    path: "/jobs/create",
+    element: <CreateJob />,
   },
 ]);
 

@@ -5,7 +5,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Slim\Psr7\Response;
-include __DIR__ . "/helpers/AuthHelper.php";
+
 class RequiresAdmin
 {
 

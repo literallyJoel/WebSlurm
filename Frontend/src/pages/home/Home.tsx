@@ -3,6 +3,7 @@ import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { useContext } from "react";
 import TaskView from "./components/TaskView";
 import { Button } from "@/shadui/ui/button";
+import { Link } from "react-router-dom";
 
 const Home = (): JSX.Element => {
   const { getUser } = useContext(AuthContext);
@@ -74,7 +75,9 @@ const Home = (): JSX.Element => {
           />
         </div>
         <div className="flex flex-col items-center">
-          <Button className="bg-uol">Create new Job</Button>
+          <Link to="/jobs/create">
+            <Button className="bg-uol">Create new Job</Button>
+          </Link>
         </div>
       </div>
     </div>

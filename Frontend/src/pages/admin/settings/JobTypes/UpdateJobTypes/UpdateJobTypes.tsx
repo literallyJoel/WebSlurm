@@ -3,8 +3,10 @@ import {
   type Parameter,
   extractParams,
   updateParamaterList,
-  JobTypeCreation,
-  createJobType,
+  JobType,
+  getJobType,
+  updateJobType,
+  JobTypeUpdate,
 } from "../jobTypes";
 import {
   Card,
@@ -22,36 +24,39 @@ import { Button } from "@/shadui/ui/button";
 import { validateParameters } from "@/helpers/validation";
 import { useMutation } from "react-query";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
+import { useLoaderData } from "react-router-dom";
 
-const NewJobType = (): JSX.Element => {
-  const [script, setScript] = useState("");
-  const [parameters, setParameters] = useState<Parameter[]>([]);
+export async function loader({ params  }: any) {
+  const jobType: JobType = await getJobType(
+    localStorage.getItem("token") ?? "",
+    params.id
+  );
+  return jobType;
+}
+
+export const UpdateJobType = (): JSX.Element => {
+  const jobType = useLoaderData() as JobType;
+  const [script, setScript] = useState(jobType.script);
+  const [parameters, setParameters] = useState<Parameter[]>(jobType.parameters);
   const [invalidParams, setInvalidParams] = useState<number[]>([]);
-  const [name, setName] = useState("");
-  const [hasFileUpload, setHasFileUpload] = useState(false);
-  const [hasImageUpload, setHasImageUpload] = useState(false);
+  const [name, setName] = useState(jobType.name);
   const [isNameValid, setIsNameValid] = useState(true);
-  const { getToken } = useContext(AuthContext);
-  const token = getToken();
-  const createJobTypeRequest = useMutation(
-    "createJobType",
-    (jobType: JobTypeCreation) => {
-      return createJobType(jobType);
-    },
-    {
-      onSuccess: () => {
-        window.location.href = "/admin/jobtypes";
-      },
+  const token = useContext(AuthContext).getToken();
+  const updateJobTypeRequest = useMutation(
+    "updateJobType",
+    (jobType: JobTypeUpdate) => {
+      return updateJobType(jobType);
     }
   );
 
-  const createJob = (): void => {
+  const updateJob = (): void => {
     const _invalidParams = validateParameters(parameters);
     setInvalidParams(_invalidParams);
 
     setIsNameValid(name !== "");
     if (_invalidParams.length === 0 && name !== "") {
-      createJobTypeRequest.mutate({
+      updateJobTypeRequest.mutate({
+        id: jobType.id,
         name: name,
         script: script,
         parameters: parameters,
@@ -64,9 +69,8 @@ const NewJobType = (): JSX.Element => {
     <div className="flex flex-col w-full items-center">
       <Card className="w-full max-w-2xl">
         <CardHeader>
-          <CardTitle>Create a New Job Type</CardTitle>
+          <CardTitle>Edit Job Type</CardTitle>
           <CardDescription>
-            Define a new Job Type by providing a name and bash script.
             Parameters that users will enter through the site should be written
             using {"{{parameterName}}"} format.
           </CardDescription>
@@ -103,31 +107,6 @@ const NewJobType = (): JSX.Element => {
           </div>
 
           <div>
-            <div className="flex flex-row w-full justify-evenly">
-              <div>
-                <Label htmlFor="fileUpload">
-                  Accepts File Uploads (PDF, DOCX, etc.)
-                </Label>
-                <Input
-                  className="cursor-pointer bg-uol"
-                  id="fileUpload"
-                  type="checkbox"
-                  checked={hasFileUpload}
-                  onChange={(e) => setHasFileUpload(e.target.checked)}
-                />
-              </div>
-              <div className="self-end">
-                <Label htmlFor="imageUpload">Accepts Image Uploads</Label>
-                <Input
-                  className="cursor-pointer"
-                  id="imageUpload"
-                  type="checkbox"
-                  checked={hasImageUpload}
-                  onChange={(e) => setHasImageUpload(e.target.checked)}
-                />
-              </div>
-            </div>
-
             <Label htmlFor="parameters">Parameters</Label>
             <div className="flex flex-row w-full justify-evenly mb-2 border-b-2">
               <div className="w-1/4">
@@ -156,9 +135,9 @@ const NewJobType = (): JSX.Element => {
         <CardFooter className="justify-center p-4">
           <Button
             className="bg-transparent border border-uol text-uol hover:bg-uol hover:text-white"
-            onClick={() => createJob()}
+            onClick={() => updateJob()}
           >
-            Create Job Type
+            Update Job Type
           </Button>
         </CardFooter>
       </Card>
@@ -166,4 +145,3 @@ const NewJobType = (): JSX.Element => {
   );
 };
 
-export default NewJobType;

@@ -64,9 +64,9 @@ function decodeJWT($token)
     
     $token = substr($token, 7);
     
-    error_log("TOKEN: " . $token);
+
     $key = new \Firebase\JWT\Key("thisShouldBeAnEnvironmentVariable", "HS256");
     $decoded = JWT::decode($token, $key);
-    error_log("DECODED: " . print_r($decoded));
+
     return $decoded;
 }

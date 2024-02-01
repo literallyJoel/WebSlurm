@@ -13,7 +13,6 @@ class RequiresAuthentication
         try{
             $token = $request->getHeaderLine("Authorization");
             $decoded = decodeJWT($token);
-            error_log("Decoded: " . print_r($decoded));
             $isAllowed = isTokenValid($decoded);
 
             if ($isAllowed) {

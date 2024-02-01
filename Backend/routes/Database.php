@@ -53,15 +53,20 @@ class Database
                 paramType INTEGER NOT NULL,
                 defaultValue TEXT,
                 jobTypeID INTEGER,
+                jobCompleteTime INTEGER,
+                jobStartTime INTEGER NOT NULL,
                 FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID)
             )');
 
                 // Create the Jobs table
                 $db->exec('CREATE TABLE IF NOT EXISTS Jobs (
-                jobID TEXT PRIMARY KEY NOT NULL,
-                jobComplete BOOLEAN NOT NULL,
+                jobID INTEGER PRIMARY KEY NOT NULL,
+                jobComplete INTEGER NOT NULL,
+                slurmID INTEGER NOT NULL,
                 commandID INTEGER,
-                FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID)
+                userID TEXT NOT NULL,
+                FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID),
+                FOREIGN KEY(userID) REFERENCES users(userID)
             )');
                 
 

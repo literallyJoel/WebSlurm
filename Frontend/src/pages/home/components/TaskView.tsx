@@ -17,7 +17,7 @@ const TaskView = ({
   <>
     <Card>
       <CardHeader>
-        <CardTitle>Running Tasks</CardTitle>
+        <CardTitle>Running Jobs</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -33,13 +33,13 @@ const TaskView = ({
           ))}
         </div>
         <div className="pt-4">
-          <Button variant="outline">View all running tasks</Button>
+          <Button variant="outline">View all Running Jobs</Button>
         </div>
       </CardContent>
     </Card>
     <Card>
       <CardHeader>
-        <CardTitle>Completed Tasks</CardTitle>
+        <CardTitle>Completed Jobs</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -56,13 +56,13 @@ const TaskView = ({
         </div>
 
         <div className="pt-4">
-          <Button variant="outline">View all completed tasks</Button>
+          <Button variant="outline">View all Completed Jobs</Button>
         </div>
       </CardContent>
     </Card>
     <Card>
       <CardHeader>
-        <CardTitle>Failed Tasks</CardTitle>
+        <CardTitle>Failed Jobs</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -77,7 +77,7 @@ const TaskView = ({
           ))}
         </div>
         <div className="pt-4">
-          <Button variant="outline">View all failed tasks</Button>
+          <Button variant="outline">View all Failed Jobs</Button>
         </div>
       </CardContent>
     </Card>

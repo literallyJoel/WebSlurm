@@ -12,9 +12,9 @@ const AdminSettings = (): JSX.Element => {
             <li>
               <Link
                 className="flex justify-center py-2 text-lg font-semibold text-gray-700 dark:text-gray-300"
-                to="/admin/jobs"
+                to="/admin/jobtypes"
               >
-                Job Management
+                Job Type Management
               </Link>
             </li>
             <li>

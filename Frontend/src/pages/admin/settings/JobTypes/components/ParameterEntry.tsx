@@ -37,7 +37,7 @@ const ParameterEntry = ({
             if (isParameterType(e)) {
               const _parameters = [...parameters];
               _parameters[index].type = e;
-              _parameters[index].default = undefined;
+              _parameters[index].defaultValue = undefined;
               setParameters(_parameters);
             }
           }}
@@ -62,10 +62,10 @@ const ParameterEntry = ({
           <input
             type="text"
             className="border border-gray-300 rounded-md"
-            value={parameters[index].default as string}
+            value={parameters[index].defaultValue as string}
             onChange={(e) => {
               const _parameters = [...parameters];
-              _parameters[index].default = e.target.value;
+              _parameters[index].defaultValue = e.target.value;
               setParameters(_parameters);
             }}
           />
@@ -75,10 +75,10 @@ const ParameterEntry = ({
           <input
             type="number"
             className="border border-gray-300 rounded-md"
-            value={parameters[index].default as string}
+            value={parameters[index].defaultValue as string}
             onChange={(e) => {
               const _parameters = [...parameters];
-              _parameters[index].default = e.target.value;
+              _parameters[index].defaultValue = e.target.value;
               setParameters(_parameters);
             }}
           />
@@ -88,10 +88,10 @@ const ParameterEntry = ({
           <>
             <Checkbox
               id="default"
-              checked={parameters[index].default as boolean}
+              checked={parameters[index].defaultValue as boolean}
               onCheckedChange={(e) => {
                 const _parameters = [...parameters];
-                _parameters[index].default = e.valueOf();
+                _parameters[index].defaultValue = e.valueOf();
                 setParameters(_parameters);
               }}
             />
