@@ -5,7 +5,7 @@ import { Card, CardFooter, CardHeader, CardTitle } from "@/shadui/ui/card";
 import { useContext } from "react";
 import { useMutation, useQueryClient } from "react-query";
 import { Link } from "react-router-dom";
-import { deleteJobType } from "../jobTypes";
+import { deleteJobType } from "../../../../../helpers/jobTypes";
 
 interface props {
   id: string;

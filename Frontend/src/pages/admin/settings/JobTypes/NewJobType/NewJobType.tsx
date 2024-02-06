@@ -1,11 +1,11 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   type Parameter,
   extractParams,
   updateParamaterList,
   JobTypeCreation,
   createJobType,
-} from "../jobTypes";
+} from "../../../../../helpers/jobTypes";
 import {
   Card,
   CardContent,
@@ -24,12 +24,16 @@ import { useMutation } from "react-query";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 const NewJobType = (): JSX.Element => {
-  const [script, setScript] = useState("");
+  const scriptStart =
+    "#!/bin/bash\n#SBATCH --job-name=*{name}*\n#SBATCH --output=*{out}*";
+  const [script, setScript] = useState(scriptStart);
   const [parameters, setParameters] = useState<Parameter[]>([]);
   const [invalidParams, setInvalidParams] = useState<number[]>([]);
   const [name, setName] = useState("");
   const [hasFileUpload, setHasFileUpload] = useState(false);
   const [hasImageUpload, setHasImageUpload] = useState(false);
+  const [fileCount, setFileCount] = useState(0);
+  const [imageCount, setImageCount] = useState(0);
   const [isNameValid, setIsNameValid] = useState(true);
   const { getToken } = useContext(AuthContext);
   const token = getToken();
@@ -56,8 +60,17 @@ const NewJobType = (): JSX.Element => {
         script: script,
         parameters: parameters,
         token: token,
+        fileUploadCount: fileCount,
+        imgUploadCount: imageCount,
       });
     }
+  };
+
+  const handleScriptChange = (value: string): void => {
+    const updatedScript =
+      scriptStart + "\n" + value.split("\n").slice(3).join("\n");
+
+    setScript(updatedScript);
   };
 
   return (
@@ -87,19 +100,22 @@ const NewJobType = (): JSX.Element => {
             <br />
             <Label className="text-sm text-red-500">
               The application assumes all code entered here is trusted. It is
-              your responsibility to upload safe code.
+              your responsibility to upload safe code. The first 3 lines cannot
+              be changed.
             </Label>
-            <Editor
-              height="300px"
-              theme="vs-dark"
-              value={script}
-              onChange={(value) => {
-                setScript(value ?? "");
-                setParameters((prev) =>
-                  updateParamaterList(prev, extractParams(value ?? ""))
-                );
-              }}
-            />
+            <div>
+              <Editor
+                height="300px"
+                theme="vs-dark"
+                value={script}
+                onChange={(value) => {
+                  handleScriptChange(value ?? "");
+                  setParameters((prev) =>
+                    updateParamaterList(prev, extractParams(value ?? ""))
+                  );
+                }}
+              />
+            </div>
           </div>
 
           <div>
@@ -113,7 +129,9 @@ const NewJobType = (): JSX.Element => {
                   id="fileUpload"
                   type="checkbox"
                   checked={hasFileUpload}
-                  onChange={(e) => setHasFileUpload(e.target.checked)}
+                  onChange={(e) => {
+                    setHasFileUpload(e.target.checked);
+                  }}
                 />
               </div>
               <div className="self-end">
@@ -123,9 +141,53 @@ const NewJobType = (): JSX.Element => {
                   id="imageUpload"
                   type="checkbox"
                   checked={hasImageUpload}
-                  onChange={(e) => setHasImageUpload(e.target.checked)}
+                  onChange={(e) => {
+                    setHasImageUpload(e.target.checked);
+                  }}
                 />
               </div>
+            </div>
+
+            <div className="flex flex-row w-full justify-evenly gap-2 p-2">
+              {hasFileUpload && (
+                <div className="flex flex-col w-1/2">
+                  <Label htmlFor="fileCount">
+                    How many files will be uploaded?
+                  </Label>
+                  <Label className="text-red-500 text-sm">
+                    When referring to files in your script, please use bash
+                    variables file0, file1, etc.
+                  </Label>
+                  <Input
+                    className="fileCount"
+                    type="number"
+                    value={fileCount}
+                    onChange={(e) => {
+                      setFileCount(Number(e.target.value));
+                    }}
+                  />
+                </div>
+              )}
+
+              {hasImageUpload && (
+                <div className="flex flex-col w-1/2">
+                  <Label htmlFor="fileCount">
+                    How many images will be uploaded?
+                  </Label>
+                  <Label className="text-red-500 text-sm">
+                    When referring to images in your script, please use bash
+                    variables img0, img1, etc.
+                  </Label>
+                  <Input
+                    className="imageCount"
+                    type="number"
+                    value={imageCount}
+                    onChange={(e) => {
+                      setImageCount(Number(e.target.value));
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <Label htmlFor="parameters">Parameters</Label>

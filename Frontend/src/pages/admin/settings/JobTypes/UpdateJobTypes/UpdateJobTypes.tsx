@@ -7,7 +7,7 @@ import {
   getJobType,
   updateJobType,
   JobTypeUpdate,
-} from "../jobTypes";
+} from "../../../../../helpers/jobTypes";
 import {
   Card,
   CardContent,
@@ -26,7 +26,7 @@ import { useMutation } from "react-query";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { useLoaderData } from "react-router-dom";
 
-export async function loader({ params  }: any) {
+export async function loader({ params }: any) {
   const jobType: JobType = await getJobType(
     localStorage.getItem("token") ?? "",
     params.id
@@ -144,4 +144,3 @@ export const UpdateJobType = (): JSX.Element => {
     </div>
   );
 };
-

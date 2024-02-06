@@ -43,6 +43,8 @@ class Database
                 jobName TEXT NOT NULL,
                 script TEXT NOT NULL,
                 userID TEXT,
+                fileUploadCount INTEGER DEFAULT 0,
+                imgUploadCount INTEGER DEFAULT 0,
                 FOREIGN KEY(userID) REFERENCES users(userID)
             )');
 
@@ -65,6 +67,7 @@ class Database
                 slurmID INTEGER NOT NULL,
                 commandID INTEGER,
                 userID TEXT NOT NULL,
+                jobName TEXT NOT NULL,
                 FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID),
                 FOREIGN KEY(userID) REFERENCES users(userID)
             )');

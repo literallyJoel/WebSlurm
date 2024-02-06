@@ -36,10 +36,9 @@ const msToTimeString = (epochTime: number): String => {
 
 const TaskCard = ({
   name,
-  id,
   variant,
-  startTime,
   endTime,
+  runTime,
 }: props): JSX.Element => {
   return (
     <div className="flex justify-between items-center">
@@ -54,10 +53,10 @@ const TaskCard = ({
         }`}
       >
         {variant === "Completed"
-          ? `Completed at ${startTime.toLocaleString()}`
+          ? `Completed at ${endTime?.toLocaleDateString()}`
           : variant === "Failed"
-          ? `Failed at ${endTime?.toLocaleString()}`
-          : `Running for ${msToTimeString(Date.now() - startTime.getTime())}`}
+          ? `Job Failed`
+          : `Running for ${msToTimeString(runTime ?? 0)}`}
       </Badge>
     </div>
   );

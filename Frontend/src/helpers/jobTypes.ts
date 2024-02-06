@@ -1,11 +1,3 @@
-export type Job = {
-  id: string;
-  name: string;
-  startTime: Date;
-  endTime?: Date;
-  runTime?: number;
-};
-
 export type Parameter = {
   name: string;
   type: ParameterType;
@@ -13,6 +5,34 @@ export type Parameter = {
 };
 
 export type ParameterType = "String" | "Number" | "Boolean" | "Undefined";
+export type CreateJobResponse = { jobTypeID: string };
+export type JobTypeCreation = {
+  parameters: Parameter[];
+  script: string;
+  name: string;
+  fileUploadCount: number;
+  imgUploadCount: number;
+  token: string;
+};
+
+export type JobType = {
+  id: number;
+  parameters: Parameter[];
+  script: string;
+  name: string;
+  createdBy: string;
+  createdByName: string;
+  fileUploadCount: number;
+  imgUploadCount: number;
+};
+
+export type JobTypeUpdate = {
+  id: number;
+  parameters: Parameter[];
+  script: string;
+  name: string;
+  token: string;
+};
 
 export const isParameterType = (str: string): str is ParameterType => {
   return ["String", "Number", "Boolean", "Undefined"].includes(str);
@@ -55,31 +75,6 @@ export const updateParamaterList = (
   return parameterList;
 };
 
-export type CreateJobResponse = { jobTypeID: string };
-export type JobTypeCreation = {
-  parameters: Parameter[];
-  script: string;
-  name: string;
-  token: string;
-};
-
-export type JobType = {
-  id: number;
-  parameters: Parameter[];
-  script: string;
-  name: string;
-  createdBy: string;
-  createdByName: string;
-};
-
-export type JobTypeUpdate = {
-  id: number;
-  parameters: Parameter[];
-  script: string;
-  name: string;
-  token: string;
-};
-
 export const createJobType = async (
   jobType: JobTypeCreation
 ): Promise<CreateJobResponse> => {
@@ -95,6 +90,8 @@ export const createJobType = async (
         parameters: jobType.parameters,
         name: jobType.name,
         script: jobType.script,
+        fileUploadCount: jobType.fileUploadCount,
+        imgUploadCount: jobType.imgUploadCount,
       }),
     })
   ).json();

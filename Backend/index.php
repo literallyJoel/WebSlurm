@@ -90,8 +90,12 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
 
     //===============POST===============//
     $app->post("/api/jobs/create", [Jobs::class, 'create'])->add(new RequiresAuthentication());
-    $app->get("/api/jobtest", [Jobs::class, 'jobTest'])->add(new RequiresAuthentication());
 
+    //===============GET==============//
+    $app->get("/api/jobtest", [Jobs::class, 'jobTest'])->add(new RequiresAuthentication());
+    $app->get("/api/jobs/complete", [Jobs::class, 'getComplete'])->add(new RequiresAuthentication());
+    $app->get("/api/jobs/running", [Jobs::class, 'getRunning'])->add(new RequiresAuthentication());
+    $app->get("/api/jobs/failed", [Jobs::class, 'getFailed'])->add(new RequiresAuthentication());
     $app->run();
 }
 

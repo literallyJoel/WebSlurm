@@ -1,4 +1,4 @@
-import { Job } from "@/pages/admin/settings/JobTypes/jobTypes";
+import type { Job } from "@/helpers/jobs";
 import { Button } from "@/shadui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadui/ui/card";
 import TaskCard from "./TaskCard";
@@ -21,19 +21,23 @@ const TaskView = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {runningJobs.map((job) => (
-            <TaskCard
-              name={job.name}
-              id={job.id}
-              variant="Running"
-              startTime={job.startTime}
-              endTime={job.endTime}
-              runTime={job.runTime}
-            />
-          ))}
+          {runningJobs.length === 0
+            ? "There are no jobs currently running"
+            : runningJobs.map((job) => (
+                <TaskCard
+                  key={job.jobID}
+                  name={job.jobName}
+                  id={`${job.jobID}`}
+                  variant="Running"
+                  startTime={new Date(job.jobStartTime * 1000)}
+                  runTime={new Date().getTime() - job.jobStartTime * 1000}
+                />
+              ))}
         </div>
         <div className="pt-4">
-          <Button variant="outline">View all Running Jobs</Button>
+          {runningJobs.length !== 0 && (
+            <Button variant="outline">View all Running Jobs</Button>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -43,16 +47,26 @@ const TaskView = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {completedJobs.map((job) => (
-            <TaskCard
-              name={job.name}
-              id={job.id}
-              variant="Completed"
-              startTime={job.startTime}
-              endTime={job.endTime}
-              runTime={job.runTime}
-            />
-          ))}
+          {completedJobs.map((job) => {
+            return (
+              <TaskCard
+                key={job.jobID}
+                name={job.jobName}
+                id={`${job.jobID}`}
+                variant="Completed"
+                startTime={new Date(job.jobStartTime * 1000)}
+                endTime={
+                  job.jobCompleteTime
+                    ? new Date(job.jobCompleteTime * 1000)
+                    : undefined
+                }
+                runTime={
+                  job.jobStartTime -
+                  (job.jobCompleteTime ? job.jobCompleteTime * 1000 : 0)
+                }
+              />
+            );
+          })}
         </div>
 
         <div className="pt-4">
@@ -68,11 +82,11 @@ const TaskView = ({
         <div className="space-y-2">
           {failedJobs.map((job) => (
             <TaskCard
-              name={job.name}
-              id={job.id}
+              key={job.jobID}
+              name={job.jobName}
+              id={`${job.jobID}`}
               variant="Failed"
-              startTime={job.startTime}
-              endTime={job.endTime}
+              startTime={new Date(job.jobStartTime * 1000)}
             />
           ))}
         </div>

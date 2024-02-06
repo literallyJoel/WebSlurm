@@ -1,5 +1,5 @@
 import { useQuery } from "react-query";
-import { getJobTypes } from "./jobTypes";
+import { getJobTypes } from "../../../../helpers/jobTypes";
 import { useContext } from "react";
 import { Button } from "@/shadui/ui/button";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
@@ -28,6 +28,7 @@ const JobTypes = (): JSX.Element => {
         {getAllJobTypes.data?.map((jobType) => {
           return (
             <JobCard
+              key={jobType.id}
               id={`${jobType.id}`}
               name={jobType.name}
               createdBy={jobType.createdByName}
