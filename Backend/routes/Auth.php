@@ -2,6 +2,7 @@
 
 use Firebase\JWT\JWT;
 use Psr\Http\Message\ResponseInterface;
+require_once __DIR__ . "/../config/config.php";
 use Psr\Http\Message\ServerRequestInterface;
 class Auth
 {
@@ -49,8 +50,8 @@ class Auth
 
 
 
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
 
         try{
             $pdo->beginTransaction();
@@ -83,8 +84,8 @@ class Auth
         }
 
         $password = $body->password;
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
         try{
             $stmt = $pdo->prepare("SELECT * from Users WHERE userID = :userID");
             $stmt->bindParam(":userID", $decoded->userID);
@@ -124,8 +125,8 @@ class Auth
 
         $email = $body->email;
         $password = $body->password;
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
         try {
             $stmt = $pdo->prepare("SELECT * FROM Users WHERE userEmail = :email");
             $stmt->bindParam(":email", $email);
@@ -179,8 +180,8 @@ class Auth
             return $response->withStatus(500);
         }
 
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
 
         try {
             $pdo->beginTransaction();

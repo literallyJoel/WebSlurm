@@ -10,6 +10,12 @@ import { Input } from "@/shadui/ui/input";
 import { Button } from "@/shadui/ui/button";
 import Nav from "@/components/Nav";
 
+import "@uppy/core/dist/style.css";
+import "@uppy/dashboard/dist/style.css";
+import "@uppy/drag-drop/dist/style.css";
+import "@uppy/file-input/dist/style.css";
+import "@uppy/progress-bar/dist/style.css";
+
 import {
   Card,
   CardContent,
@@ -20,12 +26,32 @@ import {
 import { useMutation, useQuery } from "react-query";
 import { JobType, getJobTypes } from "@/helpers/jobTypes";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
-import { useContext, useState } from "react";
-import { JobInput, JobInputParameter, createJob } from "@/helpers/jobs";
+import React, { useContext, useEffect, useState } from "react";
+import {
+  JobInput,
+  JobInputParameter,
+  createJob,
+  getFileID,
+} from "@/helpers/jobs";
 import CreationSuccess from "./CreationSuccess";
 import CreationFailure from "./CreationFailure";
-
-const CreateJob = (): JSX.Element => {
+import { Textarea } from "@/shadui/ui/textarea";
+import Uppy from "@uppy/core";
+import { Dashboard } from "@uppy/react";
+interface props {
+  uppy: Uppy<Record<string, unknown>, Record<string, unknown>>;
+  setFileID: React.Dispatch<React.SetStateAction<string | undefined>>;
+  fileID: string | undefined;
+  isUploadComplete: boolean;
+  resetUppy: () => void;
+}
+const CreateJob = ({
+  uppy,
+  setFileID,
+  fileID,
+  isUploadComplete,
+  resetUppy,
+}: props): JSX.Element => {
   const token = useContext(AuthContext).getToken();
 
   //Grabs a list of available job types
@@ -38,8 +64,22 @@ const CreateJob = (): JSX.Element => {
   const [selectedJobTypeID, setSelectedJobTypeID] = useState<number>();
   const [selectedJobType, setSelectedJobType] = useState<JobType>();
   const [jobName, setJobName] = useState("");
-  const [uploadedFiles, setUploadedFiles] = useState();
 
+  useEffect(() => {
+    if (
+      selectedJobType?.fileUploadCount !== 0 ||
+      selectedJobType?.fileUploadCount !== 0
+    ) {
+      getFID();
+      resetUppy();
+    }
+  }, [selectedJobType]);
+
+  const getFID = async () => {
+    if (fileID === undefined) {
+      setFileID((await getFileID(token)).fileID);
+    }
+  };
   //Stores the state of the job request so we know what page to display
   const [requestState, setRequestState] = useState<0 | 1 | 2>(0);
   //Stores the server response string for use on the creation success screen
@@ -107,10 +147,6 @@ const CreateJob = (): JSX.Element => {
     setUserParams(newParams);
   };
 
-  const handleFileUpload = (index: number) =>{
-
-  }
-
   //Sends a job creation request to the server
   const createJobRequest = useMutation(
     (params: JobInputParameter[]) => {
@@ -118,6 +154,7 @@ const CreateJob = (): JSX.Element => {
       const toCreate: JobInput = {
         jobID: selectedJobTypeID!,
         jobName: jobName,
+        fileID: fileID,
         parameters: params,
       };
       return createJob(toCreate, token);
@@ -125,7 +162,9 @@ const CreateJob = (): JSX.Element => {
     {
       onSuccess: (data) => {
         setRequestState(1);
+        setFileID(undefined);
         setServerResponse(data.output);
+        resetUppy();
       },
       onError: () => {
         setRequestState(2);
@@ -182,6 +221,16 @@ const CreateJob = (): JSX.Element => {
                     onChange={(e) => setJobName(e.target.value)}
                   />
                 </div>
+                {selectedJobType?.description && (
+                  <div>
+                    <Label>Description</Label>
+                    <Textarea
+                      disabled
+                      value={selectedJobType.description}
+                      rows={selectedJobType.description.split("\n").length}
+                    />
+                  </div>
+                )}
                 {userParams.length !== 0 && (
                   <div className="space-y-2">
                     <Label htmlFor="parameters">Parameters</Label>
@@ -260,30 +309,39 @@ const CreateJob = (): JSX.Element => {
                   </div>
                 )}
 
-                {selectedJobType?.fileUploadCount !== 0 && selectedJobType?.fileUploadCount !== undefined && (
-                  <div className="p-2">
-                    <Label htmlFor="parameters">File Upload</Label>
-                    {Array.from({
-                      length: selectedJobType?.fileUploadCount ?? 0,
-                    }).map((_, index) => (
-                      <div
-                        className="flex flex-col items-center w-full gap-2"
-                        key={index}
+                {selectedJobType?.fileUploadCount !== 0 &&
+                  selectedJobType?.fileUploadCount !== undefined && (
+                    <div className="p-2">
+                      <Label
+                        className="flex flex-col pb-2"
+                        htmlFor="parameters"
                       >
-                        <Label htmlFor={`fUpload${index}`}>
-                          Upload File {index}
+                        File Upload
+                      </Label>
+                      {selectedJobType.fileUploadCount > 1 && (
+                        <Label className="text-sm">
+                          Upload a zip file with your files. Each file should be
+                          named file0, file1 etc, and each image should be named
+                          img0, img1 etc.
                         </Label>
-                        <Input type="file" onChange={(e) => e.target.value}/>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      )}
+                      <Dashboard
+                        id="dashboard"
+                        uppy={uppy}
+                        plugins={["Webcam"]}
+                        doneButtonHandler={undefined}
+                      />
+                    </div>
+                  )}
               </form>
             </CardContent>
 
             <CardFooter>
               <Button
-                disabled={selectedJobTypeID === undefined}
+                disabled={
+                  selectedJobType === undefined ||
+                  (selectedJobType.fileUploadCount !== 0 && !isUploadComplete)
+                }
                 onClick={() => submitJob()}
               >
                 Create job

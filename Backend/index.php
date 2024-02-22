@@ -8,7 +8,43 @@ require __DIR__ . "/routes/Database.php";
 require __DIR__ . "/routes/Users.php";
 require __DIR__ . "/middleware/RequiresAuthentication.php";
 require __DIR__ . "/middleware/RequiresAdmin.php";
-//Redirect to React App if not an API route
+
+use DI\Container;
+use Psr\Http\Message\ResponseInterface;
+use Psr\EventDispatcher\EventDispatcherInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\StreamFactoryInterface;
+use Slim\Psr7\Factory\ResponseFactory;
+use Slim\Psr7\Factory\StreamFactory;
+use SpazzMarticus\Tus\TusServer;
+use Symfony\Component\EventDispatcher\EventDispatcher;
+use Psr\SimpleCache\CacheInterface as SimpleCacheInterface;
+use SpazzMarticus\Tus\Factories\FilenameFactoryInterface;
+use Symfony\Component\Cache\Psr16Cache;
+use SpazzMarticus\Tus\Factories\OriginalFilenameFactory;
+use SpazzMarticus\Tus\Providers\LocationProviderInterface;
+use SpazzMarticus\Tus\Providers\PathLocationProvider;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+
+
+
+
+//!TEMP
+header('Access-Control-Expose-Headers: Location, Upload-Offset, Upload-Length');
+header('Access-Control-Allow-Origin: *');
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: POST, GET, DELETE, PUT, PATCH, OPTIONS');
+        header('Access-Control-Allow-Headers: token, Content-Type, upload-length, tus-resumable, upload-metadata, upload-offset, authorization');
+        header('Access-Control-Max-Age: 1728000');
+        header('Content-Length: 0');
+        header('Content-Type: text/plain');
+        die();
+}
+
+    
+
 if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $buildPath = __DIR__ . "/build";
     // Check if the build folder exists
@@ -76,12 +112,18 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     //=============Job Types=============//
 
     //===============POST===============//
-
     //Create Job Type
     $app->post("/api/jobtypes/create", [JobTypes::class, 'create'] )->add(new RequiresAdmin());
+
+    //================GET===============//
     $app->get("/api/jobtypes", [JobTypes::class, 'getAll'])->add(new RequiresAuthentication());
     $app->get("/api/jobtypes/{jobTypeID}", [JobTypes::class, 'getById'])->add(new RequiresAuthentication());
+   
+
+   //===============PUT===============//
     $app->put("/api/jobtypes/{jobTypeID}", [JobTypes::class, 'updateById'])->add(new RequiresAdmin());
+
+    //==============DELETE============//
     $app->delete("/api/jobtypes/{jobTypeID}", [JobTypes::class, 'deleteById'])->add(new RequiresAdmin());
 
 
@@ -96,6 +138,47 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $app->get("/api/jobs/complete", [Jobs::class, 'getComplete'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/running", [Jobs::class, 'getRunning'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/failed", [Jobs::class, 'getFailed'])->add(new RequiresAuthentication());
+    $app->get("/api/jobs/fileid", [Jobs::class, 'generateFileID'])->add(new RequiresAuthentication());
+    $app->get("/api/jobs/output", [Jobs::class, 'getJobOutput'])->add(new RequiresAuthentication());
+    //===========TUS Uploads=========//
+    $app->any('/api/jobs/upload[/{id}]', function(ServerRequestInterface $request, ResponseInterface $response){
+        //Grab the users information from their decoded token
+        $decodedToken = $request->getAttribute("decoded");
+        //Grab the user ID to store with the job type   
+        $userID = $decodedToken->userID;
+
+        
+
+        $path = __DIR__ . "/usr/in/$userID/";
+        if(!file_exists($path)){
+            mkdir($path, 0775, true);
+        }   
+            
+       $container = new Container();
+        
+        $container->set(ResponseFactoryInterface::class, new ResponseFactory());
+        $container->set(StreamFactoryInterface::class, new StreamFactory());
+        $container->set(SimpleCacheInterface::class, new Psr16Cache(new FilesystemAdapter()));
+        $container->set(EventDispatcherInterface::class, new EventDispatcher());
+        $container->set(FilenameFactoryInterface::class, function () use ($path) {
+            return new OriginalFilenameFactory($path);
+        });
+
+        $container->set(LocationProviderInterface::class, new PathLocationProvider);
+        $tus = new TusServer(
+            $container->get(ResponseFactoryInterface::class),
+            $container->get(StreamFactoryInterface::class),
+            $container->get(SimpleCacheInterface::class),
+            $container->get(EventDispatcherInterface::class),
+            $container->get(FilenameFactoryInterface::class),
+            $container->get(LocationProviderInterface::class),
+        );
+
+      
+        $tus->setMaxSize(10737419264 * 1.5);
+        return $tus->handle($request);
+    })->add(new RequiresAuthentication());
+
     $app->run();
 }
 

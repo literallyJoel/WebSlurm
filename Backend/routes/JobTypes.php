@@ -3,7 +3,7 @@
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-
+require_once __DIR__ . "/../config/config.php";
 class JobTypes
 {
     public function __construct()
@@ -21,6 +21,7 @@ class JobTypes
         //Grab the body of the request
         $body = json_decode($request->getBody());
         $name = $body->name ?? null;
+        $description = $body->description ?? null;
         $script = $body->script ?? null;
         $parameters = $body->parameters ?? null;
         $imgUploadCount = $body->imgUploadCount ?? 0;
@@ -33,15 +34,16 @@ class JobTypes
         }
 
         //Open the database file
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
 
         try {
             //Multiple tables - use a transaction
             $pdo->beginTransaction();
             //Add the job type to the database
-            $stmt = $pdo->prepare("INSERT INTO jobTypes (jobName, script, userID, fileUploadCount, imgUploadCount) VALUES (:jobName, :script, :userID, :fileUploadCount, :imgUploadCount)");
+            $stmt = $pdo->prepare("INSERT INTO jobTypes (jobName, jobDescription, script, userID, fileUploadCount, imgUploadCount) VALUES (:jobName, :jobDescription, :script, :userID, :fileUploadCount, :imgUploadCount)");
             $stmt->bindParam(":jobName", $name);
+            $stmt->bindParam(":jobDescription", $description);
             $stmt->bindParam(":script", $script);
             $stmt->bindParam(":userID", $userID);
             $stmt->bindParam(":fileUploadCount", $fileUploadCount);
@@ -56,7 +58,7 @@ class JobTypes
                 $stmt->bindParam(":paramName", $param->name);
                 $stmt->bindParam(":paramType", $param->type);
                 $stmt->bindParam(":jobTypeID", $jobTypeID);
-                $defaultVal = strval($param->default);
+                $defaultVal = strval($param->defaultValue);
                 $stmt->bindParam(":defaultValue", $defaultVal);
                 $stmt->execute();
             }
@@ -84,8 +86,8 @@ class JobTypes
     public function getAll(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         // Open the database file
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
 
         try {
             //Fetch the job types, their parameters, and their users
@@ -93,6 +95,7 @@ class JobTypes
             SELECT 
                 jt.jobTypeID AS id,
                 jt.jobName AS name,
+                jt.jobDescription AS description,
                 jt.script AS script,
                 jt.userID AS createdBy,
                 u.userName AS createdByName,
@@ -125,6 +128,7 @@ class JobTypes
                         'parameters' => [],
                         'script' => $row['script'],
                         'name' => $row['name'],
+                        'description' => $row['description'],
                         'createdBy' => $row['createdBy'],
                         'createdByName' => $row['createdByName'],
                         'fileUploadCount' => $row['fileUploadCount'],
@@ -151,8 +155,8 @@ class JobTypes
         //Grab the job type ID from the request
         $jobTypeId = $args['jobTypeID'];
         //Open the database file
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
 
         try {
             //Grab the job type with the specified ID
@@ -180,7 +184,7 @@ class JobTypes
                 $paramData = [
                     'name' => $param['paramName'],
                     'type' => $param['paramType'],
-                    'default' => $param['defaultValue'],
+                    'defaultValue' => $param['defaultValue'],
                 ];
                 $parameters[] = $paramData;
             }
@@ -199,6 +203,9 @@ class JobTypes
                 'parameters' => $parameters,
                 'script' => $jobType['script'],
                 'name' => $jobType['jobName'],
+                'description' => $jobType['jobDescription'],
+                'fileUploadCount' => $jobType['fileUploadCount'],
+                'imgUploadCount' => $jobType['imgUploadCount'],
                 'createdBy' => $jobType['userID'],
                 'createdByName' => $createdByName,
             ];
@@ -219,7 +226,10 @@ class JobTypes
 
         $body = json_decode($request->getBody());
         $name = $body->name ?? null;
+        $description = $body->description ?? null;
         $script = $body->script ?? null;
+        $fileUploadCount = $body->fileUploadCount ?? 0;
+        $imgUploadCount = $body->imgUploadCount ?? 0;
         $parameters = $body->parameters ?? [];
 
         $validator = new Validator();
@@ -229,8 +239,8 @@ class JobTypes
             return $response->withStatus(400);
         }
 
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
 
         try {
             $pdo->beginTransaction();
@@ -241,9 +251,12 @@ class JobTypes
             $deleteParamsStmt->execute();
 
             // Update the job type
-            $updateJobTypeStmt = $pdo->prepare("UPDATE jobTypes SET jobName = :jobName, script = :script WHERE jobTypeID = :jobTypeID");
+            $updateJobTypeStmt = $pdo->prepare("UPDATE jobTypes SET jobName = :jobName, script = :script, jobDescription = :JobDescription, fileUploadCount = :fileUploadCount, imgUploadCount = :imgUploadCount WHERE jobTypeID = :jobTypeID");
             $updateJobTypeStmt->bindParam(":jobTypeID", $jobTypeId);
             $updateJobTypeStmt->bindParam(":jobName", $name);
+            $updateJobTypeStmt->bindParam(":fileUploadCount", $fileUploadCount);
+            $updateJobTypeStmt->bindParam(":imgUploadCount", $imgUploadCount);
+            $updateJobTypeStmt->bindParam(":jobDescription", $description);
             $updateJobTypeStmt->bindParam(":script", $script);
             $updateJobTypeStmt->execute();
 
@@ -273,8 +286,8 @@ class JobTypes
     {
         $jobTypeId = $args['jobTypeID'];
 
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
 
         try {
             $pdo->beginTransaction();

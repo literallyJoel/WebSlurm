@@ -1,0 +1,17 @@
+{
+    "name": "tus-server",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/SpazzMarticus/tus.git"
+    },
+    "author": "SpazzMarticus <SpazzMarticus@users.noreply.github.com>",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/SpazzMarticus/tus/issues"
+    },
+    "homepage": "https://github.com/SpazzMarticus/tus#readme",
+    "private": true,
+    "devDependencies": {
+        "newman": "^5.3.2"
+    }
+}

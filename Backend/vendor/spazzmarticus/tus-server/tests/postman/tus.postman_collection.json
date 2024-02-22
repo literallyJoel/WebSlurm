@@ -1,0 +1,1521 @@
+{
+	"info": {
+		"_postman_id": "0694fc88-10e1-4ed2-a7bd-bde1d7c4fc87",
+		"name": "Tus",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Preconditions",
+			"item": [
+				{
+					"name": "Version unsupported - Precondition failed",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "beee16b9-ca66-4f9a-a734-6d7e604fb993",
+								"exec": [
+									"pm.test(\"Status code is 412\", function () {",
+									"    pm.response.to.have.status(412);",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "2b6b2bbf-1353-4d20-9bb1-20afdaa11023",
+								"exec": [
+									"pm.environment.set(\"fileLocation\", \"?id=debugging\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "HEAD",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "0.2.2",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "localhost:8000/{{fileLocation}}",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Default",
+			"item": [
+				{
+					"name": "HEAD - Non existing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e9cfeb98-c420-442a-9a0a-59da54eb4488",
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "d776fe1e-808a-4c2b-bedc-a641512c5840",
+								"exec": [
+									"pm.environment.set(\"fileLocation\", \"?id=debugging\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "HEAD",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "localhost:8000/{{fileLocation}}",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH - Non existing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "37bf0c0d-58d8-4be7-b985-de11420fc6af",
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "898268b4-fdfa-4303-be7e-fd6648d15713",
+								"exec": [
+									"pm.environment.set(\"fileLocation\", \"?id=debugging\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"value": "0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Length",
+								"value": "3",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/offset+octet-stream",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "123"
+						},
+						"url": {
+							"raw": "localhost:8000/{{fileLocation}}",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send the first bits of data"
+					},
+					"response": []
+				},
+				{
+					"name": "OPTIONS",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "96920c16-531e-48d0-a9c7-949f668cff3b",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Tus-Version header\", function () {",
+									"    pm.response.to.have.header(\"Tus-Version\");",
+									"    pm.expect(pm.response.headers.get(\"Tus-Version\")).to.match(/^(\\d\\.\\d\\.\\d,?)+$/gm)",
+									"});",
+									"pm.test(\"Tus-Max-Size header\", function () {",
+									"    pm.response.to.have.header(\"Tus-Max-Size\");",
+									"    pm.expect(pm.response.headers.get(\"Tus-Max-Size\")).to.match(/^\\d+$/gm)",
+									"});",
+									"pm.test(\"Tus-Extension header\", function () {",
+									"    pm.response.to.have.header(\"Tus-Extension\");",
+									"    let header = pm.response.headers.get(\"Tus-Extension\");",
+									"    pm.expect(header).to.include('creation');",
+									"    pm.expect(header).to.include('creation-defer-length');",
+									"    pm.expect(header).to.include('creation-with-upload');",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "1bf78181-dc7f-4355-92ab-901352cedaf0",
+								"exec": [
+									"pm.environment.set(\"fileLocation\", \"?id=debugging\");"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "OPTIONS",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"value": "0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Length",
+								"value": "3",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/offset+octet-stream",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "123"
+						},
+						"url": {
+							"raw": "localhost:8000/{{fileLocation}}",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send the first bits of data"
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Creation + default PATCH",
+			"item": [
+				{
+					"name": "POST - Create File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "85eb1672-d27c-4106-babd-5f1d4a21cbdf",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Location header\", function () {",
+									"    pm.response.to.have.header(\"Location\");",
+									"    pm.environment.set(\"fileLocation\", pm.response.headers.get(\"Location\"));",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Length",
+								"type": "text",
+								"value": "10"
+							},
+							{
+								"key": "Upload-Metadata",
+								"value": "a YQ==,b Yg==,c,d ZA==",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "localhost:8000/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								""
+							]
+						},
+						"description": "POST creates the file and reports back an ID"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH #1/3 [0-3]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a2c33ab8-b028-484b-b29e-1f6f94aa0e70",
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"3\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"type": "text",
+								"value": "0"
+							},
+							{
+								"key": "Content-Length",
+								"type": "text",
+								"value": "3"
+							},
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/offset+octet-stream"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "123"
+						},
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send the first bits of data"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH #2/3 [3-5] - Illegal Content Type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "e1f21679-9cef-4132-930b-cdd568fea939",
+								"exec": [
+									"pm.test(\"Status code is 415\", function () {",
+									"    pm.response.to.have.status(415);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"type": "text",
+								"value": "3"
+							},
+							{
+								"key": "Content-Length",
+								"type": "text",
+								"value": "2"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "45"
+						},
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send second bits of data"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH #2/3 [8-10] - Illegal Offset",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "2578cf26-a86e-4af4-ae4a-dc9fe1878088",
+								"exec": [
+									"pm.test(\"Status code is 409\", function () {",
+									"    pm.response.to.have.status(409);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"value": "8",
+								"type": "text"
+							},
+							{
+								"key": "Content-Length",
+								"value": "2",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/offset+octet-stream",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "90"
+						},
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send second bits of data"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH #2/3 [3-5] - Empty body",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "6c144f9a-5396-4557-84ec-d30d22bb5f1a",
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"3\");",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"value": "3",
+								"type": "text"
+							},
+							{
+								"key": "Content-Length",
+								"value": "0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/offset+octet-stream",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send second bits of data"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH #2/3 [3-5] - X-HTTP-Method-Override",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "42396b5e-d1de-49aa-af44-bfac266fdf4b",
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"5\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"type": "text",
+								"value": "3"
+							},
+							{
+								"key": "Content-Length",
+								"type": "text",
+								"value": "2"
+							},
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/offset+octet-stream"
+							},
+							{
+								"key": "X-HTTP-Method-Override",
+								"value": "PATCH",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "45"
+						},
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send second bits of data"
+					},
+					"response": []
+				},
+				{
+					"name": "HEAD - Intermediate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fe9a36db-d8cc-4c64-9727-fd42d022508c",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"5\");",
+									"});",
+									"pm.test(\"Upload-Length header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Length\");",
+									"    pm.response.to.be.header(\"Upload-Length\", \"10\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "c426e619-2528-470d-be6d-ba5c65dcb132",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "HEAD",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH #3/3 [5-10]",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "be613683-2c0e-4f91-836c-77745e0f146d",
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"10\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"type": "text",
+								"value": "5"
+							},
+							{
+								"key": "Content-Length",
+								"type": "text",
+								"value": "5"
+							},
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/offset+octet-stream"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "67890"
+						},
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send last bits of data. (Again with some already sent bits.)"
+					},
+					"response": []
+				},
+				{
+					"name": "HEAD - Done",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "c5ab5919-11bf-4736-ae39-47e94dde808b",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"10\");",
+									"});",
+									"pm.test(\"Upload-Length header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Length\");",
+									"    pm.response.to.be.header(\"Upload-Length\", \"10\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "4b2246c8-463f-478d-adaf-9352bf834a3a",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "HEAD",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				},
+				{
+					"name": "GET - Fetch file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "fdeb9bea-b55a-4cf3-9c30-c1c5d5c8d83d",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Body\", function () {",
+									"    pm.response.to.be.body(\"1234567890\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "6d00ea5a-621b-4131-88ff-c60bad662d55",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "c114031e-a1e6-4abe-abdc-3ece96a512dd",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "34f94724-63c9-481d-be22-2169590989c4",
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Creation-Defer-Length",
+			"item": [
+				{
+					"name": "POST - Create File - Defer wrong",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "da197323-e7df-403d-b067-41d974484df5",
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Defer-Length",
+								"value": "4711",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "localhost:8000/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								""
+							]
+						},
+						"description": "POST creates the file and reports back an ID"
+					},
+					"response": []
+				},
+				{
+					"name": "POST - Create File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "80e77816-ee78-4c75-a47a-cdacbbf681e5",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"pm.test(\"Upload-Defer-Length header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Defer-Length\");",
+									"    pm.response.to.be.header(\"Upload-Defer-Length\", \"1\");",
+									"});",
+									"pm.test(\"Location header\", function () {",
+									"    pm.response.to.have.header(\"Location\");",
+									"    pm.environment.set(\"fileLocation\", pm.response.headers.get(\"Location\"));",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Defer-Length",
+								"type": "text",
+								"value": "1"
+							}
+						],
+						"url": {
+							"raw": "localhost:8000/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								""
+							]
+						},
+						"description": "POST creates the file and reports back an ID"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH #1 [0-7] Size unknown",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "d540547c-b6ab-46f4-b257-1d293c8e758f",
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"pm.test(\"Upload-Defer-Length header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Defer-Length\");",
+									"    pm.response.to.be.header(\"Upload-Defer-Length\", \"1\");",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"7\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"type": "text",
+								"value": "0"
+							},
+							{
+								"key": "Content-Type",
+								"type": "text",
+								"value": "application/offset+octet-stream"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "1234567"
+						},
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send last bits of data. (Again with some already sent bits.)"
+					},
+					"response": []
+				},
+				{
+					"name": "HEAD - Intermediate (No size)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "f02fc576-2a8e-4748-a878-647a4bdd163b",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"7\");",
+									"});",
+									"pm.test(\"No Upload-Length header\", function () {",
+									"    pm.response.to.not.have.header(\"Upload-Length\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "45ef2661-c905-4a81-a359-20464b5eff7f",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "HEAD",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				},
+				{
+					"name": "PATCH #2 [7-10] Size known",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "04264476-854e-49da-97f2-7c494f2d02b9",
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"pm.test(\"NO Upload-Defer-Length header\", function () {",
+									"    pm.response.to.not.have.header(\"Upload-Defer-Length\");",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"10\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"value": "7",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Length",
+								"value": "10",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/offset+octet-stream",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "890"
+						},
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "Send last bits of data. (Again with some already sent bits.)"
+					},
+					"response": []
+				},
+				{
+					"name": "HEAD - Done",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "428f425b-5c77-4207-b930-2b5c6239ade9",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"10\");",
+									"});",
+									"pm.test(\"Upload-Length header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Length\");",
+									"    pm.response.to.be.header(\"Upload-Length\", \"10\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "8bdb53bc-a463-4753-b5ae-578356f3886d",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "HEAD",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				},
+				{
+					"name": "GET - Fetch file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "b8e1f28d-0db3-42a2-b4c1-507e9c68cc2e",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Body\", function () {",
+									"    pm.response.to.be.body(\"1234567890\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "ea71ba84-64a0-4e11-af5a-6b85d0265cbc",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Creation-With-Upload",
+			"item": [
+				{
+					"name": "POST - Create File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "9152ca6a-3ed8-4759-a772-64bbab897f63",
+								"exec": [
+									"pm.test(\"Status code is 204\", function () {",
+									"    pm.response.to.have.status(204);",
+									"});",
+									"pm.test(\"Location header\", function () {",
+									"    pm.response.to.have.header(\"Location\");",
+									"    pm.environment.set(\"fileLocation\", pm.response.headers.get(\"Location\"));",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Length",
+								"value": "10",
+								"type": "text"
+							},
+							{
+								"key": "Upload-Offset",
+								"value": "0",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/offset+octet-stream",
+								"type": "text"
+							},
+							{
+								"key": "Expect",
+								"value": " 100-continue",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "1234567890"
+						},
+						"url": {
+							"raw": "localhost:8000/",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								""
+							]
+						},
+						"description": "POST creates the file and reports back an ID"
+					},
+					"response": []
+				},
+				{
+					"name": "HEAD - Done",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "82638a6e-7996-43c1-8fe5-200a666d5e15",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Upload-Offset header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Offset\");",
+									"    pm.response.to.be.header(\"Upload-Offset\", \"10\");",
+									"});",
+									"pm.test(\"Upload-Length header\", function () {",
+									"    pm.response.to.have.header(\"Upload-Length\");",
+									"    pm.response.to.be.header(\"Upload-Length\", \"10\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "79b5c5e5-ac1b-4462-aebb-aa480ca8859a",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "HEAD",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				},
+				{
+					"name": "GET - Fetch file",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "c0e75d5b-0dbe-47fe-ab88-3d01b84972be",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"pm.test(\"Body\", function () {",
+									"    pm.response.to.be.body(\"1234567890\");",
+									"});",
+									"",
+									"//Default",
+									"pm.test(\"Tus-Resumable\", function () {",
+									"    pm.response.to.have.header(\"Tus-Resumable\");",
+									"    pm.response.to.be.header(\"Tus-Resumable\", \"1.0.0\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "e2663beb-e9e4-43e3-953f-787dc4b0485c",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Tus-Resumable",
+								"value": "{{tusProtocolVersion}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{fileLocation}}",
+							"host": [
+								"{{fileLocation}}"
+							]
+						},
+						"description": "File does not exist, Server reports 404"
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"protocolProfileBehavior": {}
+}

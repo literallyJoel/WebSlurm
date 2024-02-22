@@ -4,6 +4,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 require __DIR__ . "/../helpers/Validator.php";
+require_once __DIR__ . "/../config/config.php";
 
 class Users
 {
@@ -49,8 +50,8 @@ class Users
             $userPWHash = password_hash($password, PASSWORD_BCRYPT);
         }
 
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+
+        $pdo = new PDO(DB_CONN);
 
         try {
             $pdo->beginTransaction();
@@ -118,8 +119,8 @@ class Users
             return $response->withStatus(400);
         }
 
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+
+        $pdo = new PDO(DB_CONN);
 
         try {
             $pdo->beginTransaction();
@@ -192,8 +193,8 @@ class Users
             return $response->withStatus(500);
         }
 
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+
+        $pdo = new PDO(DB_CONN);
 
         try {
             $pdo->beginTransaction();

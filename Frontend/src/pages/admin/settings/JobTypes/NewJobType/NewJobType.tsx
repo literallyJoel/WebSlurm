@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/shadui/ui/card";
+import { Textarea } from "@/shadui/ui/textarea";
 import { Label } from "@radix-ui/react-label";
 import { Input } from "@/shadui/ui/input";
 import { Editor } from "@monaco-editor/react";
@@ -30,7 +31,9 @@ const NewJobType = (): JSX.Element => {
   const [parameters, setParameters] = useState<Parameter[]>([]);
   const [invalidParams, setInvalidParams] = useState<number[]>([]);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [hasFileUpload, setHasFileUpload] = useState(false);
+  const [isDescriptionValid, setIsDescriptionValid] = useState(true);
   const [hasImageUpload, setHasImageUpload] = useState(false);
   const [fileCount, setFileCount] = useState(0);
   const [imageCount, setImageCount] = useState(0);
@@ -54,11 +57,13 @@ const NewJobType = (): JSX.Element => {
     setInvalidParams(_invalidParams);
 
     setIsNameValid(name !== "");
-    if (_invalidParams.length === 0 && name !== "") {
+    setIsDescriptionValid(description !== "");
+    if (_invalidParams.length === 0 && name !== "" && description !== "") {
       createJobTypeRequest.mutate({
         name: name,
         script: script,
         parameters: parameters,
+        description: description,
         token: token,
         fileUploadCount: fileCount,
         imgUploadCount: imageCount,
@@ -93,6 +98,22 @@ const NewJobType = (): JSX.Element => {
               value={name}
               className={`${isNameValid ? "" : "border-red-500"}`}
               onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2 flex flex-col">
+            <Label htmlFor="jobDescription">Job Description</Label>
+            {(fileCount !== 0 || imageCount !== 0) && (
+              <Label className="text-sm text-rose-500">
+                Your description should indicate which files are which, i.e what
+                file0 should be, and what file1 should be.
+              </Label>
+            )}
+            <Textarea
+              id="jobDescription"
+              placeholder="Enter Job Type Description"
+              value={description}
+              className={`${isDescriptionValid ? "" : "border-red-500"}`}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -131,6 +152,7 @@ const NewJobType = (): JSX.Element => {
                   checked={hasFileUpload}
                   onChange={(e) => {
                     setHasFileUpload(e.target.checked);
+                    if (!e.target.checked) setFileCount(0);
                   }}
                 />
               </div>
@@ -143,6 +165,7 @@ const NewJobType = (): JSX.Element => {
                   checked={hasImageUpload}
                   onChange={(e) => {
                     setHasImageUpload(e.target.checked);
+                    if (!e.target.checked) setImageCount(0);
                   }}
                 />
               </div>

@@ -10,6 +10,7 @@ export type JobTypeCreation = {
   parameters: Parameter[];
   script: string;
   name: string;
+  description: string;
   fileUploadCount: number;
   imgUploadCount: number;
   token: string;
@@ -19,6 +20,7 @@ export type JobType = {
   id: number;
   parameters: Parameter[];
   script: string;
+  description: string;
   name: string;
   createdBy: string;
   createdByName: string;
@@ -26,13 +28,7 @@ export type JobType = {
   imgUploadCount: number;
 };
 
-export type JobTypeUpdate = {
-  id: number;
-  parameters: Parameter[];
-  script: string;
-  name: string;
-  token: string;
-};
+export type JobTypeUpdate = JobTypeCreation & { id: number };
 
 export const isParameterType = (str: string): str is ParameterType => {
   return ["String", "Number", "Boolean", "Undefined"].includes(str);
@@ -86,13 +82,7 @@ export const createJobType = async (
         Authorization: `Bearer ${jobType.token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        parameters: jobType.parameters,
-        name: jobType.name,
-        script: jobType.script,
-        fileUploadCount: jobType.fileUploadCount,
-        imgUploadCount: jobType.imgUploadCount,
-      }),
+      body: JSON.stringify(jobType)
     })
   ).json();
 };

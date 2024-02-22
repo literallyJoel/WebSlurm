@@ -10,6 +10,9 @@ import {
   getFailedJobs,
   getRunningJobs,
 } from "@/helpers/jobs";
+import Uppy from "@uppy/core";
+
+
 const Home = (): JSX.Element => {
   const { getUser } = useContext(AuthContext);
   const user = getUser();

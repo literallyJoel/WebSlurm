@@ -3,11 +3,15 @@
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+require_once __DIR__ . "/../config/config.php";
 
 class Jobs
-{
+{   
+ 
     public function __construct()
+
     {
+     
     }
 
     //Replaces windows line breaks with unix ones - slurm does not like \r\n :(
@@ -58,10 +62,24 @@ class Jobs
         $jobID = $body->jobID;
         $jobName = $body->jobName;
         $parameters = $body->parameters;
+        $fileID = isset($body->fileID) ? $body->fileID : null;
 
-        //Get the job type from the database
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        $pdo = new PDO(DB_CONN);
+
+        if($fileID !== null){
+            
+            $stmt = $pdo->prepare("SELECT * FROM fileIDs WHERE fileID = :fileID AND userID = :userID");
+            $stmt->bindParam(":fileID", $fileID);
+            $stmt->bindParam(":userID", $userID);
+            $stmt->execute();
+            $file = $stmt->fetch(PDO::FETCH_ASSOC);
+            if(!$file){
+                $response->getBody()->write("Bad Requset");
+                return $response->withStatus(400);
+            }
+        }
+
+       
 
         $stmt = $pdo->prepare("SELECT * FROM jobTypes WHERE jobTypeID = :jobID");
         $stmt->bindParam(":jobID", $jobID);
@@ -88,16 +106,31 @@ class Jobs
             $script = str_replace("{{" . $key . "}}", escapeshellarg($value), $script);
         }
 
+        //If there's a file upload, we add the file0 variable. 
+        //We handle multiple separately, as we'll need to unzip the zip file.
+  
+
+      
+        if((int)$job["fileUploadCount"] === 1){
+            $fileLine = "file0=" . escapeshellarg(__DIR__ . "/../usr/in/" . $userID . "/" . $fileID );
+            $substring = "\\\$file0";
+            $script = preg_replace("/^(.*$substring.*)$/m", "$fileLine\n$1", $script);
+         
+        }
+
         //This is in every script, as is enforced by both the frontend and backend.
         $script = str_replace("*{name}*", escapeshellarg($jobName), $script);
         mkdir(__DIR__ . "/../usr/out/" . $userID, 0775, true);
-        $script = str_replace("*{out}*", __DIR__ . "/../usr/out/" . $userID . "/" . (date('Y-m-d_H-i-s')), $script);
-        error_log($script);
 
+       
         //The script needs the database ID of the Job in order to update the database when it is complete.
         //In order to achieve this, we create the record, run the slurm job, and then update the record with the correct slurm ID.
         try {
-            $stmt = $pdo->prepare("INSERT INTO jobs (slurmID, userID, jobStartTime, jobComplete, jobTypeID, jobName, jobComplete) VALUES (-1, :userID, :jobStartTime, :jobComplete, :jobTypeID, :jobName, :jobComplete)");
+            $query = "INSERT INTO jobs (slurmID, userID, jobStartTime, jobComplete, jobTypeID, jobName, jobComplete";
+            $query = $fileID !== null ? $query . ", fileID)" : $query . ")";
+            $query = $query . " VALUES (-1, :userID, :jobStartTime, :jobComplete, :jobTypeID, :jobName, :jobComplete";
+            $query = $fileID !== null ? $query . ", :fileID)" : $query . ")";
+            $stmt = $pdo->prepare($query);
             $stmt->bindParam(":userID", $userID);
             $currentTime = time();
             $stmt->bindParam(":jobStartTime", $currentTime);
@@ -105,6 +138,9 @@ class Jobs
             $stmt->bindParam(":jobComplete", $jobComplete);
             $stmt->bindParam(":jobTypeID", $jobID);
             $stmt->bindParam(":jobName", $jobName);
+            if($fileID !== null){
+                $stmt->bindParam(":fileID", $fileID);
+            }
             $stmt->execute();
             $newId = $pdo->lastInsertId();
         } catch (Exception $e) {
@@ -121,17 +157,18 @@ class Jobs
         try {
             $script .= "\nphp ../../script/jobComplete.php " . $newId;
             //Appends the self deletion to the script
-            $script .= "\n";
-            $script .= 'rm -- ' . __DIR__ . "/../usr/script/" . $userID . "-" . $jobID . "-" . date('Y-m-d_H-i-s') . ".sh";
+            // $script .= "\n";
+            // $script .= 'rm -- ' . __DIR__ . "/../usr/script/" . $userID . "-" . $jobID . "-" . date('Y-m-d_H-i-s') . ".sh";
             //Writes the script to a file so Slurm can run it
-            file_put_contents(__DIR__ . "/../usr/script/" . $userID . "-" . $jobID . "-" . date('Y-m-d_H-i-s') . ".sh", $this->replaceLineBreaks($script));
+            $script = str_replace("*{out}*", __DIR__ . "/../usr/out/" . $userID . "/" . $newId, $script);
+            file_put_contents(__DIR__ . "/../usr/script/" . $userID . "-" . $newId . "-" . date('Y-m-d_H-i-s') . ".sh", $this->replaceLineBreaks($script));
             //Run the script in slurm and return the output to the client
-            $output = shell_exec('cd ' . __DIR__ . '/../usr/script/ && sbatch ' . $userID . "-" . $jobID . "-" . date('Y-m-d_H-i-s') . ".sh");
+            $output = shell_exec('cd ' . __DIR__ . '/../usr/script/ && sbatch ' . $userID . "-" . $newId . "-" . date('Y-m-d_H-i-s') . ".sh");
             $resp = array("output" => $output);
             $response->getBody()->write(json_encode($resp));
         } catch (Exception $e) {
             //If it fails here we want to rollback the database changes.
-            //I've opted not to use transactions for this, because otherwise I have to handle concurrency myself
+            //I've opted not to use transactions for this, because otherwise I have to handld:\Users\Joel\OneDrive - JDVivian\Design Docs.docxe concurrency myself
             //And risk the lastInserID function returning the wrong value, if I don't use transactions, SQLite handles this.
             $stmt = $pdo->prepare("DELETE FROM jobs WHERE jobID = :jobID");
             $stmt->bindParam(":jobID", $newId);
@@ -174,8 +211,8 @@ class Jobs
     {
         $queryParams = $request->getQueryParams();
         $jobID = $queryParams["jobID"];
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
         $stmt = $pdo->prepare("SELECT * FROM jobs WHERE jobID = :jobID");
         $stmt->bindParam(":jobID", $jobID);
         $stmt->execute();
@@ -200,11 +237,7 @@ class Jobs
     }
 
 
-    public function jobTest(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
-    {
-        $response->getBody()->write(__DIR__ . "/../usr");
-        return $response->withStatus(200);
-    }
+
 
     public function getComplete(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
@@ -219,8 +252,8 @@ class Jobs
                 $userID = $decodedToken->userID;
             }
 
-            $dbFile = __DIR__ . "/../data/db.db";
-            $pdo = new PDO("sqlite:$dbFile");
+            
+            $pdo = new PDO(DB_CONN);
             $query = "SELECT * FROM jobs WHERE jobComplete = 1 ";
 
             if ($userID !== null) {
@@ -269,8 +302,8 @@ class Jobs
                 $userID = $decodedToken->userID;
             }
 
-            $dbFile = __DIR__ . "/../data/db.db";
-            $pdo = new PDO("sqlite:$dbFile");
+            
+            $pdo = new PDO(DB_CONN);
             $query = "SELECT * FROM jobs WHERE jobComplete = 0 ";
 
             if ($userID !== null) {
@@ -324,8 +357,8 @@ class Jobs
     private function updateFailed($userID)
     {
         //Open the DB
-        $dbFile = __DIR__ . "/../data/db.db";
-        $pdo = new PDO("sqlite:$dbFile");
+        
+        $pdo = new PDO(DB_CONN);
         $query = "SELECT * FROM jobs WHERE jobComplete = 0 ";
 
         if ($userID !== null) {
@@ -393,8 +426,8 @@ class Jobs
     {
         try {
             //Open the DB
-            $dbFile = __DIR__ . "/../data/db.db";
-            $pdo = new PDO("sqlite:$dbFile");
+            
+            $pdo = new PDO(DB_CONN);
 
             $decodedToken = $request->getAttribute("decoded");
             $queryParams = $request->getQueryParams();
@@ -443,4 +476,33 @@ class Jobs
         }
     }
 
-}
+    public function generateFileID(ServerRequestInterface $request,ResponseInterface $response): ResponseInterface{
+        $decoded = $request->getAttribute("decoded");
+        $userID = $decoded->userID;
+
+        $fileID = uniqid();
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("INSERT INTO fileIDS (fileID, userID) VALUES (:fileID, :userID)");
+        $stmt->bindParam(":fileID", $fileID);
+        $stmt->bindParam(":userID", $userID);
+
+        $stmt->execute();
+
+        $response->getBody()->write(json_encode(["fileID" => $fileID]));
+        return $response->withStatus(200);
+    }
+
+    public function getJobOutput(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface{
+        $decoded = $request->getAttribute("decoded");
+        $userID = $decoded->userID; 
+        $queryParams = $request->getQueryParams();
+        $jobID = $queryParams["jobID"];
+        $fileDir = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID;
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($fileDir);
+        $response->getBody()->write($mime);
+        return $response->withStatus(200);
+    }
+
+    
+}   

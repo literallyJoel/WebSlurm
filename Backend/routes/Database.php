@@ -2,7 +2,7 @@
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-
+require_once __DIR__ . "/../config/config.php";
 class Database
 {
     public function __construct()
@@ -13,12 +13,12 @@ class Database
     public function setup(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $dbFile = __DIR__ . "/../data/db.db";
-            if (!file_exists($dbFile)) {
+            
+            if (!file_exists(DB_PATH)) {
                 if(!file_exists(__DIR__ . "/../data")){
                     mkdir(__DIR__ . "/../data", 0775, true);
                 }
-                $db = new SQLite3($dbFile);
+                $db = new SQLite3(DB_PATH);
 
                 // Create the users table
                 $db->exec('CREATE TABLE IF NOT EXISTS users (
@@ -41,6 +41,7 @@ class Database
                 $db->exec('CREATE TABLE IF NOT EXISTS jobTypes(
                 jobTypeID INTEGER PRIMARY KEY NOT NULL,
                 jobName TEXT NOT NULL,
+                jobDescription TEXT NOT NULL,
                 script TEXT NOT NULL,
                 userID TEXT,
                 fileUploadCount INTEGER DEFAULT 0,
@@ -60,6 +61,12 @@ class Database
                 FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID)
             )');
 
+                //Create File IDs table
+                $db->exec('CREATE TABLE IF NOT EXISTS fileIDs(
+                    fileID TEXT PRIMARY KEY NOT NULL,
+                    userID TEXT NOT NULL,
+                    FOREIGN KEY(userID) REFERENCES users(userID)');
+
                 // Create the Jobs table
                 $db->exec('CREATE TABLE IF NOT EXISTS Jobs (
                 jobID INTEGER PRIMARY KEY NOT NULL,
@@ -68,8 +75,10 @@ class Database
                 commandID INTEGER,
                 userID TEXT NOT NULL,
                 jobName TEXT NOT NULL,
+                fileID TEXT,
                 FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID),
-                FOREIGN KEY(userID) REFERENCES users(userID)
+                FOREIGN KEY(userID) REFERENCES users(userID),
+                FOREIGN KEY(fileID) REFERENCES fileIDs(fileID)
             )');
                 
 
