@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react";
 import {
-  type Parameter,
+  type JobTypeParameter,
   extractParams,
   updateParamaterList,
   JobTypeCreation,
@@ -28,7 +28,7 @@ const NewJobType = (): JSX.Element => {
   const scriptStart =
     "#!/bin/bash\n#SBATCH --job-name=*{name}*\n#SBATCH --output=*{out}*";
   const [script, setScript] = useState(scriptStart);
-  const [parameters, setParameters] = useState<Parameter[]>([]);
+  const [parameters, setParameters] = useState<JobTypeParameter[]>([]);
   const [invalidParams, setInvalidParams] = useState<number[]>([]);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");

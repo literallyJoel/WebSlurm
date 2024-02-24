@@ -1,4 +1,4 @@
-export type JobInputParameter = {
+export type JobParameter = {
   key: string;
   value: string | number | boolean;
 };
@@ -6,7 +6,7 @@ export type JobInputParameter = {
 export type JobInput = {
   jobID: number;
   jobName: string;
-  parameters: JobInputParameter[];
+  parameters: JobParameter[];
   fileID?: string;
 };
 
@@ -23,6 +23,7 @@ export type Job = {
   jobStartTime: number;
   userID: string;
   jobName: string;
+  jobTypeName?: string;
 };
 export async function createJob(
   job: JobInput,
@@ -36,6 +37,14 @@ export async function createJob(
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    })
+  ).json();
+}
+
+export async function getJobs(token: string): Promise<Job[]> {
+  return (
+    await fetch("/api/jobs", {
+      headers: { Authorization: `Bearer ${token}` },
     })
   ).json();
 }
@@ -82,6 +91,31 @@ export const getFailedJobs = async (
   ).json();
 };
 
+export const getJob = async (
+  jobID: string,
+  token: string
+): Promise<Job | false> => {
+  const res = await fetch(`/api/jobs/${jobID}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return res.status === 404 ? false : res.json();
+};
+
+export const getParameters = async (
+  jobID: string,
+  token: string
+): Promise<JobParameter[]> => {
+  return (
+    await fetch(`/api/jobs/${jobID}/parameters`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+  ).json();
+};
 export const getFileID = async (token: string): Promise<FileID> => {
   return (
     await fetch(`/api/jobs/fileid`, {

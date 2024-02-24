@@ -1,13 +1,13 @@
-export type Parameter = {
+export type JobTypeParameter = {
   name: string;
-  type: ParameterType;
+  type: JobTypeParameterType;
   defaultValue: string | number | boolean | undefined;
 };
 
-export type ParameterType = "String" | "Number" | "Boolean" | "Undefined";
+export type JobTypeParameterType = "String" | "Number" | "Boolean" | "Undefined";
 export type CreateJobResponse = { jobTypeID: string };
 export type JobTypeCreation = {
-  parameters: Parameter[];
+  parameters: JobTypeParameter[];
   script: string;
   name: string;
   description: string;
@@ -18,7 +18,7 @@ export type JobTypeCreation = {
 
 export type JobType = {
   id: number;
-  parameters: Parameter[];
+  parameters: JobTypeParameter[];
   script: string;
   description: string;
   name: string;
@@ -30,7 +30,7 @@ export type JobType = {
 
 export type JobTypeUpdate = JobTypeCreation & { id: number };
 
-export const isParameterType = (str: string): str is ParameterType => {
+export const isParameterType = (str: string): str is JobTypeParameterType => {
   return ["String", "Number", "Boolean", "Undefined"].includes(str);
 };
 
@@ -43,9 +43,9 @@ export const extractParams = (script: string): string[] => {
 };
 
 export const updateParamaterList = (
-  _parameterList: Parameter[],
+  _parameterList: JobTypeParameter[],
   extractedParameters: string[]
-): Parameter[] => {
+): JobTypeParameter[] => {
   const parameterList = [..._parameterList];
 
   const parameterSet = new Set(
@@ -82,7 +82,7 @@ export const createJobType = async (
         Authorization: `Bearer ${jobType.token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(jobType)
+      body: JSON.stringify(jobType),
     })
   ).json();
 };

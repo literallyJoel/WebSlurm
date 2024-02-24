@@ -1,4 +1,4 @@
-const { transform } = require('typescript')
+const { transform } = require("typescript");
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -68,16 +68,27 @@ module.exports = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: 0 },
         },
-        "spinner":{
+        spinner: {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(360deg)" },
-        }
+        },
+        blueBounce: {
+          "0%": {
+            color: "#212b58",
+          },
+          "50%": {
+            color: "#5060B2",
+          },
+          "100%": {
+            color: "#212b58",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "spinner": "spinner 1.2s linear infinite",
-        
+        spinner: "spinner 1.2s linear infinite",
+        blueBounce: "blueBounce 5s infinite",
       },
     },
   },

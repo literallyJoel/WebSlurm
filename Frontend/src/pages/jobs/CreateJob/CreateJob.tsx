@@ -27,12 +27,7 @@ import { useMutation, useQuery } from "react-query";
 import { JobType, getJobTypes } from "@/helpers/jobTypes";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import React, { useContext, useEffect, useState } from "react";
-import {
-  JobInput,
-  JobInputParameter,
-  createJob,
-  getFileID,
-} from "@/helpers/jobs";
+import { JobInput, Parameter, createJob, getFileID } from "@/helpers/jobs";
 import CreationSuccess from "./CreationSuccess";
 import CreationFailure from "./CreationFailure";
 import { Textarea } from "@/shadui/ui/textarea";
@@ -60,7 +55,7 @@ const CreateJob = ({
   });
 
   //Stores the parameters for the job, the selected job type, and name respectively.
-  const [userParams, setUserParams] = useState<JobInputParameter[]>([]);
+  const [userParams, setUserParams] = useState<Parameter[]>([]);
   const [selectedJobTypeID, setSelectedJobTypeID] = useState<number>();
   const [selectedJobType, setSelectedJobType] = useState<JobType>();
   const [jobName, setJobName] = useState("");
@@ -124,7 +119,7 @@ const CreateJob = ({
 
       //We have to cast, because we're filtering out the undefineds but TypeScript doesn't recognise it.
       setUserParams(
-        _params.filter((param) => param !== undefined) as JobInputParameter[]
+        _params.filter((param) => param !== undefined) as Parameter[]
       );
     }
   };
@@ -149,7 +144,7 @@ const CreateJob = ({
 
   //Sends a job creation request to the server
   const createJobRequest = useMutation(
-    (params: JobInputParameter[]) => {
+    (params: Parameter[]) => {
       //We can coerce selectedJobType here because the submit button is disabled if no job type is selected
       const toCreate: JobInput = {
         jobID: selectedJobTypeID!,

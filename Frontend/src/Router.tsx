@@ -19,6 +19,7 @@ import Uppy from "@uppy/core";
 import Tus from "@uppy/tus";
 import Webcam from "@uppy/webcam";
 import ViewJobs from "./pages/jobs/ViewJob/ViewJobs.tsx";
+import JobInfo from "./pages/jobs/ViewJob/JobInfo.tsx";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +62,7 @@ const Router = () => {
   );
 
   const resetUppy = () => {
+    console.log("Resetting Uppy");
     setUppy(
       new Uppy({
         autoProceed: false,
@@ -133,8 +135,14 @@ const Router = () => {
     },
     {
       path: "/jobs/",
-      element: <ViewJobs/>
-    }
+      element: <ViewJobs />,
+      children: [
+        {
+          path: "/jobs/:jobID",
+          element: <JobInfo />,
+        },
+      ],
+    },
   ]);
 
   return (

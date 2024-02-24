@@ -3,15 +3,16 @@
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+
 require_once __DIR__ . "/../config/config.php";
 
 class Jobs
-{   
- 
+{
+
     public function __construct()
 
     {
-     
+
     }
 
     //Replaces windows line breaks with unix ones - slurm does not like \r\n :(
@@ -66,20 +67,19 @@ class Jobs
 
         $pdo = new PDO(DB_CONN);
 
-        if($fileID !== null){
-            
+        if ($fileID !== null) {
+
             $stmt = $pdo->prepare("SELECT * FROM fileIDs WHERE fileID = :fileID AND userID = :userID");
             $stmt->bindParam(":fileID", $fileID);
             $stmt->bindParam(":userID", $userID);
             $stmt->execute();
             $file = $stmt->fetch(PDO::FETCH_ASSOC);
-            if(!$file){
+            if (!$file) {
                 $response->getBody()->write("Bad Requset");
                 return $response->withStatus(400);
             }
         }
 
-       
 
         $stmt = $pdo->prepare("SELECT * FROM jobTypes WHERE jobTypeID = :jobID");
         $stmt->bindParam(":jobID", $jobID);
@@ -108,21 +108,20 @@ class Jobs
 
         //If there's a file upload, we add the file0 variable. 
         //We handle multiple separately, as we'll need to unzip the zip file.
-  
 
-      
-        if((int)$job["fileUploadCount"] === 1){
-            $fileLine = "file0=" . escapeshellarg(__DIR__ . "/../usr/in/" . $userID . "/" . $fileID );
+
+        if ((int)$job["fileUploadCount"] === 1) {
+            $fileLine = "file0=" . escapeshellarg(__DIR__ . "/../usr/in/" . $userID . "/" . $fileID);
             $substring = "\\\$file0";
             $script = preg_replace("/^(.*$substring.*)$/m", "$fileLine\n$1", $script);
-         
+
         }
 
         //This is in every script, as is enforced by both the frontend and backend.
         $script = str_replace("*{name}*", escapeshellarg($jobName), $script);
         mkdir(__DIR__ . "/../usr/out/" . $userID, 0775, true);
 
-       
+
         //The script needs the database ID of the Job in order to update the database when it is complete.
         //In order to achieve this, we create the record, run the slurm job, and then update the record with the correct slurm ID.
         try {
@@ -138,7 +137,7 @@ class Jobs
             $stmt->bindParam(":jobComplete", $jobComplete);
             $stmt->bindParam(":jobTypeID", $jobID);
             $stmt->bindParam(":jobName", $jobName);
-            if($fileID !== null){
+            if ($fileID !== null) {
                 $stmt->bindParam(":fileID", $fileID);
             }
             $stmt->execute();
@@ -146,6 +145,21 @@ class Jobs
         } catch (Exception $e) {
             error_log($e);
             $response->getBody()->write("Error creating job");
+            return $response->withStatus(500);
+        }
+
+        //We insert the parameters provided into the database for logging purposes.
+        try{
+            foreach($parameters as $parameter){
+                $stmt = $pdo->prepare("INSERT INTO jobParameters (jobID, key, value) VALUES (:jobID, :key, :value)");
+                $stmt->bindParam(":jobID", $newId);
+                $stmt->bindParam(":key", $parameter->key);
+                $stmt->bindParam(":value", $parameter->value);
+                $stmt->execute();
+            }
+        }catch(Exception $e){
+            error_log($e);
+            $repsonse->getBody()->write("Error creating job");
             return $response->withStatus(500);
         }
 
@@ -207,36 +221,65 @@ class Jobs
         return $obj->jobs;
     }
 
-    public function getJob(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    public function getAll(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $queryParams = $request->getQueryParams();
-        $jobID = $queryParams["jobID"];
-        
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("SELECT * FROM jobs WHERE jobID = :jobID");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->execute();
-        $job = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$job) {
-            $response->getBody()->write("Unknown Job");
-            return $response->withStatus(404);
+        try {
+            $decoded = $request->getAttribute("decoded");
+            $userID = $decoded->userID;
+            $pdo = new PDO(DB_CONN);
+            $stmt = $pdo->prepare("SELECT jobs.*, jobTypes.jobName AS jobTypeName FROM jobs JOIN jobTypes ON jobs.jobTypeID = jobTypes.jobTypeID WHERE jobs.userID = :userID ORDER BY jobs.jobStartTime DESC;");
+            $stmt->bindParam(":userID", $userID);
+            $stmt->execute();
+            $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $response->getBody()->write(json_encode($jobs));
+            return $response->withStatus(200);
+        } catch (Exception $e) {
+            error_log($e);
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
         }
-
-        $slurmID = $job["slurmID"];
-        $slurmJobs = $this->getRunningSlurmJobs();
-        $slurmJobs = array_filter($slurmJobs, function ($slurmJob) use ($slurmID) {
-            return $slurmJob->job_id == $slurmID;
-        });
-
-
-        $slurmJobs = $this->formatOutput($slurmJobs);
-
-        $response->getBody()->write(json_encode($slurmJobs));
-        return $response->withStatus(200);
     }
 
+    public function getJob(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $decodedToken = $request->getAttribute("decoded");
+        $userID = $decodedToken->userID;
+        $jobID = $args["jobID"];
+        $pdo = new PDO(DB_CONN);
 
+        $stmt = $pdo->prepare("SELECT jobs.*, jobTypes.jobName as jobTypeName FROM jobs JOIN jobTypes ON jobs.jobTypeID = jobTypes.jobTypeID WHERE jobs.jobId = :jobID AND jobs.userId = :userID");
+        $stmt->bindParam(":jobID", $jobID);
+        $stmt->bindParam(":userID", $userID);
+        $stmt->execute();
+        $job = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($job) {
+            $response->getBody()->write(json_encode($job));
+            return $response->withStatus(200);
+        } else {
+            $response->getBody()->write("Job not found");
+            return $response->withStatus(404);
+        }
+    }
+
+    public function getParameters(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface{
+        $decodedToken = $request->getAttribute("decoded");
+        $userID = $decodedToken->userID;
+        $jobID = $args["jobID"];
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT jobParameters.key, jobParameters.value from jobParameters JOIN jobs ON jobParameters.jobID = jobs.jobID WHERE jobParameters.jobID = :jobID AND jobs.userID = :userID");
+        $stmt->bindParam(":jobID", $jobID);
+        $stmt->bindParam(":userID", $userID);
+        $stmt->execute();
+        $parameters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log(print_r($parameters, true));
+        if($parameters) {
+            $response->getBody()->write(json_encode($parameters));
+            return $response->withStatus(200);
+        }else{
+            $response->getBody()->write("Job not found");
+            return $response->withStatus(404);
+        }
+    }
 
 
     public function getComplete(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -252,7 +295,7 @@ class Jobs
                 $userID = $decodedToken->userID;
             }
 
-            
+
             $pdo = new PDO(DB_CONN);
             $query = "SELECT * FROM jobs WHERE jobComplete = 1 ";
 
@@ -302,12 +345,12 @@ class Jobs
                 $userID = $decodedToken->userID;
             }
 
-            
+
             $pdo = new PDO(DB_CONN);
-            $query = "SELECT * FROM jobs WHERE jobComplete = 0 ";
+            $query = "SELECT * FROM jobs WHERE jobComplete = 0";
 
             if ($userID !== null) {
-                $query .= "AND userID = :userID ";
+                $query .= " AND userID = :userID ";
                 $params[":userID"] = $userID;
             }
 
@@ -357,7 +400,7 @@ class Jobs
     private function updateFailed($userID)
     {
         //Open the DB
-        
+
         $pdo = new PDO(DB_CONN);
         $query = "SELECT * FROM jobs WHERE jobComplete = 0 ";
 
@@ -426,7 +469,7 @@ class Jobs
     {
         try {
             //Open the DB
-            
+
             $pdo = new PDO(DB_CONN);
 
             $decodedToken = $request->getAttribute("decoded");
@@ -476,7 +519,8 @@ class Jobs
         }
     }
 
-    public function generateFileID(ServerRequestInterface $request,ResponseInterface $response): ResponseInterface{
+    public function generateFileID(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
         $decoded = $request->getAttribute("decoded");
         $userID = $decoded->userID;
 
@@ -492,9 +536,10 @@ class Jobs
         return $response->withStatus(200);
     }
 
-    public function getJobOutput(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface{
+    public function getJobOutput(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
         $decoded = $request->getAttribute("decoded");
-        $userID = $decoded->userID; 
+        $userID = $decoded->userID;
         $queryParams = $request->getQueryParams();
         $jobID = $queryParams["jobID"];
         $fileDir = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID;
@@ -504,5 +549,5 @@ class Jobs
         return $response->withStatus(200);
     }
 
-    
+
 }   

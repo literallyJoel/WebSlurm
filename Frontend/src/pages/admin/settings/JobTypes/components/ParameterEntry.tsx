@@ -5,14 +5,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/shadui/ui/select";
-import { isParameterType, Parameter } from "../../../../../helpers/jobTypes";
+import {
+  isParameterType,
+  JobTypeParameter,
+} from "../../../../../helpers/jobTypes";
 import { Checkbox } from "@/shadui/ui/checkbox";
 import { Label } from "@/shadui/ui/label";
 
 interface props {
-  parameters: Parameter[];
+  parameters: JobTypeParameter[];
   index: number;
-  setParameters: React.Dispatch<React.SetStateAction<Parameter[]>>;
+  setParameters: React.Dispatch<React.SetStateAction<JobTypeParameter[]>>;
   invalidParams: number[];
 }
 

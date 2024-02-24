@@ -10,7 +10,7 @@ import {
   getFailedJobs,
   getRunningJobs,
 } from "@/helpers/jobs";
-import Uppy from "@uppy/core";
+
 
 
 const Home = (): JSX.Element => {
