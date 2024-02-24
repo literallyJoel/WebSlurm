@@ -182,7 +182,7 @@ const JobInfo = (): JSX.Element => {
       )}
     </div>
   ) : (
-    <>Loading...</>
+    <div className="w-full h-full flex flex-col items-center">loading...</div>
   );
 };
 

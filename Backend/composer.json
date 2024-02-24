@@ -16,6 +16,7 @@
     "spazzmarticus/tus-server": "^1.2",
     "php-di/php-di": "^7.0",
     "league/flysystem": "^3.24",
-    "symfony/cache": "^6.4"
+    "symfony/cache": "^6.4",
+    "ext-fileinfo": "*"
   }
 }

@@ -233,4 +233,31 @@ class Users
             return $response->withStatus(500);
         }
     }
+
+
+    public function downloadInputFile(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface{
+        $jobID = $args['jobID'] ?? null;
+        $decodedToken = $request->getAttribute("decoded") ?? null;
+        $userID = $decodedToken->userID ?? null;
+
+        if($jobID === null){
+            $response->getBody()->write("Bad Request");
+            return $response->withStatus(400);
+        }
+
+        $path = __DIR__ . "/usr/in/$userID/$jobID";
+        if (!file_exists($path)) {
+            $response->getBody()->write("Not Found");
+            return $response->withStatus(404);
+        }
+
+        //open the file and get the file type from the mime info
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mimeType = finfo_file($finfo, $path);
+        finfo_close($finfo);
+        //Send the file to the user, with the correct mime type, and the extension appended to the file name
+        $response = $response->withHeader('Content-Type', $mimeType);
+        $response = $response->withHeader('Content-Disposition', "attachment; filename=$jobID." . $this->getExtension($mimeType));
+
+    }
 }   
