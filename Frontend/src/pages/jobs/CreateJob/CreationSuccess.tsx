@@ -11,7 +11,7 @@ export default function CreationSuccess({ serverResponse }: props) {
     <div className="flex flex-col w-full h-screen ">
       <Nav />
       <div className="flex flex-col w-full h-4/6 justify-center items-center pt-8">
-        <Card className="w-5/12 h-1/2 flex flex-col justify-center">
+        <Card className="w-10/12 h-3/4 flex flex-col justify-center">
           <CardHeader className="flex flex-row justify-center bg-white">
             <div className="flex justify-center items-center h-24 w-24 rounded-full bg-emerald-600">
               <CheckIcon className="h-16 w-16 text-white mx-auto" />
@@ -22,11 +22,13 @@ export default function CreationSuccess({ serverResponse }: props) {
               Job Succesfully Created
             </h1>
             <p className="text-2xl text-uol">{serverResponse}</p>
-            <Link to="/">
-              <Button className="mt-4 bg-uol text-white hover:bg-emerald-600">
-                Return to Home
-              </Button>
-            </Link>
+            <div className="p-3">
+              <Link to="/">
+                <Button className="mt-4 bg-uol text-white hover:bg-emerald-600">
+                  Return to Home
+                </Button>
+              </Link>
+            </div>
           </CardContent>
         </Card>
       </div>

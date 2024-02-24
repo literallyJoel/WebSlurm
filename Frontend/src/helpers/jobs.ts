@@ -3,6 +3,13 @@ export type JobParameter = {
   value: string | number | boolean;
 };
 
+export type File = {
+  fileName: string;
+  fileURL: string;
+  fileExt: string;
+  fileContents?: string;
+};
+
 export type JobInput = {
   jobID: number;
   jobName: string;
@@ -124,4 +131,75 @@ export const getFileID = async (token: string): Promise<FileID> => {
       },
     })
   ).json();
+};
+
+export const downloadInputFile = async (
+  token: string,
+  jobID: string
+): Promise<File | undefined> => {
+  const res = await fetch(`/api/jobs/${jobID}/download/in`, {
+    headers: {
+      authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (res.status !== 200) {
+    return undefined;
+  }
+
+  const file: File = { fileName: "", fileURL: "", fileExt: "" };
+  const contentDisposition = res.headers.get("Content-Disposition");
+  const contentDispositionArray = contentDisposition?.split(".");
+  if (contentDispositionArray) {
+    file.fileExt = contentDispositionArray[contentDispositionArray.length - 1];
+  }
+
+  file.fileName = contentDisposition?.split("filename=")[1] || "";
+
+  if (file.fileExt === "txt") {
+    const text = await res.text();
+    file.fileContents = text;
+    file.fileURL = URL.createObjectURL(new Blob([text]));
+  } else {
+    const blob = await res.blob();
+    file.fileURL = URL.createObjectURL(blob);
+  }
+
+  return file;
+};
+
+export const downloadOutputFile = async (
+  token: string,
+  jobID: string
+): Promise<File | undefined> => {
+  const res = await fetch(`/api/jobs/${jobID}/download/out`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (res.status === 200) {
+    const file: File = { fileName: "", fileURL: "", fileExt: "" };
+    const contentDisposition = res.headers.get("Content-Disposition");
+    const contentDispositionArray = contentDisposition?.split(".");
+    if (contentDispositionArray) {
+      file.fileExt =
+        contentDispositionArray[contentDispositionArray.length - 1];
+    }
+
+    file.fileName = contentDisposition?.split("filename=")[1] || "";
+
+    if (file.fileExt === "txt") {
+      const text = await res.text();
+      file.fileContents = text;
+      file.fileURL = URL.createObjectURL(new Blob([text]));
+    } else {
+      const blob = await res.blob();
+      file.fileURL = URL.createObjectURL(blob);
+    }
+
+    return file;
+  } else {
+    return undefined;
+  }
 };

@@ -45,15 +45,11 @@ export const UpdateJobType = (): JSX.Element => {
     currentJob.data?.fileUploadCount !== 0 ?? false
   );
   const [isDescriptionValid, setIsDescriptionValid] = useState(true);
-  const [hasImageUpload, setHasImageUpload] = useState(
-    currentJob.data?.imgUploadCount !== 0 ?? false
-  );
+
   const [fileCount, setFileCount] = useState(
     currentJob.data?.fileUploadCount ?? 0
   );
-  const [imageCount, setImageCount] = useState(
-    currentJob.data?.imgUploadCount ?? 0
-  );
+
   const [isNameValid, setIsNameValid] = useState(true);
   const { getToken } = useContext(AuthContext);
   const token = getToken();
@@ -81,15 +77,8 @@ export const UpdateJobType = (): JSX.Element => {
         setFileCount(currentJob.data.fileUploadCount);
       }
 
-      if (currentJob.data.imgUploadCount) {
-        setImageCount(currentJob.data.imgUploadCount);
-      }
-
       if (currentJob.data.fileUploadCount !== undefined) {
         setHasFileUpload(currentJob.data.fileUploadCount !== 0);
-      }
-      if (currentJob.data.imgUploadCount !== undefined) {
-        setHasImageUpload(currentJob.data.imgUploadCount !== 0);
       }
     }
   }, [currentJob.data]);
@@ -120,7 +109,6 @@ export const UpdateJobType = (): JSX.Element => {
         description: description,
         token: token,
         fileUploadCount: fileCount,
-        imgUploadCount: imageCount,
       });
     }
   };
@@ -156,7 +144,7 @@ export const UpdateJobType = (): JSX.Element => {
           </div>
           <div className="space-y-2 flex flex-col">
             <Label htmlFor="jobDescription">Job Description</Label>
-            {(fileCount !== 0 || imageCount !== 0) && (
+            {(fileCount !== 0) && (
               <Label className="text-sm text-rose-500">
                 Your description should indicate which files are which, i.e what
                 file0 should be, and what file1 should be.
@@ -210,19 +198,6 @@ export const UpdateJobType = (): JSX.Element => {
                   }}
                 />
               </div>
-              <div className="self-end">
-                <Label htmlFor="imageUpload">Accepts Image Uploads</Label>
-                <Input
-                  className="cursor-pointer"
-                  id="imageUpload"
-                  type="checkbox"
-                  checked={hasImageUpload}
-                  onChange={(e) => {
-                    setHasImageUpload(e.target.checked);
-                    if (!e.target.checked) setImageCount(0);
-                  }}
-                />
-              </div>
             </div>
 
             <div className="flex flex-row w-full justify-evenly gap-2 p-2">
@@ -241,26 +216,6 @@ export const UpdateJobType = (): JSX.Element => {
                     value={fileCount}
                     onChange={(e) => {
                       setFileCount(Number(e.target.value));
-                    }}
-                  />
-                </div>
-              )}
-
-              {hasImageUpload && (
-                <div className="flex flex-col w-1/2">
-                  <Label htmlFor="fileCount">
-                    How many images will be uploaded?
-                  </Label>
-                  <Label className="text-red-500 text-sm">
-                    When referring to images in your script, please use bash
-                    variables img0, img1, etc.
-                  </Label>
-                  <Input
-                    className="imageCount"
-                    type="number"
-                    value={imageCount}
-                    onChange={(e) => {
-                      setImageCount(Number(e.target.value));
                     }}
                   />
                 </div>

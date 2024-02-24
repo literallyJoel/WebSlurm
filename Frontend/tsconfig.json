@@ -24,6 +24,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"],
+  "include": ["src", "src/react-file-viewer.d.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

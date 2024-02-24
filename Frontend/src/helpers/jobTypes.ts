@@ -12,7 +12,6 @@ export type JobTypeCreation = {
   name: string;
   description: string;
   fileUploadCount: number;
-  imgUploadCount: number;
   token: string;
 };
 
@@ -25,7 +24,6 @@ export type JobType = {
   createdBy: string;
   createdByName: string;
   fileUploadCount: number;
-  imgUploadCount: number;
 };
 
 export type JobTypeUpdate = JobTypeCreation & { id: number };

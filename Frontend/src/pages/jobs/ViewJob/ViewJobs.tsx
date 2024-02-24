@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shadui/ui/dropdown-menu";
 import Spinner from "@/components/Spinner/Spinner";
+import { Button } from "@/shadui/ui/button";
 function useQueryParams() {
   const { search } = useLocation();
   return useMemo(() => new URLSearchParams(search), [search]);
@@ -109,7 +110,12 @@ const ViewJobs = (): JSX.Element => {
       <Nav />
       <div className="flex h-screen w-full text-center">
         <nav className="w-80 bg-gray-100 overflow-y-auto dark:bg-gray-800 border-r dark:border-gray-700 h-full px-6 py-4">
-          <h1 className="text-xl font-bold mb-4">Your Jobs</h1>
+          <div className="flex justify-between">
+            <h1 className="text-xl font-bold mb-4 w-full">Your Jobs</h1>
+            <Link to="/jobs/create">
+              <Button className="self-end">+</Button>
+            </Link>
+          </div>
           <div className="flex flex-row p-2 gap-2">
             <Input
               placeholder="Search"

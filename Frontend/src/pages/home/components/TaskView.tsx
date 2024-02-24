@@ -2,6 +2,7 @@ import type { Job } from "@/helpers/jobs";
 import { Button } from "@/shadui/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadui/ui/card";
 import TaskCard from "./TaskCard";
+import { Link } from "react-router-dom";
 
 interface props {
   failedJobs: Job[];
@@ -36,7 +37,9 @@ const TaskView = ({
         </div>
         <div className="pt-4">
           {runningJobs.length !== 0 && (
-            <Button variant="outline">View all Running Jobs</Button>
+            <Link to="/jobs?filter=running">
+              <Button variant="outline">View all Running Jobs</Button>
+            </Link>
           )}
         </div>
       </CardContent>
@@ -70,7 +73,9 @@ const TaskView = ({
         </div>
 
         <div className="pt-4">
-          <Button variant="outline">View all Completed Jobs</Button>
+          <Link to="/jobs?filter=completed">
+            <Button variant="outline">View all Completed Jobs</Button>
+          </Link>
         </div>
       </CardContent>
     </Card>
@@ -91,7 +96,9 @@ const TaskView = ({
           ))}
         </div>
         <div className="pt-4">
-          <Button variant="outline">View all Failed Jobs</Button>
+          <Link to="/jobs?filter=failed">
+            <Button variant="outline">View all Failed Jobs</Button>
+          </Link>
         </div>
       </CardContent>
     </Card>

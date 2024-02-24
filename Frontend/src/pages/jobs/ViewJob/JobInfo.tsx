@@ -1,27 +1,79 @@
-import { getJob, getParameters } from "@/helpers/jobs";
+import {
+  downloadInputFile,
+  downloadOutputFile,
+  getJob,
+  getParameters,
+  type File,
+} from "@/helpers/jobs";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { useQuery } from "react-query";
 import { useParams } from "react-router-dom";
 import { GrStatusUnknown } from "react-icons/gr";
 import Spinner from "@/components/Spinner/Spinner";
 import { getJobType } from "@/helpers/jobTypes";
+import ExtendedViewer from "./components/ExtendedViewer";
+import { Button } from "@/shadui/ui/button";
 
 const JobInfo = (): JSX.Element => {
   const { jobID } = useParams();
   const token = useContext(AuthContext).getToken();
+  const [hasFileUpload, setHasFileUpload] = useState(false);
+  const [inputFile, setInputFile] = useState<File>();
+  const [outputFile, setOutputFile] = useState<File>();
+
   const { data: jobInfo } = useQuery(`job${jobID}Info`, () => {
     return jobID ? getJob(jobID, token) : false;
   });
 
-  const {data: jobType} = useQuery("jobType", () =>{
-    return getJobType(token, `${jobInfo ? jobInfo.jobTypeID : ""}`)
-  },{
-    enabled: jobInfo !== false && jobInfo !== undefined
-  })
-  const { data: parameters } = useQuery(`job${jobID}Parameters`, () => {
-    return jobID ? getParameters(jobID, token) : [];
-  });
+  useQuery(
+    `job${jobID}file`,
+    () => {
+      return downloadInputFile(token, `${jobID}`);
+    },
+    {
+      enabled: jobInfo !== false && jobInfo !== undefined && hasFileUpload,
+      onSuccess: (data) => {
+        setInputFile(data);
+      },
+    }
+  );
+
+  useQuery(
+    `job${jobID}output`,
+    () => {
+      return downloadOutputFile(token, `${jobID}`);
+    },
+    {
+      enabled:
+        jobInfo !== false && jobInfo !== undefined && jobInfo.jobComplete === 1,
+      onSuccess: (data) => {
+        setOutputFile(data);
+      },
+    }
+  );
+
+  useQuery(
+    `job${jobID}Type`,
+    () => {
+      return getJobType(token, `${jobInfo ? jobInfo.jobTypeID : ""}`);
+    },
+    {
+      enabled: jobInfo !== false && jobInfo !== undefined,
+      onSuccess: (data) => {
+        setHasFileUpload(data.fileUploadCount > 0);
+      },
+    }
+  );
+  const { data: parameters } = useQuery(
+    `job${jobID}Parameters`,
+    () => {
+      return jobID ? getParameters(jobID, token) : [];
+    },
+    {
+      retry: false,
+    }
+  );
 
   return jobInfo === false ? (
     <div className="flex h-full flex-col gap-2 items-center justify-center">
@@ -89,24 +141,45 @@ const JobInfo = (): JSX.Element => {
         </div>
       )}
 
-      {jobType?.fileUploadCount !== 0 && (
-        <div>
-            <div className="border border-black w-8/12 rounded-md p-2 flex flex-col">
-                <div className="border-b border-b-black p-2 font-bold ">
-                Uploaded Files
-                </div>
-                <div className="p-4">
-                <div className="text-sm">
-                    {jobType?.fileUploadCount === 0
-                    ? "No files uploaded"
-                    : "Files uploaded"}
-                </div>
-                </div>
+      {inputFile && (
+        <div className="w-full flex flex-col items-center">
+          <div className="border border-black w-8/12 rounded-md p-2 flex flex-col">
+            <div className="border-b border-b-black p-2 font-bold ">
+              Uploaded Files
             </div>
+            <div className="p-2 ">
+              Viewing <span className="font-bold">{inputFile.fileName}</span>
+            </div>
+            <div className="max-h-80 overflow-auto p-2">
+              <ExtendedViewer file={inputFile} key={`in${jobID}`} />
+            </div>
+            <div className="flex flex-row justify-center w-full">
+              <a href={inputFile.fileURL} download className="w-full">
+                <Button className="w-1/2">Download {inputFile.fileName}</Button>
+              </a>
+            </div>
+          </div>
         </div>
       )}
 
-      
+      {outputFile && (
+        <div className="w-full flex flex-col items-center max-h-11">
+          <div className="border border-black w-8/12 rounded-md p-2 flex flex-col">
+            <div className="border-b border-b-black p-2 font-bold ">Output</div>
+            <div className="p-2 ">
+              Viewing <span className="font-bold">{outputFile.fileName}</span>
+            </div>
+            <ExtendedViewer file={outputFile} key={`out${jobID}`} />
+            <div className="flex flex-row justify-center w-full">
+              <a href={outputFile.fileURL} download className="w-full">
+                <Button className="w-1/2">
+                  Download {outputFile.fileName}
+                </Button>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   ) : (
     <>Loading...</>
