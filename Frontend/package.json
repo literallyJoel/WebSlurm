@@ -27,6 +27,8 @@
     "@uppy/remote-sources": "^1.1.0",
     "@uppy/tus": "^3.5.0",
     "@uppy/webcam": "^3.3.4",
+    "chonky": "latest",
+    "chonky-icon-fontawesome": "latest",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "crypto-js": "^4.2.0",

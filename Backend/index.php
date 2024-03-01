@@ -126,8 +126,8 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $app->get("/api/jobs/{jobID}/download/out", [Jobs::class, 'downloadOutputFile'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/{jobID}/parameters", [Jobs::class, 'getParameters'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/{jobID}", [Jobs::class, 'getJob'])->add(new RequiresAuthentication());
-
-
+    $app->get("/api/jobs/{jobID}/zipinfo", [Jobs::class, 'getZipData'])->add(new RequiresAuthentication());
+    $app->get("/api/jobs/{jobID}/extracted/{file}", [Jobs::class, 'getExtractedFile'])->add(new RequiresAuthentication());
     $app->run();
 }
 

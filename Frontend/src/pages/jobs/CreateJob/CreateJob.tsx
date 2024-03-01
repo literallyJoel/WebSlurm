@@ -39,6 +39,8 @@ interface props {
   fileID: string | undefined;
   isUploadComplete: boolean;
   resetUppy: () => void;
+  setAllowedTypes: React.Dispatch<React.SetStateAction<string[] | undefined>>;
+  allowedTypes: string[] | undefined;
 }
 const CreateJob = ({
   uppy,
@@ -46,6 +48,8 @@ const CreateJob = ({
   fileID,
   isUploadComplete,
   resetUppy,
+  setAllowedTypes,
+  allowedTypes,
 }: props): JSX.Element => {
   const token = useContext(AuthContext).getToken();
 
@@ -61,14 +65,24 @@ const CreateJob = ({
   const [jobName, setJobName] = useState("");
 
   useEffect(() => {
-    if (
-      selectedJobType?.fileUploadCount !== 0 ||
-      selectedJobType?.fileUploadCount !== 0
-    ) {
-      getFID();
-      resetUppy();
+    async function updateUppyInfo() {
+      if (selectedJobType && selectedJobType.fileUploadCount > 1) {
+        await getFID();
+        setAllowedTypes([".zip"]);
+      }
+
+      if (selectedJobType && selectedJobType.fileUploadCount === 1) {
+        await getFID();
+        setAllowedTypes(undefined);
+      }
     }
+
+    updateUppyInfo();
   }, [selectedJobType]);
+
+  useEffect(() => {
+    resetUppy();
+  }, [allowedTypes, selectedJobType]);
 
   const getFID = async () => {
     if (fileID === undefined) {
@@ -313,8 +327,7 @@ const CreateJob = ({
                       {selectedJobType.fileUploadCount > 1 && (
                         <Label className="text-sm">
                           Upload a zip file with your files. Each file should be
-                          named file0, file1 etc, and each image should be named
-                          img0, img1 etc.
+                          named file0, file1 etc.
                         </Label>
                       )}
                       <Dashboard

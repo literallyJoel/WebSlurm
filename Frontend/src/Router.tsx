@@ -21,16 +21,16 @@ import Webcam from "@uppy/webcam";
 import ViewJobs from "./pages/jobs/ViewJob/ViewJobs.tsx";
 import JobInfo from "./pages/jobs/ViewJob/JobInfo.tsx";
 
+
 const queryClient = new QueryClient();
 
+
 const Router = () => {
-  const [fileID, setFileID] = useState<string | undefined>();
-  const [isUploadComplete, setIsUploadComplete] = useState(false);
-  const [uppy, setUppy] = useState(() =>
-    new Uppy({
+  const getNewUppy = () => {
+    return new Uppy({
       autoProceed: false,
       allowMultipleUploads: false,
-      restrictions: { maxNumberOfFiles: 1 },
+      restrictions: { maxNumberOfFiles: 1, allowedFileTypes: allowedTypes },
       onBeforeFileAdded(currentFile) {
         const modifiedFile = {
           ...currentFile,
@@ -58,46 +58,18 @@ const Router = () => {
         if (res.successful) {
           setIsUploadComplete(true);
         }
-      })
-  );
+      });
+  };
+  const [fileID, setFileID] = useState<string | undefined>();
+  const [isUploadComplete, setIsUploadComplete] = useState(false);
+  const [allowedTypes, setAllowedTypes] = useState<string[] | undefined>();
+  const [uppy, setUppy] = useState(() => getNewUppy());
 
   const resetUppy = () => {
-    console.log("Resetting Uppy");
-    setUppy(
-      new Uppy({
-        autoProceed: false,
-        allowMultipleUploads: false,
-        restrictions: { maxNumberOfFiles: 1 },
-        onBeforeFileAdded(currentFile) {
-          const modifiedFile = {
-            ...currentFile,
-            name: fileID ?? "",
-            meta: { ...currentFile.meta, name: fileID ?? "" },
-          };
-          return modifiedFile;
-        },
-      })
-        .use(Tus, {
-          endpoint:
-            process.env.NODE_ENV === "development"
-              ? "http://localhost:8080/api/jobs/upload"
-              : "/api/jobs/upload",
-          retryDelays: [0, 1000, 3000, 5000],
-          limit: 1,
-          removeFingerprintOnSuccess: true,
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          chunkSize: 2142880,
-        })
-        .use(Webcam)
-        .on("complete", (res) => {
-          if (res.successful) {
-            setIsUploadComplete(true);
-          }
-        })
-    );
+    console.log("resetting uppy");
+    setUppy(getNewUppy());
   };
+
   const router = createBrowserRouter([
     { path: "/", element: <Home /> },
     { path: "/accounts/create", element: <CreateAccount /> },
@@ -130,6 +102,8 @@ const Router = () => {
           setFileID={setFileID}
           fileID={fileID}
           resetUppy={resetUppy}
+          setAllowedTypes={setAllowedTypes}
+          allowedTypes={allowedTypes}
         />
       ),
     },

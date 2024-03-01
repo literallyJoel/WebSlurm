@@ -3,11 +3,19 @@ export type JobParameter = {
   value: string | number | boolean;
 };
 
+//If a zip file is super large, we don't wanna download it into memory
+//So if its a zip file we just store some metadata so we can display to the user and download as needed.
+export type ZipContentData = {
+  fileName: string;
+  fileExtension: string;
+};
 export type File = {
   fileName: string;
   fileURL: string;
   fileExt: string;
   fileContents?: string;
+  fileBlob?: Blob;
+  zipContents?: ZipContentData[];
 };
 
 export type JobInput = {
@@ -160,6 +168,12 @@ export const downloadInputFile = async (
     const text = await res.text();
     file.fileContents = text;
     file.fileURL = URL.createObjectURL(new Blob([text]));
+  } else if (file.fileExt === "zip") {
+    const zipInfo = await fetch(`/api/jobs/${jobID}/zipinfo`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const zipContents: ZipContentData[] = await zipInfo.json();
+    file.zipContents = zipContents;
   } else {
     const blob = await res.blob();
     file.fileURL = URL.createObjectURL(blob);
@@ -192,14 +206,48 @@ export const downloadOutputFile = async (
     if (file.fileExt === "txt") {
       const text = await res.text();
       file.fileContents = text;
-      file.fileURL = URL.createObjectURL(new Blob([text]));
+      const blob = new Blob([text]);
+      file.fileBlob = blob;
+      file.fileURL = URL.createObjectURL(blob);
     } else {
       const blob = await res.blob();
+      file.fileBlob = blob;
       file.fileURL = URL.createObjectURL(blob);
     }
 
     return file;
   } else {
     return undefined;
+  }
+};
+export const downloadExtracted = async (
+  jobID: string,
+  file: number,
+  token: string
+): Promise<void> => {
+  const res = await fetch(`/api/jobs/${jobID}/extracted/${file}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (res.status === 200) {
+    const contentDisposition = res.headers.get("Content-Disposition");
+    const fileName =
+      contentDisposition?.split("filename=")[1] || "downloaded-file"; // Default filename if not provided
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    // Create a link element
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName; // Set the filename for download
+
+    // Trigger a click event on the link to initiate the download
+    link.click();
+
+    // Clean up by revoking the object URL
+    URL.revokeObjectURL(url);
   }
 };

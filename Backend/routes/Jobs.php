@@ -84,6 +84,7 @@ class Jobs
         $pdo = new PDO(DB_CONN);
 
 
+        //If there is a fileID included, we check if it is a valid fileID associated with the user
         if ($fileID !== null) {
 
             $stmt = $pdo->prepare("SELECT * FROM fileIDs WHERE fileID = :fileID AND userID = :userID");
@@ -98,6 +99,7 @@ class Jobs
         }
 
 
+        //Grab the job type information from the database
         $stmt = $pdo->prepare("SELECT * FROM jobTypes WHERE jobTypeID = :jobID");
         $stmt->bindParam(":jobID", $jobID);
 
@@ -126,8 +128,8 @@ class Jobs
 
         //This is in every script, as is enforced by both the frontend and backend.
         $script = str_replace("*{name}*", escapeshellarg($jobName), $script);
-        mkdir(__DIR__ . "/../usr/out/" . $userID, 0775, true);
-
+        $dir = __DIR__ . "/../usr/out/" . $userID;
+        if (!file_exists($dir)) mkdir(__DIR__ . "/../usr/out/" . $userID, 0775, true);
 
 
         //The script needs the database ID of the Job in order to update the database when it is complete.
@@ -168,7 +170,7 @@ class Jobs
             }
         } catch (Exception $e) {
             error_log($e);
-            $repsonse->getBody()->write("Error creating job");
+            $response->getBody()->write("Error creating job");
             return $response->withStatus(500);
         }
 
@@ -184,13 +186,58 @@ class Jobs
             // $script .= 'rm -- ' . __DIR__ . "/../usr/script/" . $userID . "-" . $jobID . "-" . date('Y-m-d_H-i-s') . ".sh";
             //Writes the script to a file so Slurm can run it
             $script = str_replace("*{out}*", __DIR__ . "/../usr/out/" . $userID . "/" . $newId, $script);
-            //Append the file input location to the script
-            if($fileID !== null){
-                $filePath = "file0=" . __DIR__ . "/../usr/in/" . $userID . "/" . $fileID;
-                $scriptArr = explode("\n", $script);
-                array_splice($scriptArr, 4, 0, $filePath);
-                $script = implode("\n", $scriptArr);
 
+            //Append the file input location to the script
+            if ($fileID !== null) {
+                //If there's only one file, we can just append the file path to the script
+                if ($job["fileUploadCount"] === 1) {
+                    $filePath = "file0=" . __DIR__ . "/../usr/in/" . $userID . "/" . $fileID;
+                    $scriptArr = explode("\n", $script);
+                    array_splice($scriptArr, 4, 0, $filePath);
+                    $script = implode("\n", $scriptArr);
+                    //If there's more than one file, we need to extract them from the zip folder
+                } else {
+                    $zip = new ZipArchive();
+                    $dir = __DIR__ . "/../usr/in/" . $userID . "/" . $fileID;
+
+                    $open = $zip->open($dir);
+                    $extractDir = __DIR__ . "/../usr/in/" . $userID . "/" . $newId . "/";
+                    if ($open === true) {
+                        $zip->extractTo($extractDir);
+                        $zip->close();
+                    } else {
+
+                        error_log("Error extracting zip file for Job with ID " . $newId);
+                        error_log("Error code: " . $open);
+                        $response->getBody()->write("Internal Server Error");
+                        return $response->withStatus(500);
+
+                    }
+
+                    //Strip out the file extensions from the extracted files
+                    $dir = $extractDir;
+                    if ($handle = opendir($dir)) {
+                        while (($file = readdir($handle)) !== false) {
+                            if ($file !== "." && $file !== "..") {
+                                $currentFile = pathinfo($file, PATHINFO_FILENAME);
+                                rename($dir . DIRECTORY_SEPARATOR . $file, $dir . DIRECTORY_SEPARATOR . $currentFile);
+                            }
+                        }
+                        closeDir($handle);
+                    } else {
+                        error_log("Error opening directory for Job with ID " . $newId);
+                        $response->getBody()->write("Internal Server Error");
+                        return $response->withStatus(500);
+                    }
+
+                    //Append the file paths to the script
+                    for ($i = 0; $i < (int)$job["fileUploadCount"]; $i++) {
+                        $filePath = "file" . $i . "=" . __DIR__ . "/../usr/in/" . $userID . "/" . $newId . "/" . "file" . $i;
+                        $scriptArr = explode("\n", $script);
+                        array_splice($scriptArr, 4 + $i, 0, $filePath);
+                        $script = implode("\n", $scriptArr);
+                    }
+                }
             }
             file_put_contents(__DIR__ . "/../usr/script/" . $userID . "-" . $newId . "-" . date('Y-m-d_H-i-s') . ".sh", $this->replaceLineBreaks($script));
 
@@ -834,6 +881,83 @@ class Jobs
         $response = $response->withHeader("Content-Type", $mime);
         $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $jobID . "." . $this->getExtension($mime));
         $response->getBody()->write(file_get_contents($filePath));
+        return $response->withStatus(200);
+    }
+
+    public function getZipData(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
+        $decoded = $request->getAttribute("decoded");
+        $userId = $decoded->userID;
+        $jobID = $args["jobID"];
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT fileUploadCount FROM jobTypes JOIN jobs on JobTypes.jobTypeID = jobs.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID");
+        $stmt->bindParam(":jobID", $jobID);
+        $stmt->bindParam(":userID", $userId);
+        $stmt->execute();
+        $job = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$job) {
+            $response->getBody()->write("Job not found");
+            return $response->withStatus(404);
+        } elseif ((int)$job["fileUploadCount"] < 2) {
+            $response->getBody()->write("Bad Request");
+            return $response->withStatus(400);
+        }
+
+        //If the job has more than one file, we know the application will have already extracted them into this folder.
+        //We can therefore assume the folder already exists and contains files
+        $dir = __DIR__ . "/../usr/in/" . $userId . "/" . $jobID;
+
+        $files = scandir($dir);
+
+        // Filter out unwanted entries (e.g., ".", "..")
+        $files = array_filter($files, function ($file) {
+            return $file !== "." && $file !== "..";
+        });
+
+        // Initialize an empty array to store the results
+        $result = [];
+
+        foreach ($files as $file) {
+            $fileName = pathinfo($file, PATHINFO_FILENAME);
+            if (!empty($fileName)) {
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                $mime = $finfo->file($dir . "/" . $file);
+                $ext = $this->getExtension($mime);
+                $result[] = ["fileName" => $fileName, "fileExtension" => $ext];
+            }
+        }
+
+// Now $result contains the desired array
+        $response->getBody()->write(json_encode($result));
+        return $response->withStatus(200);
+
+    }
+
+    public function getExtractedFile(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface{
+        $decoded = $request->getAttribute("decoded");
+        $userId = $decoded->userID;
+        $jobID = $args["jobID"];
+        $fileNum = $args["file"];
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT fileUploadCount FROM jobTypes JOIN jobs on JobTypes.jobTypeID = jobs.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID");
+        $stmt->bindParam(":jobID", $jobID);
+        $stmt->bindParam(":userID", $userId);
+        $stmt->execute();
+        $job = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$job) {
+            $response->getBody()->write("Job not found");
+            return $response->withStatus(404);
+        } elseif ((int)$job["fileUploadCount"] < 2) {
+            $response->getBody()->write("Bad Request");
+            return $response->withStatus(400);
+        }
+
+        $dir = __DIR__ . "/../usr/in/" . $userId . "/" .  $jobID  . "/" . "file" . $fileNum;
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime = $finfo->file($dir);
+        $response = $response->withHeader("Content-Type", $mime);
+        $response = $response->withHeader("Content-Disposition", "attachment; filename=" . "file" . $fileNum . "." . $this->getExtension($mime));
+        $response->getBody()->write(file_get_contents($dir));
         return $response->withStatus(200);
     }
 }   

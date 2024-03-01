@@ -83,7 +83,10 @@ const JobInfo = (): JSX.Element => {
       </div>
     </div>
   ) : jobInfo ? (
-    <div className="h-full flex flex-col gap-4">
+    <div className="h-full flex flex-col gap-2">
+      <span className="text-red-600 font-bold">
+        Note To Self!!: Next to implement: Viewing non-native output files.
+      </span>
       <div className="text-4xl font-bold">{jobInfo.jobName}</div>
       <div className="flex flex-col w-full justify-center items-center">
         <div className="flex flex-row w-8/12 justify-center border border-black rounded-md">
@@ -140,18 +143,28 @@ const JobInfo = (): JSX.Element => {
           </div>
         </div>
       )}
-
       {inputFile && (
         <div className="w-full flex flex-col items-center">
           <div className="border border-black w-8/12 rounded-md p-2 flex flex-col">
             <div className="border-b border-b-black p-2 font-bold ">
               Uploaded Files
             </div>
-            <div className="p-2 ">
-              Viewing <span className="font-bold">{inputFile.fileName}</span>
+            <div className="p-2 flex flex-col">
+              <span>
+                Viewing <span className="font-bold">{inputFile.fileName}</span>
+              </span>
+              {inputFile.fileExt === "zip" && (
+                <span className="text-sm">
+                  Double click file in viewer to download
+                </span>
+              )}
             </div>
             <div className="max-h-80 overflow-auto p-2">
-              <ExtendedViewer file={inputFile} key={`in${jobID}`} />
+              <ExtendedViewer
+                file={inputFile}
+                key={`in${jobID}`}
+                jobID={jobID ?? ""}
+              />
             </div>
             <div className="flex flex-row justify-center w-full">
               <a href={inputFile.fileURL} download className="w-full">
@@ -161,15 +174,25 @@ const JobInfo = (): JSX.Element => {
           </div>
         </div>
       )}
-
       {outputFile && (
         <div className="w-full flex flex-col items-center max-h-11">
           <div className="border border-black w-8/12 rounded-md p-2 flex flex-col">
             <div className="border-b border-b-black p-2 font-bold ">Output</div>
-            <div className="p-2 ">
-              Viewing <span className="font-bold">{outputFile.fileName}</span>
+            <div className="p-2 flex flex-col">
+              <span>
+                Viewing <span className="font-bold">{outputFile.fileName}</span>
+              </span>
+              {outputFile.fileExt === "zip" && (
+                <span className="text-sm">
+                  Double click file in viewer to download
+                </span>
+              )}
             </div>
-            <ExtendedViewer file={outputFile} key={`out${jobID}`} />
+            <ExtendedViewer
+              file={outputFile}
+              key={`out${jobID}`}
+              jobID={jobID ?? ""}
+            />
             <div className="flex flex-row justify-center w-full">
               <a href={outputFile.fileURL} download className="w-full">
                 <Button className="w-1/2">
