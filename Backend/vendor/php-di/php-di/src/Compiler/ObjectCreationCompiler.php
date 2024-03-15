@@ -19,17 +19,20 @@ use ReflectionProperty;
  */
 class ObjectCreationCompiler
 {
-    public function __construct(
-        private Compiler $compiler,
-    ) {
+    /**
+     * @var Compiler
+     */
+    private $compiler;
+
+    public function __construct(Compiler $compiler)
+    {
+        $this->compiler = $compiler;
     }
 
     public function compile(ObjectDefinition $definition) : string
     {
         $this->assertClassIsNotAnonymous($definition);
         $this->assertClassIsInstantiable($definition);
-        /** @var class-string $className At this point we have checked the class is valid */
-        $className = $definition->getClassName();
 
         // Lazy?
         if ($definition->isLazy()) {
@@ -37,7 +40,7 @@ class ObjectCreationCompiler
         }
 
         try {
-            $classReflection = new ReflectionClass($className);
+            $classReflection = new ReflectionClass($definition->getClassName());
             $constructorArguments = $this->resolveParameters($definition->getConstructorInjection(), $classReflection->getConstructor());
             $dumpedConstructorArguments = array_map(function ($value) {
                 return $this->compiler->compileValue($value);
@@ -46,7 +49,7 @@ class ObjectCreationCompiler
             $code = [];
             $code[] = sprintf(
                 '$object = new %s(%s);',
-                $className,
+                $definition->getClassName(),
                 implode(', ', $dumpedConstructorArguments)
             );
 
@@ -55,12 +58,12 @@ class ObjectCreationCompiler
                 $value = $propertyInjection->getValue();
                 $value = $this->compiler->compileValue($value);
 
-                $propertyClassName = $propertyInjection->getClassName() ?: $className;
-                $property = new ReflectionProperty($propertyClassName, $propertyInjection->getPropertyName());
-                if ($property->isPublic() && !(\PHP_VERSION_ID >= 80100 && $property->isReadOnly())) {
+                $className = $propertyInjection->getClassName() ?: $definition->getClassName();
+                $property = new ReflectionProperty($className, $propertyInjection->getPropertyName());
+                if ($property->isPublic()) {
                     $code[] = sprintf('$object->%s = %s;', $propertyInjection->getPropertyName(), $value);
                 } else {
-                    // Private/protected/readonly property
+                    // Private/protected property
                     $code[] = sprintf(
                         '\DI\Definition\Resolver\ObjectCreator::setPrivatePropertyValue(%s, $object, \'%s\', %s);',
                         var_export($propertyInjection->getClassName(), true),
@@ -72,7 +75,7 @@ class ObjectCreationCompiler
 
             // Method injections
             foreach ($definition->getMethodInjections() as $methodInjection) {
-                $methodReflection = new ReflectionMethod($className, $methodInjection->getMethodName());
+                $methodReflection = new \ReflectionMethod($definition->getClassName(), $methodInjection->getMethodName());
                 $parameters = $this->resolveParameters($methodInjection, $methodReflection);
 
                 $dumpedParameters = array_map(function ($value) {
@@ -96,7 +99,7 @@ class ObjectCreationCompiler
         return implode("\n        ", $code);
     }
 
-    public function resolveParameters(?MethodInjection $definition, ?ReflectionMethod $method) : array
+    public function resolveParameters(MethodInjection $definition = null, ReflectionMethod $method = null) : array
     {
         $args = [];
 
@@ -134,33 +137,31 @@ class ObjectCreationCompiler
         $subDefinition->setLazy(false);
         $subDefinition = $this->compiler->compileValue($subDefinition);
 
-        /** @var class-string $className At this point we have checked the class is valid */
-        $className = $definition->getClassName();
+        $this->compiler->getProxyFactory()->generateProxyClass($definition->getClassName());
 
-        $this->compiler->getProxyFactory()->generateProxyClass($className);
-
-        return <<<STR
-                    \$object = \$this->proxyFactory->createProxy(
-                        '{$definition->getClassName()}',
-                        function (&\$wrappedObject, \$proxy, \$method, \$params, &\$initializer) {
-                            \$wrappedObject = $subDefinition;
-                            \$initializer = null; // turning off further lazy initialization
-                            return true;
-                        }
-                    );
-            STR;
+        return <<<PHP
+        \$object = \$this->proxyFactory->createProxy(
+            '{$definition->getClassName()}',
+            function (&\$wrappedObject, \$proxy, \$method, \$params, &\$initializer) {
+                \$wrappedObject = $subDefinition;
+                \$initializer = null; // turning off further lazy initialization
+                return true;
+            }
+        );
+PHP;
     }
 
     /**
      * Returns the default value of a function parameter.
      *
      * @throws InvalidDefinition Can't get default values from PHP internal classes and functions
+     * @return mixed
      */
-    private function getParameterDefaultValue(ReflectionParameter $parameter, ReflectionMethod $function) : mixed
+    private function getParameterDefaultValue(ReflectionParameter $parameter, ReflectionMethod $function)
     {
         try {
             return $parameter->getDefaultValue();
-        } catch (\ReflectionException) {
+        } catch (\ReflectionException $e) {
             throw new InvalidDefinition(sprintf(
                 'The parameter "%s" of %s has no type defined or guessable. It has a default value, '
                 . 'but the default value can\'t be read through Reflection because it is a PHP internal class.',
@@ -175,9 +176,9 @@ class ObjectCreationCompiler
         return $method->getName() . '()';
     }
 
-    private function assertClassIsNotAnonymous(ObjectDefinition $definition) : void
+    private function assertClassIsNotAnonymous(ObjectDefinition $definition)
     {
-        if (str_contains($definition->getClassName(), '@')) {
+        if (strpos($definition->getClassName(), '@') !== false) {
             throw InvalidDefinition::create($definition, sprintf(
                 'Entry "%s" cannot be compiled: anonymous classes cannot be compiled',
                 $definition->getName()
@@ -185,7 +186,7 @@ class ObjectCreationCompiler
         }
     }
 
-    private function assertClassIsInstantiable(ObjectDefinition $definition) : void
+    private function assertClassIsInstantiable(ObjectDefinition $definition)
     {
         if ($definition->isInstantiable()) {
             return;

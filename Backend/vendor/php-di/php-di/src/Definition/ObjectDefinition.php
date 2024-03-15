@@ -19,35 +19,52 @@ class ObjectDefinition implements Definition
 {
     /**
      * Entry name (most of the time, same as $classname).
+     * @var string
      */
-    private string $name;
+    private $name;
 
     /**
      * Class name (if null, then the class name is $name).
+     * @var string|null
      */
-    protected ?string $className = null;
+    protected $className;
 
-    protected ?MethodInjection $constructorInjection = null;
+    /**
+     * Constructor parameter injection.
+     * @var MethodInjection|null
+     */
+    protected $constructorInjection;
 
-    protected array $propertyInjections = [];
+    /**
+     * Property injections.
+     * @var PropertyInjection[]
+     */
+    protected $propertyInjections = [];
 
     /**
      * Method calls.
      * @var MethodInjection[][]
      */
-    protected array $methodInjections = [];
+    protected $methodInjections = [];
 
-    protected ?bool $lazy = null;
+    /**
+     * @var bool|null
+     */
+    protected $lazy;
 
     /**
      * Store if the class exists. Storing it (in cache) avoids recomputing this.
+     *
+     * @var bool
      */
-    private bool $classExists;
+    private $classExists;
 
     /**
      * Store if the class is instantiable. Storing it (in cache) avoids recomputing this.
+     *
+     * @var bool
      */
-    private bool $isInstantiable;
+    private $isInstantiable;
 
     /**
      * @param string $name Entry name
@@ -63,12 +80,12 @@ class ObjectDefinition implements Definition
         return $this->name;
     }
 
-    public function setName(string $name) : void
+    public function setName(string $name)
     {
         $this->name = $name;
     }
 
-    public function setClassName(?string $className) : void
+    public function setClassName(string $className = null)
     {
         $this->className = $className;
 
@@ -77,20 +94,27 @@ class ObjectDefinition implements Definition
 
     public function getClassName() : string
     {
-        return $this->className ?? $this->name;
+        if ($this->className !== null) {
+            return $this->className;
+        }
+
+        return $this->name;
     }
 
-    public function getConstructorInjection() : ?MethodInjection
+    /**
+     * @return MethodInjection|null
+     */
+    public function getConstructorInjection()
     {
         return $this->constructorInjection;
     }
 
-    public function setConstructorInjection(MethodInjection $constructorInjection) : void
+    public function setConstructorInjection(MethodInjection $constructorInjection)
     {
         $this->constructorInjection = $constructorInjection;
     }
 
-    public function completeConstructorInjection(MethodInjection $injection) : void
+    public function completeConstructorInjection(MethodInjection $injection)
     {
         if ($this->constructorInjection !== null) {
             // Merge
@@ -109,7 +133,7 @@ class ObjectDefinition implements Definition
         return $this->propertyInjections;
     }
 
-    public function addPropertyInjection(PropertyInjection $propertyInjection) : void
+    public function addPropertyInjection(PropertyInjection $propertyInjection)
     {
         $className = $propertyInjection->getClassName();
         if ($className) {
@@ -137,7 +161,7 @@ class ObjectDefinition implements Definition
         return $injections;
     }
 
-    public function addMethodInjection(MethodInjection $methodInjection) : void
+    public function addMethodInjection(MethodInjection $methodInjection)
     {
         $method = $methodInjection->getMethodName();
         if (! isset($this->methodInjections[$method])) {
@@ -146,7 +170,7 @@ class ObjectDefinition implements Definition
         $this->methodInjections[$method][] = $methodInjection;
     }
 
-    public function completeFirstMethodInjection(MethodInjection $injection) : void
+    public function completeFirstMethodInjection(MethodInjection $injection)
     {
         $method = $injection->getMethodName();
 
@@ -159,7 +183,7 @@ class ObjectDefinition implements Definition
         }
     }
 
-    public function setLazy(bool $lazy = null) : void
+    public function setLazy(bool $lazy = null)
     {
         $this->lazy = $lazy;
     }
@@ -169,7 +193,6 @@ class ObjectDefinition implements Definition
         if ($this->lazy !== null) {
             return $this->lazy;
         }
-
         // Default value
         return false;
     }
@@ -184,13 +207,15 @@ class ObjectDefinition implements Definition
         return $this->isInstantiable;
     }
 
-    public function replaceNestedDefinitions(callable $replacer) : void
+    public function replaceNestedDefinitions(callable $replacer)
     {
         array_walk($this->propertyInjections, function (PropertyInjection $propertyInjection) use ($replacer) {
             $propertyInjection->replaceNestedDefinition($replacer);
         });
 
-        $this->constructorInjection?->replaceNestedDefinitions($replacer);
+        if ($this->constructorInjection) {
+            $this->constructorInjection->replaceNestedDefinitions($replacer);
+        }
 
         array_walk($this->methodInjections, function ($injectionArray) use ($replacer) {
             array_walk($injectionArray, function (MethodInjection $methodInjection) use ($replacer) {
@@ -204,7 +229,7 @@ class ObjectDefinition implements Definition
      *
      * @param string[] $replacements
      */
-    public function replaceWildcards(array $replacements) : void
+    public function replaceWildcards(array $replacements)
     {
         $className = $this->getClassName();
 
@@ -218,12 +243,12 @@ class ObjectDefinition implements Definition
         $this->setClassName($className);
     }
 
-    public function __toString() : string
+    public function __toString()
     {
         return (new ObjectDefinitionDumper)->dump($this);
     }
 
-    private function updateCache() : void
+    private function updateCache()
     {
         $className = $this->getClassName();
 
@@ -235,7 +260,6 @@ class ObjectDefinition implements Definition
             return;
         }
 
-        /** @var class-string $className */
         $class = new ReflectionClass($className);
         $this->isInstantiable = $class->isInstantiable();
     }

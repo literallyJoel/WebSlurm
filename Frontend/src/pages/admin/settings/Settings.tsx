@@ -20,12 +20,12 @@ const AdminSettings = (): JSX.Element => {
             <li>
               <a
                 className="flex justify-center py-2 text-lg font-semibold text-gray-700 dark:text-gray-300"
-                href="#"
+                href="/admin/users"
               >
                 User Management
               </a>
             </li>
-            <li>
+            {/* <li>
               <a
                 className="flex justify-center py-2 text-lg font-semibold text-gray-700 dark:text-gray-300"
                 href="#"
@@ -40,7 +40,7 @@ const AdminSettings = (): JSX.Element => {
               >
                 Organisation Management
               </a>
-            </li>
+            </li> */}
           </ul>
         </nav>
         <main className="flex-grow p-8">

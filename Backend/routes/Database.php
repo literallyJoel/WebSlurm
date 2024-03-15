@@ -2,7 +2,9 @@
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+
 require_once __DIR__ . "/../config/config.php";
+
 class Database
 {
     public function __construct()
@@ -10,83 +12,142 @@ class Database
     }
 
 
-    public function setup(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function setup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         try {
-            
+
             if (!file_exists(DB_PATH)) {
-                if(!file_exists(__DIR__ . "/../data")){
+                if (!file_exists(__DIR__ . "/../data")) {
                     mkdir(__DIR__ . "/../data", 0775, true);
                 }
                 $db = new SQLite3(DB_PATH);
 
-                // Create the users table
-                $db->exec('CREATE TABLE IF NOT EXISTS users (
-                userID TEXT PRIMARY KEY NOT NULL,
-                userName TEXT,
-                userEmail TEXT,
-                userPWHash TEXT,
-                role INTEGER NOT NULL,
-                requiresPasswordReset BOOLEAN NOT NULL
-            )');
+                $query = 'create table organisations
+    (
+        organisationID integer not null
+            constraint organisations_pk
+                primary key autoincrement,
+        name           text    not null,
+        description    text
+    );
+
+    create table users
+    (
+        userID                TEXT    not null
+            primary key,
+        userName              TEXT,
+        userEmail             TEXT,
+        userPWHash            TEXT,
+        role                  INTEGER not null,
+        requiresPasswordReset BOOLEAN not null
+    );
+
+    create table fileIDs
+    (
+        fileID TEXT not null
+            constraint fileIDs_pk
+                primary key,
+        userID TEXT not null
+            constraint fileIDs_users_userID_fk
+                references users
+    );
+
+    create table jobTypes
+    (
+        jobTypeID       INTEGER            not null
+            primary key,
+        jobName         TEXT               not null,
+        script          TEXT               not null,
+        userID          TEXT
+            references users,
+        fileUploadCount integer default 0,
+        jobDescription  text    default "" not null,
+        hasOutputFile   boolean default false,
+        outputCount     integer default 0
+    );
+
+    create table Jobs
+    (
+        jobID           INTEGER            not null
+            primary key autoincrement,
+        jobComplete     INTEGER            not null,
+        slurmID         INTEGER            not null,
+        jobTypeID       INTEGER            not null
+            references jobTypes,
+        jobCompleteTime integer,
+        jobStartTime    integer            not null,
+        userID          TEXT               not null
+            constraint Jobs_users_userID_fk
+                references users,
+        jobName         TEXT default "old" not null,
+        fileID          TEXT
+            constraint Jobs_fileIDs_fileID_fk
+                references fileIDs
+    );
+
+    create table JobParameters
+    (
+        jobID integer not null
+            constraint JobParameters_Jobs_jobID_fk
+                references Jobs,
+        key   TEXT    not null,
+        value TEXT    not null,
+        constraint JobParameters_pk
+            primary key (jobID, key)
+    );
+
+    create table jobTypeOrganisations
+    (
+        organisationID integer not null
+            constraint jobTypeOrganisations_organisations_organisationID_fk
+                references organisations,
+        jobTypeID      integer not null
+            constraint jobTypeOrganisations_jobTypes_jobTypeID_fk
+                references jobTypes,
+        constraint jobTypeOrganisations_pk
+            primary key (jobTypeID, organisationID)
+    );
+
+    create table jobTypeParams
+    (
+        paramID      INTEGER not null
+            primary key,
+        paramName    TEXT    not null,
+        paramType    INTEGER not null,
+        defaultValue TEXT,
+        jobTypeID    INTEGER
+            references jobTypes
+    );
+
+    create table userOrganisations
+    (
+        userID         integer           not null,
+        organisationID integer           not null,
+        role           integer default 0 not null,
+        constraint userOrganisations_pk
+            primary key (userID, organisationID),
+        constraint userOrganisations_users_organisationID_userID_fk
+            foreign key (organisationID, userID) references users (organisationID, userID)
+    );
+
+    create table userTokens
+    (
+        tokenID TEXT not null
+            primary key,
+        userID  TEXT
+            references users
+    );
+
+';
+                // Create the database
+                $db->exec($query);
 
                 /*
                 This exists as a default user. It has no email or password so cannot be accessed,
                 and has standard user permissions in any case. Used so when a user is removed,
                 the commands they created can remain.
                 */
-                $db->exec('INSERT INTO users (userID, userName, role) VALUES ("default", "default", 0');
-
-                // Create the slurmCommands table
-                $db->exec('CREATE TABLE IF NOT EXISTS jobTypes(
-                jobTypeID INTEGER PRIMARY KEY NOT NULL,
-                jobName TEXT NOT NULL,
-                jobDescription TEXT NOT NULL,
-                script TEXT NOT NULL,
-                userID TEXT,
-                fileUploadCount INTEGER DEFAULT 0,
-                FOREIGN KEY(userID) REFERENCES users(userID)
-            )');
-
-                // Create the slurmCommandParams table
-                $db->exec('CREATE TABLE IF NOT EXISTS jobTypeParams(
-                paramID INTEGER PRIMARY KEY NOT NULL,
-                paramName TEXT NOT NULL,
-                paramType INTEGER NOT NULL,
-                defaultValue TEXT,
-                jobTypeID INTEGER,
-                jobCompleteTime INTEGER,
-                jobStartTime INTEGER NOT NULL,
-                FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID)
-            )');
-
-                //Create File IDs table
-                $db->exec('CREATE TABLE IF NOT EXISTS fileIDs(
-                    fileID TEXT PRIMARY KEY NOT NULL,
-                    userID TEXT NOT NULL,
-                    FOREIGN KEY(userID) REFERENCES users(userID)');
-
-                // Create the Jobs table
-                $db->exec('CREATE TABLE IF NOT EXISTS Jobs (
-                jobID INTEGER PRIMARY KEY NOT NULL,
-                jobComplete INTEGER NOT NULL,
-                slurmID INTEGER NOT NULL,
-                commandID INTEGER,
-                userID TEXT NOT NULL,
-                jobName TEXT NOT NULL,
-                fileID TEXT,
-                FOREIGN KEY(jobTypeID) REFERENCES jobTypes(jobTypeID),
-                FOREIGN KEY(userID) REFERENCES users(userID),
-                FOREIGN KEY(fileID) REFERENCES fileIDs(fileID)
-            )');
-                
-
-                //Create the all tokens table. This is so we can disable tokens if needed.
-                $db->exec('CREATE TABLE IF NOT EXISTS userTokens(
-                        tokenID TEXT PRIMARY KEY NOT NULL,
-                        userID TEXT,
-                        FOREIGN KEY(userID) REFERENCES users(userID)
-             )');
+                $db->exec("INSERT INTO users (userID, userName, role, requiresPasswordReset) VALUES ('default', 'default', 0, false);");
 
                 $db->close();
             }
@@ -100,5 +161,7 @@ class Database
         }
 
     }
+
+
 
 }

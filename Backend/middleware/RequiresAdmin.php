@@ -1,17 +1,16 @@
 <?php
 
 use Firebase\JWT\ExpiredException;
-use Psr\Http\Server\RequestHandlerInterface;
+
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Slim\Psr7\Response;
 
 class RequiresAdmin
 {
 
 
 
-    public function __invoke(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, $next): ResponseInterface
     {
         try {
             $token = $request->getHeaderLine("Authorization");
@@ -22,14 +21,13 @@ class RequiresAdmin
 
             if ($isAllowed && $role === 1) {
                 $request = $request->withAttribute("decoded", $decoded);
-                return $handler->handle($request);
+                return $next($request, $response);
             }
 
-            $response = new Response();
+            
             $response->getBody()->write("Unauthorized");
             return $response->withStatus(401);
         } catch (ExpiredException $e) {
-            $response = new Response();
             $response->getBody()->write("Token Expired");
             return $response->withStatus(401);
         }

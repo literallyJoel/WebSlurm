@@ -1,7 +1,6 @@
 <?php
 
 
-use Slim\Psr7\Response;
 use Firebase\JWT\ExpiredException;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -22,12 +21,12 @@ class RequiresAuthentication
                 return $next($request, $response);
             }
 
-            $response = new Response(); 
+          
             $response->getBody()->write("Unauthorized");
             return $response->withStatus(401);
         }catch(ExpiredException $e){
             error_log($e);
-            $response = new Response();
+          
             $response->getBody()->write("Token Expired");
             return $response->withStatus(401);
         }

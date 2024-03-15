@@ -21,7 +21,6 @@
       <path value="$PROJECT_DIR$/Backend/vendor/lcobucci/clock" />
       <path value="$PROJECT_DIR$/Backend/vendor/lcobucci/jwt" />
       <path value="$PROJECT_DIR$/Backend/vendor/composer" />
-      <path value="$PROJECT_DIR$/Backend/vendor/fig/http-message-util" />
       <path value="$PROJECT_DIR$/Backend/vendor/psr/log" />
       <path value="$PROJECT_DIR$/Backend/vendor/psr/http-message" />
       <path value="$PROJECT_DIR$/Backend/vendor/psr/container" />
@@ -32,7 +31,6 @@
       <path value="$PROJECT_DIR$/Backend/vendor/nikic/fast-route" />
       <path value="$PROJECT_DIR$/Backend/vendor/firebase/php-jwt" />
       <path value="$PROJECT_DIR$/Backend/vendor/league/uri-interfaces" />
-      <path value="$PROJECT_DIR$/Backend/vendor/slim/psr7" />
       <path value="$PROJECT_DIR$/Backend/vendor/league/oauth2-server" />
       <path value="$PROJECT_DIR$/Backend/vendor/php-di/invoker" />
       <path value="$PROJECT_DIR$/Backend/vendor/symfony/event-dispatcher" />
@@ -77,6 +75,7 @@
       <path value="$PROJECT_DIR$/Backend/vendor/symfony/polyfill-ctype" />
       <path value="$PROJECT_DIR$/Backend/vendor/container-interop/container-interop" />
       <path value="$PROJECT_DIR$/Backend/vendor/pimple/pimple" />
+      <path value="$PROJECT_DIR$/Backend/vendor/nyholm/psr7" />
     </include_path>
   </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="7.0">

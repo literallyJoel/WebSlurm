@@ -12,22 +12,18 @@ use Psr\Container\NotFoundExceptionInterface;
 /**
  * Injects dependencies on an existing instance.
  *
- * @template-implements DefinitionResolver<InstanceDefinition>
- *
  * @since 5.0
  * @author Matthieu Napoli <matthieu@mnapoli.fr>
  */
-class InstanceInjector extends ObjectCreator implements DefinitionResolver
+class InstanceInjector extends ObjectCreator
 {
     /**
      * Injects dependencies on an existing instance.
      *
      * @param InstanceDefinition $definition
-     * @psalm-suppress ImplementedParamTypeMismatch
      */
-    public function resolve(Definition $definition, array $parameters = []) : ?object
+    public function resolve(Definition $definition, array $parameters = [])
     {
-        /** @psalm-suppress InvalidCatch */
         try {
             $this->injectMethodsAndProperties($definition->getInstance(), $definition->getObjectDefinition());
         } catch (NotFoundExceptionInterface $e) {

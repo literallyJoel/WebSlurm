@@ -14,12 +14,19 @@ use DI\Definition\Definition;
 class MethodInjection implements Definition
 {
     /**
-     * @param mixed[] $parameters
+     * @var string
      */
-    public function __construct(
-        private string $methodName,
-        private array $parameters = [],
-    ) {
+    private $methodName;
+
+    /**
+     * @var mixed[]
+     */
+    private $parameters = [];
+
+    public function __construct(string $methodName, array $parameters = [])
+    {
+        $this->methodName = $methodName;
+        $this->parameters = $parameters;
     }
 
     public static function constructor(array $parameters = []) : self
@@ -43,15 +50,15 @@ class MethodInjection implements Definition
     /**
      * Replace the parameters of the definition by a new array of parameters.
      */
-    public function replaceParameters(array $parameters) : void
+    public function replaceParameters(array $parameters)
     {
         $this->parameters = $parameters;
     }
 
-    public function merge(self $definition) : void
+    public function merge(self $definition)
     {
         // In case of conflicts, the current definition prevails.
-        $this->parameters += $definition->parameters;
+        $this->parameters = $this->parameters + $definition->parameters;
     }
 
     public function getName() : string
@@ -59,17 +66,20 @@ class MethodInjection implements Definition
         return '';
     }
 
-    public function setName(string $name) : void
+    public function setName(string $name)
     {
         // The name does not matter for method injections
     }
 
-    public function replaceNestedDefinitions(callable $replacer) : void
+    public function replaceNestedDefinitions(callable $replacer)
     {
         $this->parameters = array_map($replacer, $this->parameters);
     }
 
-    public function __toString() : string
+    /**
+     * {@inheritdoc}
+     */
+    public function __toString()
     {
         return sprintf('method(%s)', $this->methodName);
     }

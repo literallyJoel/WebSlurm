@@ -11,9 +11,14 @@ use DI\Factory\RequestedEntry;
  */
 class RequestedEntryHolder implements RequestedEntry
 {
-    public function __construct(
-        private string $name,
-    ) {
+    /**
+     * @var string
+     */
+    private $name;
+
+    public function __construct(string $name)
+    {
+        $this->name = $name;
     }
 
     public function getName() : string

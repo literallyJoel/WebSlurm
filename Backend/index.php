@@ -84,6 +84,14 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $container['Users'] = function($container){
         return new Users();
     };
+
+    //================GET=================//
+    //Returns whether a user has been created, so if the setup screen should be shown
+    $app->get("/api/users/shouldsetup", "Users:getShouldSetup");
+    //Returns the number of users - admin only (excludes default)
+    $app->get("/api/users/count", "Users:getCount")->add(new RequiresAdmin());
+    //Get all users - admin only
+    $app->get("/api/users", "Users:getAll")->add(new RequiresAdmin());
     //================POST================//
     //Create User
     $app->post("/api/users/create", "Users:create");

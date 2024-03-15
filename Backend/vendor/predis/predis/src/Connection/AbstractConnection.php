@@ -3,8 +3,7 @@
 /*
  * This file is part of the Predis package.
  *
- * (c) 2009-2020 Daniele Alessandri
- * (c) 2021-2023 Till Krüss
+ * (c) Daniele Alessandri <suppakilla@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -12,15 +11,15 @@
 
 namespace Predis\Connection;
 
-use InvalidArgumentException;
 use Predis\Command\CommandInterface;
-use Predis\Command\RawCommand;
 use Predis\CommunicationException;
 use Predis\Protocol\ProtocolException;
 
 /**
  * Base class with the common logic used by connection classes to communicate
  * with Redis.
+ *
+ * @author Daniele Alessandri <suppakilla@gmail.com>
  */
 abstract class AbstractConnection implements NodeConnectionInterface
 {
@@ -28,11 +27,7 @@ abstract class AbstractConnection implements NodeConnectionInterface
     private $cachedId;
 
     protected $parameters;
-
-    /**
-     * @var RawCommand[]
-     */
-    protected $initCommands = [];
+    protected $initCommands = array();
 
     /**
      * @param ParametersInterface $parameters Initialization parameters for the connection.
@@ -56,8 +51,9 @@ abstract class AbstractConnection implements NodeConnectionInterface
      *
      * @param ParametersInterface $parameters Initialization parameters for the connection.
      *
+     * @throws \InvalidArgumentException
+     *
      * @return ParametersInterface
-     * @throws InvalidArgumentException
      */
     abstract protected function assertParameters(ParametersInterface $parameters);
 
@@ -109,14 +105,6 @@ abstract class AbstractConnection implements NodeConnectionInterface
     /**
      * {@inheritdoc}
      */
-    public function getInitCommands(): array
-    {
-        return $this->initCommands;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
     public function executeCommand(CommandInterface $command)
     {
         $this->writeRequest($command);
@@ -133,15 +121,38 @@ abstract class AbstractConnection implements NodeConnectionInterface
     }
 
     /**
+     * Helper method that returns an exception message augmented with useful
+     * details from the connection parameters.
+     *
+     * @param string $message Error message.
+     *
+     * @return string
+     */
+    private function createExceptionMessage($message)
+    {
+        $parameters = $this->parameters;
+
+        if ($parameters->scheme === 'unix') {
+            return "$message [$parameters->scheme:$parameters->path]";
+        }
+
+        if (filter_var($parameters->host, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return "$message [$parameters->scheme://[$parameters->host]:$parameters->port]";
+        }
+
+        return "$message [$parameters->scheme://$parameters->host:$parameters->port]";
+    }
+
+    /**
      * Helper method to handle connection errors.
      *
      * @param string $message Error message.
      * @param int    $code    Error code.
      */
-    protected function onConnectionError($message, $code = 0)
+    protected function onConnectionError($message, $code = null)
     {
         CommunicationException::handle(
-            new ConnectionException($this, "$message [{$this->getParameters()}]", $code)
+            new ConnectionException($this, static::createExceptionMessage($message), $code)
         );
     }
 
@@ -153,7 +164,7 @@ abstract class AbstractConnection implements NodeConnectionInterface
     protected function onProtocolError($message)
     {
         CommunicationException::handle(
-            new ProtocolException($this, "$message [{$this->getParameters()}]")
+            new ProtocolException($this, static::createExceptionMessage($message))
         );
     }
 
@@ -210,6 +221,6 @@ abstract class AbstractConnection implements NodeConnectionInterface
      */
     public function __sleep()
     {
-        return ['parameters', 'initCommands'];
+        return array('parameters', 'initCommands');
     }
 }

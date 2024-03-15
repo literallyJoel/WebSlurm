@@ -15,12 +15,21 @@ class ValueDefinition implements Definition, SelfResolvingDefinition
 {
     /**
      * Entry name.
+     * @var string
      */
-    private string $name = '';
+    private $name = '';
 
-    public function __construct(
-        private mixed $value,
-    ) {
+    /**
+     * @var mixed
+     */
+    private $value;
+
+    /**
+     * @param mixed $value
+     */
+    public function __construct($value)
+    {
+        $this->value = $value;
     }
 
     public function getName() : string
@@ -28,17 +37,20 @@ class ValueDefinition implements Definition, SelfResolvingDefinition
         return $this->name;
     }
 
-    public function setName(string $name) : void
+    public function setName(string $name)
     {
         $this->name = $name;
     }
 
-    public function getValue() : mixed
+    /**
+     * @return mixed
+     */
+    public function getValue()
     {
         return $this->value;
     }
 
-    public function resolve(ContainerInterface $container) : mixed
+    public function resolve(ContainerInterface $container)
     {
         return $this->getValue();
     }
@@ -48,12 +60,12 @@ class ValueDefinition implements Definition, SelfResolvingDefinition
         return true;
     }
 
-    public function replaceNestedDefinitions(callable $replacer) : void
+    public function replaceNestedDefinitions(callable $replacer)
     {
         // no nested definitions
     }
 
-    public function __toString() : string
+    public function __toString()
     {
         return sprintf('Value (%s)', var_export($this->value, true));
     }

@@ -1,6 +1,6 @@
 import Nav from "@/components/Nav";
 import { useState } from "react";
-import { updateAccount } from "../accounts";
+import { updateAccount } from "@/helpers/accounts";
 import { useMutation } from "react-query";
 import { validatePassword } from "@/helpers/validation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/shadui/ui/card";

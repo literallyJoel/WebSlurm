@@ -51,9 +51,6 @@ class ObjectDefinitionDumper
         return sprintf('Object (' . \PHP_EOL . '%s' . \PHP_EOL . ')', $str);
     }
 
-    /**
-     * @param class-string $className
-     */
     private function dumpConstructor(string $className, ObjectDefinition $definition) : string
     {
         $str = '';
@@ -83,9 +80,6 @@ class ObjectDefinitionDumper
         return $str;
     }
 
-    /**
-     * @param class-string $className
-     */
     private function dumpMethods(string $className, ObjectDefinition $definition) : string
     {
         $str = '';
@@ -99,9 +93,6 @@ class ObjectDefinitionDumper
         return $str;
     }
 
-    /**
-     * @param class-string $className
-     */
     private function dumpMethodParameters(string $className, MethodInjection $methodInjection) : string
     {
         $methodReflection = new \ReflectionMethod($className, $methodInjection->getMethodName());
@@ -131,7 +122,7 @@ class ObjectDefinitionDumper
                         var_export($value, true)
                     );
                     continue;
-                } catch (ReflectionException) {
+                } catch (ReflectionException $e) {
                     // The default value can't be read through Reflection because it is a PHP internal class
                 }
             }

@@ -22,7 +22,7 @@ import {
   UpdateAccountObject,
   updateAccount as updateAccountHelper,
   deleteAccount as deleteAccountHelper,
-} from "@/pages/accounts/accounts";
+} from "@/helpers/accounts";
 import { useMutation } from "react-query";
 import { verifyPass } from "@/pages/auth/auth";
 const AccountSettings = (): JSX.Element => {

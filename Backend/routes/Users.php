@@ -3,6 +3,8 @@
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
+use function PHPSTORM_META\type;
+
 require __DIR__ . "/../helpers/Validator.php";
 require_once __DIR__ . "/../config/config.php";
 
@@ -234,6 +236,36 @@ class Users
         }
     }
 
+    public function getShouldSetup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface{
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM users");
+        $stmt->execute();
+        $count = $stmt->fetchColumn();
+        error_log("COUNT: $count");
+        if($count === 1){
+            $response->getBody()->write(json_encode(["shouldSetup" => true]));
+            return $response->withStatus(200);
+        }else{
+            $response->getBody()->write(json_encode(["shouldSetup" => false]));
+            return $response->withStatus(200);
+        }
+    }
 
+    public function getAll(ServerRequestInterface $request, ResponseInterface $response):ResponseInterface{
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT userID, userName, userEmail, role FROM users WHERE userID != 'default'");
+        $stmt->execute();
+        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $response->getBody()->write(json_encode($users));   
+        return $response->withStatus(200);
+    }
 
+    public function getCount(ServerRequestInterface $request, ResponseInterface $response):ResponseInterface{
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT COUNT (*) FROM USERS WHERE userID != 'default'");
+        $stmt->execute();
+        $count = $stmt->fetchColumn();
+        $response->getBody()->write(json_encode(["count" => $count]));
+        return $response->withStatus(200);
+    }
 }   

@@ -1,6 +1,6 @@
 import Nav from "@/components/Nav";
 import { useMutation } from "react-query";
-import { createAccount, type NewAccountObject } from "../accounts";
+import { createAccount, type NewAccountObject } from "@/helpers/accounts";
 import { useState } from "react";
 import {
   validateEmail,
@@ -10,27 +10,27 @@ import {
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
 } from "@/shadui/ui/card";
 import { Label } from "@/shadui/ui/label";
 import { Input } from "@/shadui/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-} from "@/shadui/ui/select";
+import { Select, SelectContent, SelectItem } from "@/shadui/ui/select";
 import { Checkbox } from "@/shadui/ui/checkbox";
 import { Button } from "@/shadui/ui/button";
 import { SelectTrigger, SelectValue } from "@radix-ui/react-select";
 
-const CreateAccount = (): JSX.Element => {
+interface props {
+  isSetup?: boolean;
+}
+const CreateAccount = ({ isSetup }: props): JSX.Element => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [generatePass, setGeneratePass] = useState(false);
 
-  const [role, setRole] = useState(0);
+  const [role, setRole] = useState(isSetup ? 1 : 0);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -102,6 +102,11 @@ const CreateAccount = (): JSX.Element => {
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Create a new User</CardTitle>
+            {isSetup && (
+              <CardDescription>
+                Create an admin account to get started
+              </CardDescription>
+            )}
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -149,13 +154,18 @@ const CreateAccount = (): JSX.Element => {
               <div className="space-y-2 flex flex-col">
                 <Label htmlFor="role">Role</Label>
                 <Select
+                  disabled={isSetup}
                   required
                   value={`${role}`}
                   onValueChange={(e) => {
                     setRole(Number.parseInt(e));
                   }}
                 >
-                  <SelectTrigger className="border border-[#E2E8F0] h-10 rounded-md relative">
+                  <SelectTrigger
+                    className={`border border-[#E2E8F0] h-10 rounded-md relative ${
+                      isSetup ? "bg-slate-100 text-slate-500" : ""
+                    }`}
+                  >
                     <SelectValue placeholder="Select a parameter type" />
                     {/* Displays a dropdown arrow. */}
                     <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">

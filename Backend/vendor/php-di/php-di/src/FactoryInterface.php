@@ -25,6 +25,7 @@ interface FactoryInterface
      * @throws \InvalidArgumentException The name parameter must be of type string.
      * @throws DependencyException       Error while resolving the entry.
      * @throws NotFoundException         No entry or class found for the given name.
+     * @return mixed
      */
-    public function make(string $name, array $parameters = []) : mixed;
+    public function make($name, array $parameters = []);
 }

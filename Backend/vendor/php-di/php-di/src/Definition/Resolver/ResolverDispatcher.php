@@ -26,17 +26,27 @@ use Psr\Container\ContainerInterface;
  */
 class ResolverDispatcher implements DefinitionResolver
 {
-    private ?ArrayResolver $arrayResolver = null;
-    private ?FactoryResolver $factoryResolver = null;
-    private ?DecoratorResolver $decoratorResolver = null;
-    private ?ObjectCreator $objectResolver = null;
-    private ?InstanceInjector $instanceResolver = null;
-    private ?EnvironmentVariableResolver $envVariableResolver = null;
+    /**
+     * @var ContainerInterface
+     */
+    private $container;
 
-    public function __construct(
-        private ContainerInterface $container,
-        private ProxyFactory $proxyFactory,
-    ) {
+    /**
+     * @var ProxyFactory
+     */
+    private $proxyFactory;
+
+    private $arrayResolver;
+    private $factoryResolver;
+    private $decoratorResolver;
+    private $objectResolver;
+    private $instanceResolver;
+    private $envVariableResolver;
+
+    public function __construct(ContainerInterface $container, ProxyFactory $proxyFactory)
+    {
+        $this->container = $container;
+        $this->proxyFactory = $proxyFactory;
     }
 
     /**
@@ -45,10 +55,11 @@ class ResolverDispatcher implements DefinitionResolver
      * @param Definition $definition Object that defines how the value should be obtained.
      * @param array      $parameters Optional parameters to use to build the entry.
      *
-     * @return mixed Value obtained from the definition.
      * @throws InvalidDefinition If the definition cannot be resolved.
+     *
+     * @return mixed Value obtained from the definition.
      */
-    public function resolve(Definition $definition, array $parameters = []) : mixed
+    public function resolve(Definition $definition, array $parameters = [])
     {
         // Special case, tested early for speed
         if ($definition instanceof SelfResolvingDefinition) {
@@ -117,7 +128,7 @@ class ResolverDispatcher implements DefinitionResolver
 
                 return $this->instanceResolver;
             default:
-                throw new \RuntimeException('No definition resolver was configured for definition of type ' . $definition::class);
+                throw new \RuntimeException('No definition resolver was configured for definition of type ' . get_class($definition));
         }
     }
 }

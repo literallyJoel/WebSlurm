@@ -11,5 +11,5 @@ namespace DI\Definition;
  */
 interface ExtendsPreviousDefinition extends Definition
 {
-    public function setExtendedDefinition(Definition $definition) : void;
+    public function setExtendedDefinition(Definition $definition);
 }

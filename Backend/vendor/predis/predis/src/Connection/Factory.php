@@ -3,8 +3,7 @@
 /*
  * This file is part of the Predis package.
  *
- * (c) 2009-2020 Daniele Alessandri
- * (c) 2021-2023 Till Krüss
+ * (c) Daniele Alessandri <suppakilla@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -12,27 +11,25 @@
 
 namespace Predis\Connection;
 
-use InvalidArgumentException;
-use Predis\Client;
 use Predis\Command\RawCommand;
-use ReflectionClass;
-use UnexpectedValueException;
 
 /**
  * Standard connection factory for creating connections to Redis nodes.
+ *
+ * @author Daniele Alessandri <suppakilla@gmail.com>
  */
 class Factory implements FactoryInterface
 {
-    private $defaults = [];
+    private $defaults = array();
 
-    protected $schemes = [
+    protected $schemes = array(
         'tcp' => 'Predis\Connection\StreamConnection',
         'unix' => 'Predis\Connection\StreamConnection',
         'tls' => 'Predis\Connection\StreamConnection',
         'redis' => 'Predis\Connection\StreamConnection',
         'rediss' => 'Predis\Connection\StreamConnection',
         'http' => 'Predis\Connection\WebdisConnection',
-    ];
+    );
 
     /**
      * Checks if the provided argument represents a valid connection class
@@ -41,8 +38,9 @@ class Factory implements FactoryInterface
      *
      * @param mixed $initializer FQN of a connection class or a callable for lazy initialization.
      *
+     * @throws \InvalidArgumentException
+     *
      * @return mixed
-     * @throws InvalidArgumentException
      */
     protected function checkInitializer($initializer)
     {
@@ -50,10 +48,10 @@ class Factory implements FactoryInterface
             return $initializer;
         }
 
-        $class = new ReflectionClass($initializer);
+        $class = new \ReflectionClass($initializer);
 
         if (!$class->isSubclassOf('Predis\Connection\NodeConnectionInterface')) {
-            throw new InvalidArgumentException(
+            throw new \InvalidArgumentException(
                 'A connection initializer must be a valid connection class or a callable object.'
             );
         }
@@ -89,7 +87,7 @@ class Factory implements FactoryInterface
         $scheme = $parameters->scheme;
 
         if (!isset($this->schemes[$scheme])) {
-            throw new InvalidArgumentException("Unknown connection scheme: '$scheme'.");
+            throw new \InvalidArgumentException("Unknown connection scheme: '$scheme'.");
         }
 
         $initializer = $this->schemes[$scheme];
@@ -102,13 +100,23 @@ class Factory implements FactoryInterface
         }
 
         if (!$connection instanceof NodeConnectionInterface) {
-            throw new UnexpectedValueException(
-                'Objects returned by connection initializers must implement ' .
+            throw new \UnexpectedValueException(
+                'Objects returned by connection initializers must implement '.
                 "'Predis\Connection\NodeConnectionInterface'."
             );
         }
 
         return $connection;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function aggregate(AggregateConnectionInterface $connection, array $parameters)
+    {
+        foreach ($parameters as $node) {
+            $connection->add($node instanceof NodeConnectionInterface ? $node : $this->create($node));
+        }
     }
 
     /**
@@ -146,7 +154,7 @@ class Factory implements FactoryInterface
         if (is_string($parameters)) {
             $parameters = Parameters::parse($parameters);
         } else {
-            $parameters = $parameters ?: [];
+            $parameters = $parameters ?: array();
         }
 
         if ($this->defaults) {
@@ -167,27 +175,17 @@ class Factory implements FactoryInterface
 
         if (isset($parameters->password) && strlen($parameters->password)) {
             $cmdAuthArgs = isset($parameters->username) && strlen($parameters->username)
-                ? [$parameters->username, $parameters->password]
-                : [$parameters->password];
+                ? array('AUTH', $parameters->username, $parameters->password)
+                : array('AUTH', $parameters->password);
 
             $connection->addConnectCommand(
-                new RawCommand('AUTH', $cmdAuthArgs)
-            );
-        }
-
-        if ($parameters->client_info ?? false && !$connection instanceof RelayConnection) {
-            $connection->addConnectCommand(
-                new RawCommand('CLIENT', ['SETINFO', 'LIB-NAME', 'predis'])
-            );
-
-            $connection->addConnectCommand(
-                new RawCommand('CLIENT', ['SETINFO', 'LIB-VER', Client::VERSION])
+                new RawCommand($cmdAuthArgs)
             );
         }
 
         if (isset($parameters->database) && strlen($parameters->database)) {
             $connection->addConnectCommand(
-                new RawCommand('SELECT', [$parameters->database])
+                new RawCommand(array('SELECT', $parameters->database))
             );
         }
     }

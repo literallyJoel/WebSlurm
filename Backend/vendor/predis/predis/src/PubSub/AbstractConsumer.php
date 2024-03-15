@@ -3,8 +3,7 @@
 /*
  * This file is part of the Predis package.
  *
- * (c) 2009-2020 Daniele Alessandri
- * (c) 2021-2023 Till Krüss
+ * (c) Daniele Alessandri <suppakilla@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -12,28 +11,27 @@
 
 namespace Predis\PubSub;
 
-use Iterator;
-use ReturnTypeWillChange;
-
 /**
  * Base implementation of a PUB/SUB consumer abstraction based on PHP iterators.
+ *
+ * @author Daniele Alessandri <suppakilla@gmail.com>
  */
-abstract class AbstractConsumer implements Iterator
+abstract class AbstractConsumer implements \Iterator
 {
-    public const SUBSCRIBE = 'subscribe';
-    public const UNSUBSCRIBE = 'unsubscribe';
-    public const PSUBSCRIBE = 'psubscribe';
-    public const PUNSUBSCRIBE = 'punsubscribe';
-    public const MESSAGE = 'message';
-    public const PMESSAGE = 'pmessage';
-    public const PONG = 'pong';
+    const SUBSCRIBE = 'subscribe';
+    const UNSUBSCRIBE = 'unsubscribe';
+    const PSUBSCRIBE = 'psubscribe';
+    const PUNSUBSCRIBE = 'punsubscribe';
+    const MESSAGE = 'message';
+    const PMESSAGE = 'pmessage';
+    const PONG = 'pong';
 
-    public const STATUS_VALID = 1;       // 0b0001
-    public const STATUS_SUBSCRIBED = 2;  // 0b0010
-    public const STATUS_PSUBSCRIBED = 4; // 0b0100
+    const STATUS_VALID = 1;       // 0b0001
+    const STATUS_SUBSCRIBED = 2;  // 0b0010
+    const STATUS_PSUBSCRIBED = 4; // 0b0100
 
-    protected $position;
-    protected $statusFlags = self::STATUS_VALID;
+    private $position = null;
+    private $statusFlags = self::STATUS_VALID;
 
     /**
      * Automatically stops the consumer when the garbage collector kicks in.
@@ -58,9 +56,9 @@ abstract class AbstractConsumer implements Iterator
     /**
      * Subscribes to the specified channels.
      *
-     * @param string ...$channel One or more channel names.
+     * @param mixed $channel,... One or more channel names.
      */
-    public function subscribe($channel /* , ... */)
+    public function subscribe($channel /*, ... */)
     {
         $this->writeRequest(self::SUBSCRIBE, func_get_args());
         $this->statusFlags |= self::STATUS_SUBSCRIBED;
@@ -69,9 +67,9 @@ abstract class AbstractConsumer implements Iterator
     /**
      * Unsubscribes from the specified channels.
      *
-     * @param string ...$channel One or more channel names.
+     * @param string ... One or more channel names.
      */
-    public function unsubscribe(...$channel)
+    public function unsubscribe(/* ... */)
     {
         $this->writeRequest(self::UNSUBSCRIBE, func_get_args());
     }
@@ -79,9 +77,9 @@ abstract class AbstractConsumer implements Iterator
     /**
      * Subscribes to the specified channels using a pattern.
      *
-     * @param string ...$pattern One or more channel name patterns.
+     * @param mixed $pattern,... One or more channel name patterns.
      */
-    public function psubscribe(...$pattern)
+    public function psubscribe($pattern /* ... */)
     {
         $this->writeRequest(self::PSUBSCRIBE, func_get_args());
         $this->statusFlags |= self::STATUS_PSUBSCRIBED;
@@ -90,9 +88,9 @@ abstract class AbstractConsumer implements Iterator
     /**
      * Unsubscribes from the specified channels using a pattern.
      *
-     * @param string ...$pattern One or more channel name patterns.
+     * @param string ... One or more channel name patterns.
      */
-    public function punsubscribe(...$pattern)
+    public function punsubscribe(/* ... */)
     {
         $this->writeRequest(self::PUNSUBSCRIBE, func_get_args());
     }
@@ -105,7 +103,7 @@ abstract class AbstractConsumer implements Iterator
      */
     public function ping($payload = null)
     {
-        $this->writeRequest('PING', [$payload]);
+        $this->writeRequest('PING', array($payload));
     }
 
     /**
@@ -151,9 +149,9 @@ abstract class AbstractConsumer implements Iterator
     abstract protected function writeRequest($method, $arguments);
 
     /**
-     * @return void
+     * {@inheritdoc}
      */
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function rewind()
     {
         // NOOP
@@ -165,25 +163,25 @@ abstract class AbstractConsumer implements Iterator
      *
      * @return array
      */
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function current()
     {
         return $this->getValue();
     }
 
     /**
-     * @return int|null
+     * {@inheritdoc}
      */
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function key()
     {
         return $this->position;
     }
 
     /**
-     * @return int|null
+     * {@inheritdoc}
      */
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function next()
     {
         if ($this->valid()) {
@@ -198,7 +196,7 @@ abstract class AbstractConsumer implements Iterator
      *
      * @return bool
      */
-    #[ReturnTypeWillChange]
+    #[\ReturnTypeWillChange]
     public function valid()
     {
         $isValid = $this->isFlagSet(self::STATUS_VALID);

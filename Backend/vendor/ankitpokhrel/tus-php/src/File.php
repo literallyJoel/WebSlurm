@@ -22,9 +22,6 @@ class File
     /** @const Append binary mode */
     public const APPEND_BINARY = 'ab';
 
-    /** @const Read and write mode */
-    public const APPEND_WRITE = 'a+';
-
     /** @var string */
     protected $key;
 

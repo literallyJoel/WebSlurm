@@ -3,8 +3,7 @@
 /*
  * This file is part of the Predis package.
  *
- * (c) 2009-2020 Daniele Alessandri
- * (c) 2021-2023 Till Krüss
+ * (c) Daniele Alessandri <suppakilla@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -13,15 +12,18 @@
 namespace Predis\Pipeline;
 
 use Predis\CommunicationException;
-use Predis\Connection\Cluster\ClusterInterface;
+use Predis\Connection\Aggregate\ClusterInterface;
 use Predis\Connection\ConnectionInterface;
 use Predis\Connection\NodeConnectionInterface;
 use Predis\NotSupportedException;
-use SplQueue;
 
 /**
  * Command pipeline that does not throw exceptions on connection errors, but
  * returns the exception instances as the rest of the response elements.
+ *
+ * @todo Awful naming!
+ *
+ * @author Daniele Alessandri <suppakilla@gmail.com>
  */
 class ConnectionErrorProof extends Pipeline
 {
@@ -36,7 +38,7 @@ class ConnectionErrorProof extends Pipeline
     /**
      * {@inheritdoc}
      */
-    protected function executePipeline(ConnectionInterface $connection, SplQueue $commands)
+    protected function executePipeline(ConnectionInterface $connection, \SplQueue $commands)
     {
         if ($connection instanceof NodeConnectionInterface) {
             return $this->executeSingleNode($connection, $commands);
@@ -52,9 +54,9 @@ class ConnectionErrorProof extends Pipeline
     /**
      * {@inheritdoc}
      */
-    protected function executeSingleNode(NodeConnectionInterface $connection, SplQueue $commands)
+    protected function executeSingleNode(NodeConnectionInterface $connection, \SplQueue $commands)
     {
-        $responses = [];
+        $responses = array();
         $sizeOfPipe = count($commands);
 
         foreach ($commands as $command) {
@@ -84,14 +86,14 @@ class ConnectionErrorProof extends Pipeline
     /**
      * {@inheritdoc}
      */
-    protected function executeCluster(ClusterInterface $connection, SplQueue $commands)
+    protected function executeCluster(ClusterInterface $connection, \SplQueue $commands)
     {
-        $responses = [];
+        $responses = array();
         $sizeOfPipe = count($commands);
-        $exceptions = [];
+        $exceptions = array();
 
         foreach ($commands as $command) {
-            $cmdConnection = $connection->getConnectionByCommand($command);
+            $cmdConnection = $connection->getConnection($command);
 
             if (isset($exceptions[spl_object_hash($cmdConnection)])) {
                 continue;
@@ -107,7 +109,7 @@ class ConnectionErrorProof extends Pipeline
         for ($i = 0; $i < $sizeOfPipe; ++$i) {
             $command = $commands->dequeue();
 
-            $cmdConnection = $connection->getConnectionByCommand($command);
+            $cmdConnection = $connection->getConnection($command);
             $connectionHash = spl_object_hash($cmdConnection);
 
             if (isset($exceptions[$connectionHash])) {

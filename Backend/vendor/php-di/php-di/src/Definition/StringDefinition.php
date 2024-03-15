@@ -16,12 +16,20 @@ use Psr\Container\NotFoundExceptionInterface;
  */
 class StringDefinition implements Definition, SelfResolvingDefinition
 {
-    /** Entry name. */
-    private string $name = '';
+    /**
+     * Entry name.
+     * @var string
+     */
+    private $name = '';
 
-    public function __construct(
-        private string $expression,
-    ) {
+    /**
+     * @var string
+     */
+    private $expression;
+
+    public function __construct(string $expression)
+    {
+        $this->expression = $expression;
     }
 
     public function getName() : string
@@ -29,7 +37,7 @@ class StringDefinition implements Definition, SelfResolvingDefinition
         return $this->name;
     }
 
-    public function setName(string $name) : void
+    public function setName(string $name)
     {
         $this->name = $name;
     }
@@ -49,12 +57,12 @@ class StringDefinition implements Definition, SelfResolvingDefinition
         return true;
     }
 
-    public function replaceNestedDefinitions(callable $replacer) : void
+    public function replaceNestedDefinitions(callable $replacer)
     {
         // no nested definitions
     }
 
-    public function __toString() : string
+    public function __toString()
     {
         return $this->expression;
     }
@@ -68,7 +76,6 @@ class StringDefinition implements Definition, SelfResolvingDefinition
         ContainerInterface $container
     ) : string {
         $callback = function (array $matches) use ($entryName, $container) {
-            /** @psalm-suppress InvalidCatch */
             try {
                 return $container->get($matches[1]);
             } catch (NotFoundExceptionInterface $e) {
@@ -80,7 +87,7 @@ class StringDefinition implements Definition, SelfResolvingDefinition
             }
         };
 
-        $result = preg_replace_callback('#\{([^{}]+)}#', $callback, $expression);
+        $result = preg_replace_callback('#\{([^\{\}]+)\}#', $callback, $expression);
         if ($result === null) {
             throw new \RuntimeException(sprintf('An unknown error occurred while parsing the string definition: \'%s\'', $expression));
         }

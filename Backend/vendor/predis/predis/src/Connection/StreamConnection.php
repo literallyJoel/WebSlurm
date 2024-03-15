@@ -3,8 +3,7 @@
 /*
  * This file is part of the Predis package.
  *
- * (c) 2009-2020 Daniele Alessandri
- * (c) 2021-2023 Till Krüss
+ * (c) Daniele Alessandri <suppakilla@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -12,7 +11,6 @@
 
 namespace Predis\Connection;
 
-use InvalidArgumentException;
 use Predis\Command\CommandInterface;
 use Predis\Response\Error as ErrorResponse;
 use Predis\Response\ErrorInterface as ErrorResponseInterface;
@@ -32,6 +30,8 @@ use Predis\Response\Status as StatusResponse;
  *  - tcp_nodelay: enables or disables Nagle's algorithm for coalescing.
  *  - persistent: the connection is left intact after a GC collection.
  *  - ssl: context options array (see http://php.net/manual/en/context.ssl.php)
+ *
+ * @author Daniele Alessandri <suppakilla@gmail.com>
  */
 class StreamConnection extends AbstractConnection
 {
@@ -58,15 +58,35 @@ class StreamConnection extends AbstractConnection
             case 'tcp':
             case 'redis':
             case 'unix':
+                break;
+
             case 'tls':
             case 'rediss':
+                $this->assertSslSupport($parameters);
                 break;
 
             default:
-                throw new InvalidArgumentException("Invalid scheme: '$parameters->scheme'.");
+                throw new \InvalidArgumentException("Invalid scheme: '$parameters->scheme'.");
         }
 
         return $parameters;
+    }
+
+    /**
+     * Checks needed conditions for SSL-encrypted connections.
+     *
+     * @param ParametersInterface $parameters Initialization parameters for the connection.
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function assertSslSupport(ParametersInterface $parameters)
+    {
+        if (
+            filter_var($parameters->persistent, FILTER_VALIDATE_BOOLEAN) &&
+            version_compare(PHP_VERSION, '7.0.0beta') < 0
+        ) {
+            throw new \InvalidArgumentException('Persistent SSL connections require PHP >= 7.0.0.');
+        }
     }
 
     /**
@@ -87,7 +107,7 @@ class StreamConnection extends AbstractConnection
                 return $this->tlsStreamInitializer($this->parameters);
 
             default:
-                throw new InvalidArgumentException("Invalid scheme: '{$this->parameters->scheme}'.");
+                throw new \InvalidArgumentException("Invalid scheme: '{$this->parameters->scheme}'.");
         }
     }
 
@@ -103,9 +123,8 @@ class StreamConnection extends AbstractConnection
     protected function createStreamSocket(ParametersInterface $parameters, $address, $flags)
     {
         $timeout = (isset($parameters->timeout) ? (float) $parameters->timeout : 5.0);
-        $context = stream_context_create(['socket' => ['tcp_nodelay' => (bool) $parameters->tcp_nodelay]]);
 
-        if (!$resource = @stream_socket_client($address, $errno, $errstr, $timeout, $flags, $context)) {
+        if (!$resource = @stream_socket_client($address, $errno, $errstr, $timeout, $flags)) {
             $this->onConnectionError(trim($errstr), $errno);
         }
 
@@ -115,6 +134,11 @@ class StreamConnection extends AbstractConnection
             $timeoutSeconds = floor($rwtimeout);
             $timeoutUSeconds = ($rwtimeout - $timeoutSeconds) * 1000000;
             stream_set_timeout($resource, $timeoutSeconds, $timeoutUSeconds);
+        }
+
+        if (isset($parameters->tcp_nodelay) && function_exists('socket_import_stream')) {
+            $socket = socket_import_stream($resource);
+            socket_set_option($socket, SOL_TCP, TCP_NODELAY, (int) $parameters->tcp_nodelay);
         }
 
         return $resource;
@@ -151,7 +175,9 @@ class StreamConnection extends AbstractConnection
             }
         }
 
-        return $this->createStreamSocket($parameters, $address, $flags);
+        $resource = $this->createStreamSocket($parameters, $address, $flags);
+
+        return $resource;
     }
 
     /**
@@ -164,7 +190,7 @@ class StreamConnection extends AbstractConnection
     protected function unixStreamInitializer(ParametersInterface $parameters)
     {
         if (!isset($parameters->path)) {
-            throw new InvalidArgumentException('Missing UNIX domain socket path.');
+            throw new \InvalidArgumentException('Missing UNIX domain socket path.');
         }
 
         $flags = STREAM_CLIENT_CONNECT;
@@ -174,14 +200,16 @@ class StreamConnection extends AbstractConnection
                 $flags |= STREAM_CLIENT_PERSISTENT;
 
                 if ($persistent === null) {
-                    throw new InvalidArgumentException(
+                    throw new \InvalidArgumentException(
                         'Persistent connection IDs are not supported when using UNIX domain sockets.'
                     );
                 }
             }
         }
 
-        return $this->createStreamSocket($parameters, "unix://{$parameters->path}", $flags);
+        $resource = $this->createStreamSocket($parameters, "unix://{$parameters->path}", $flags);
+
+        return $resource;
     }
 
     /**
@@ -201,17 +229,17 @@ class StreamConnection extends AbstractConnection
             return $resource;
         }
 
-        if (isset($parameters->ssl) && is_array($parameters->ssl)) {
+        if (is_array($parameters->ssl)) {
             $options = $parameters->ssl;
         } else {
-            $options = [];
+            $options = array();
         }
 
         if (!isset($options['crypto_type'])) {
             $options['crypto_type'] = STREAM_CRYPTO_METHOD_TLS_CLIENT;
         }
 
-        if (!stream_context_set_option($resource, ['ssl' => $options])) {
+        if (!stream_context_set_option($resource, array('ssl' => $options))) {
             $this->onConnectionError('Error while setting SSL context options');
         }
 
@@ -231,10 +259,8 @@ class StreamConnection extends AbstractConnection
             foreach ($this->initCommands as $command) {
                 $response = $this->executeCommand($command);
 
-                if ($response instanceof ErrorResponseInterface && $command->getId() === 'CLIENT') {
-                    // Do nothing on CLIENT SETINFO command failure
-                } elseif ($response instanceof ErrorResponseInterface) {
-                    $this->onConnectionError("`{$command->getId()}` failed: {$response->getMessage()}", 0);
+                if ($response instanceof ErrorResponseInterface) {
+                    $this->onConnectionError("`{$command->getId()}` failed: $response", 0);
                 }
             }
         }
@@ -246,10 +272,7 @@ class StreamConnection extends AbstractConnection
     public function disconnect()
     {
         if ($this->isConnected()) {
-            $resource = $this->getResource();
-            if (is_resource($resource)) {
-                fclose($resource);
-            }
+            fclose($this->getResource());
             parent::disconnect();
         }
     }
@@ -265,7 +288,7 @@ class StreamConnection extends AbstractConnection
         $socket = $this->getResource();
 
         while (($length = strlen($buffer)) > 0) {
-            $written = is_resource($socket) ? @fwrite($socket, $buffer) : false;
+            $written = @fwrite($socket, $buffer);
 
             if ($length === $written) {
                 return;
@@ -309,7 +332,7 @@ class StreamConnection extends AbstractConnection
                 $bytesLeft = ($size += 2);
 
                 do {
-                    $chunk = is_resource($socket) ? fread($socket, min($bytesLeft, 4096)) : false;
+                    $chunk = fread($socket, min($bytesLeft, 4096));
 
                     if ($chunk === false || $chunk === '') {
                         $this->onConnectionError('Error while reading bytes from the server.');
@@ -328,7 +351,7 @@ class StreamConnection extends AbstractConnection
                     return;
                 }
 
-                $multibulk = [];
+                $multibulk = array();
 
                 for ($i = 0; $i < $count; ++$i) {
                     $multibulk[$i] = $this->read();
@@ -338,7 +361,6 @@ class StreamConnection extends AbstractConnection
 
             case ':':
                 $integer = (int) $payload;
-
                 return $integer == $payload ? $integer : $payload;
 
             case '-':

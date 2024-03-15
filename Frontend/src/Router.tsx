@@ -21,6 +21,7 @@ import Webcam from "@uppy/webcam";
 import ViewJobs from "./pages/jobs/ViewJob/ViewJobs.tsx";
 import JobInfo from "./pages/jobs/ViewJob/JobInfo.tsx";
 import { getFileID } from "./helpers/jobs.ts";
+import Users from "./pages/admin/settings/Users/Users.tsx";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +96,7 @@ const Router = () => {
           path: "/admin/jobtypes/:id",
           element: <UpdateJobType />,
         },
+        { path: "/admin/users", element: <Users /> },
       ],
     },
     {

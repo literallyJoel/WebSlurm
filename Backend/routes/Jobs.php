@@ -8,8 +8,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\SimpleCache\CacheInterface as SimpleCacheInterface;
-use Slim\Psr7\Factory\ResponseFactory;
-use Slim\Psr7\Factory\StreamFactory;
+use Nyholm\Psr7\Factory\Psr17Factory;
 use SpazzMarticus\Tus\Factories\FilenameFactoryInterface;
 use SpazzMarticus\Tus\Factories\OriginalFilenameFactory;
 use SpazzMarticus\Tus\Providers\LocationProviderInterface;
@@ -407,8 +406,8 @@ class Jobs
 
             $container = new Container();
 
-            $container->set(ResponseFactoryInterface::class, new ResponseFactory());
-            $container->set(StreamFactoryInterface::class, new StreamFactory());
+            $container->set(ResponseFactoryInterface::class, new Psr17Factory());
+            $container->set(StreamFactoryInterface::class, new Psr17Factory());
             $container->set(SimpleCacheInterface::class, new Psr16Cache(new FilesystemAdapter()));
             $container->set(EventDispatcherInterface::class, new EventDispatcher());
             $container->set(FilenameFactoryInterface::class, function () use ($path) {

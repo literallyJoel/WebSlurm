@@ -134,10 +134,10 @@ class FileStore extends AbstractCache
      *
      * @return mixed
      */
-    protected function lock(string $path, int $type = LOCK_SH, callable $cb = null, $fopenType = FILE::READ_BINARY)
+    protected function lock(string $path, int $type = LOCK_SH, callable $cb = null)
     {
         $out    = false;
-        $handle = @fopen($path, $fopenType);
+        $handle = @fopen($path, File::READ_BINARY);
 
         if (false === $handle) {
             return $out;
@@ -167,9 +167,7 @@ class FileStore extends AbstractCache
     public function sharedGet(string $path): string
     {
         return $this->lock($path, LOCK_SH, function ($handle) use ($path) {
-            $fstat    = fstat($handle);
-            $size     = $fstat ? $fstat['size'] : 1;
-            $contents = fread($handle, $size ?: 1);
+            $contents = fread($handle, filesize($path) ?: 1);
 
             if (false === $contents) {
                 return '';
@@ -206,8 +204,7 @@ class FileStore extends AbstractCache
         }
 
         return $this->lock($cacheFile, LOCK_EX, function ($handle) use ($cacheKey, $cacheFile, $value) {
-            $size     = fstat($handle)['size'];
-            $contents = fread($handle, $size ?: 1) ?? '';
+            $contents = fread($handle, filesize($cacheFile) ?: 1) ?? '';
             $contents = json_decode($contents, true) ?? [];
 
             if ( ! empty($contents[$cacheKey]) && \is_array($value)) {
@@ -215,9 +212,9 @@ class FileStore extends AbstractCache
             } else {
                 $contents[$cacheKey] = $value;
             }
-            ftruncate($handle, 0);
-            return fwrite($handle, json_encode($contents));
-        }, FILE::APPEND_WRITE);
+
+            return $this->put($cacheFile, json_encode($contents), self::LOCK_NONE);
+        });
     }
 
     /**

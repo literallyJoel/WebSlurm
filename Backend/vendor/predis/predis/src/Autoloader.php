@@ -3,8 +3,7 @@
 /*
  * This file is part of the Predis package.
  *
- * (c) 2009-2020 Daniele Alessandri
- * (c) 2021-2023 Till Krüss
+ * (c) Daniele Alessandri <suppakilla@gmail.com>
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -17,7 +16,6 @@ namespace Predis;
  *
  * @author Eric Naeseth <eric@thumbtack.com>
  * @author Daniele Alessandri <suppakilla@gmail.com>
- * @codeCoverageIgnore
  */
 class Autoloader
 {
@@ -31,7 +29,7 @@ class Autoloader
     public function __construct($baseDirectory = __DIR__)
     {
         $this->directory = $baseDirectory;
-        $this->prefix = __NAMESPACE__ . '\\';
+        $this->prefix = __NAMESPACE__.'\\';
         $this->prefixLength = strlen($this->prefix);
     }
 
@@ -42,7 +40,7 @@ class Autoloader
      */
     public static function register($prepend = false)
     {
-        spl_autoload_register([new self(), 'autoload'], true, $prepend);
+        spl_autoload_register(array(new self(), 'autoload'), true, $prepend);
     }
 
     /**
@@ -54,7 +52,7 @@ class Autoloader
     {
         if (0 === strpos($className, $this->prefix)) {
             $parts = explode('\\', substr($className, $this->prefixLength));
-            $filepath = $this->directory . DIRECTORY_SEPARATOR . implode(DIRECTORY_SEPARATOR, $parts) . '.php';
+            $filepath = $this->directory.DIRECTORY_SEPARATOR.implode(DIRECTORY_SEPARATOR, $parts).'.php';
 
             if (is_file($filepath)) {
                 require $filepath;

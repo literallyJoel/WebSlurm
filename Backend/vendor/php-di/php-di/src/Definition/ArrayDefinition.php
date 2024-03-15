@@ -12,12 +12,20 @@ namespace DI\Definition;
  */
 class ArrayDefinition implements Definition
 {
-    /** Entry name. */
-    private string $name = '';
+    /**
+     * Entry name.
+     * @var string
+     */
+    private $name = '';
 
-    public function __construct(
-        private array $values,
-    ) {
+    /**
+     * @var array
+     */
+    private $values;
+
+    public function __construct(array $values)
+    {
+        $this->values = $values;
     }
 
     public function getName() : string
@@ -25,7 +33,7 @@ class ArrayDefinition implements Definition
         return $this->name;
     }
 
-    public function setName(string $name) : void
+    public function setName(string $name)
     {
         $this->name = $name;
     }
@@ -35,12 +43,12 @@ class ArrayDefinition implements Definition
         return $this->values;
     }
 
-    public function replaceNestedDefinitions(callable $replacer) : void
+    public function replaceNestedDefinitions(callable $replacer)
     {
         $this->values = array_map($replacer, $this->values);
     }
 
-    public function __toString() : string
+    public function __toString()
     {
         $str = '[' . \PHP_EOL;
 
