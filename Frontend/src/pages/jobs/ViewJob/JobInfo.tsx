@@ -1,9 +1,11 @@
 import {
   downloadInputFile,
-  downloadOutputFile,
   getJob,
   getParameters,
   type File,
+  OutputFile,
+  downloadOutputFile,
+  downloadZip,
 } from "@/helpers/jobs";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { useContext, useState } from "react";
@@ -20,24 +22,10 @@ const JobInfo = (): JSX.Element => {
   const token = useContext(AuthContext).getToken();
   const [hasFileUpload, setHasFileUpload] = useState(false);
   const [inputFile, setInputFile] = useState<File>();
-  const [outputFile, setOutputFile] = useState<File>();
-
+  const [outputFile, setOutputFile] = useState<OutputFile>();
   const { data: jobInfo } = useQuery(`job${jobID}Info`, () => {
     return jobID ? getJob(jobID, token) : false;
   });
-
-  useQuery(
-    `job${jobID}file`,
-    () => {
-      return downloadInputFile(token, `${jobID}`);
-    },
-    {
-      enabled: jobInfo !== false && jobInfo !== undefined && hasFileUpload,
-      onSuccess: (data) => {
-        setInputFile(data);
-      },
-    }
-  );
 
   useQuery(
     `job${jobID}output`,
@@ -45,10 +33,22 @@ const JobInfo = (): JSX.Element => {
       return downloadOutputFile(token, `${jobID}`);
     },
     {
-      enabled:
-        jobInfo !== false && jobInfo !== undefined && jobInfo.jobComplete === 1,
+      enabled: !!jobID,
       onSuccess: (data) => {
         setOutputFile(data);
+      },
+    }
+  );
+
+  useQuery(
+    `job${jobID}inputfiles`,
+    () => {
+      return downloadInputFile(token, `${jobID}`);
+    },
+    {
+      enabled: jobInfo !== false && jobInfo !== undefined && hasFileUpload,
+      onSuccess: (data) => {
+        setInputFile(data);
       },
     }
   );
@@ -84,9 +84,6 @@ const JobInfo = (): JSX.Element => {
     </div>
   ) : jobInfo ? (
     <div className="h-full flex flex-col gap-2">
-      <span className="text-red-600 font-bold">
-        Note To Self!!: Next to implement: Viewing non-native output files.
-      </span>
       <div className="text-4xl font-bold">{jobInfo.jobName}</div>
       <div className="flex flex-col w-full justify-center items-center">
         <div className="flex flex-row w-8/12 justify-center border border-black rounded-md">
@@ -161,15 +158,28 @@ const JobInfo = (): JSX.Element => {
             </div>
             <div className="max-h-80 overflow-auto p-2">
               <ExtendedViewer
-                file={inputFile}
+                file={{ type: "file", content: inputFile }}
                 key={`in${jobID}`}
                 jobID={jobID ?? ""}
               />
             </div>
             <div className="flex flex-row justify-center w-full">
-              <a href={inputFile.fileURL} download className="w-full">
-                <Button className="w-1/2">Download {inputFile.fileName}</Button>
-              </a>
+              {inputFile.fileExt === "zip" ? (
+                <Button
+                  className="w-1/2"
+                  onClick={() => {
+                    downloadZip(token, jobID ?? "");
+                  }}
+                >
+                  Download {inputFile.fileName}
+                </Button>
+              ) : (
+                <a href={inputFile.fileURL} download className="w-full">
+                  <Button className="w-1/2">
+                    Download {inputFile.fileName}
+                  </Button>
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -180,9 +190,16 @@ const JobInfo = (): JSX.Element => {
             <div className="border-b border-b-black p-2 font-bold ">Output</div>
             <div className="p-2 flex flex-col">
               <span>
-                Viewing <span className="font-bold">{outputFile.fileName}</span>
+                Viewing{" "}
+                <span className="font-bold">
+                  {outputFile.type === "file"
+                    ? outputFile.content.fileName
+                    : "Output"}
+                </span>
               </span>
-              {outputFile.fileExt === "zip" && (
+              {((outputFile.type === "file" &&
+                outputFile.content.fileExt === "zip") ||
+                outputFile.type === "meta") && (
                 <span className="text-sm">
                   Double click file in viewer to download
                 </span>
@@ -193,13 +210,20 @@ const JobInfo = (): JSX.Element => {
               key={`out${jobID}`}
               jobID={jobID ?? ""}
             />
-            <div className="flex flex-row justify-center w-full">
-              <a href={outputFile.fileURL} download className="w-full">
-                <Button className="w-1/2">
-                  Download {outputFile.fileName}
-                </Button>
-              </a>
-            </div>
+
+            {outputFile.type === "file" && (
+              <div className="flex flex-row justify-center w-full">
+                <a
+                  href={outputFile.content.fileURL}
+                  download
+                  className="w-full"
+                >
+                  <Button className="w-1/2">
+                    Download {outputFile.content.fileName}
+                  </Button>
+                </a>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -3,19 +3,29 @@ export type JobParameter = {
   value: string | number | boolean;
 };
 
-//If a zip file is super large, we don't wanna download it into memory
-//So if its a zip file we just store some metadata so we can display to the user and download as needed.
-export type ZipContentData = {
+//If theres loads of files we don't want to download them all into memory, so we just download the metadata
+export type FileMetadata = {
   fileName: string;
   fileExtension: string;
 };
+
+export type OutputFile =
+  | {
+      type: "file";
+      content: File;
+    }
+  | {
+      type: "meta";
+      content: FileMetadata[];
+    };
+
 export type File = {
   fileName: string;
   fileURL: string;
   fileExt: string;
   fileContents?: string;
   fileBlob?: Blob;
-  zipContents?: ZipContentData[];
+  meta?: FileMetadata[];
 };
 
 export type JobInput = {
@@ -172,8 +182,8 @@ export const downloadInputFile = async (
     const zipInfo = await fetch(`/api/jobs/${jobID}/zipinfo`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const zipContents: ZipContentData[] = await zipInfo.json();
-    file.zipContents = zipContents;
+    const zipContents: FileMetadata[] = await zipInfo.json();
+    file.meta = zipContents;
   } else {
     const blob = await res.blob();
     file.fileURL = URL.createObjectURL(blob);
@@ -185,7 +195,7 @@ export const downloadInputFile = async (
 export const downloadOutputFile = async (
   token: string,
   jobID: string
-): Promise<File | undefined> => {
+): Promise<OutputFile | undefined> => {
   const res = await fetch(`/api/jobs/${jobID}/download/out`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -195,6 +205,11 @@ export const downloadOutputFile = async (
   if (res.status === 200) {
     const file: File = { fileName: "", fileURL: "", fileExt: "" };
     const contentDisposition = res.headers.get("Content-Disposition");
+    if (!contentDisposition) {
+      const meta = await res.json();
+      return { type: "meta", content: meta };
+    }
+
     const contentDispositionArray = contentDisposition?.split(".");
     if (contentDispositionArray) {
       file.fileExt =
@@ -215,9 +230,57 @@ export const downloadOutputFile = async (
       file.fileURL = URL.createObjectURL(blob);
     }
 
-    return file;
+    return { type: "file", content: file };
   } else {
     return undefined;
+  }
+};
+
+export const downloadZip = async (
+  token: string,
+  jobID: string,
+):Promise<void> =>{
+  const res = await fetch(`/api/jobs/${jobID}/download/zip` , {
+    headers:{
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  if (res.status === 200){
+    const contentDisposition = res.headers.get("Content-Disposition");
+    const fileName = contentDisposition?.split("filename=")[1] || "downloaded-file";
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
+export const downloadFile = async (
+  token: string,
+  jobID: string,
+  fileName: string
+): Promise<void> => {
+  const res = await fetch(`/api/jobs/${jobID}/download/out/${fileName}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (res.status === 200) {
+    const contentDisposition = res.headers.get("Content-Disposition");
+    const fileName =
+      contentDisposition?.split("filename=")[1] || "downloaded-file";
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 };
 export const downloadExtracted = async (

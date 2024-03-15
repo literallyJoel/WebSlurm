@@ -45,7 +45,6 @@ class Database
                 script TEXT NOT NULL,
                 userID TEXT,
                 fileUploadCount INTEGER DEFAULT 0,
-                imgUploadCount INTEGER DEFAULT 0,
                 FOREIGN KEY(userID) REFERENCES users(userID)
             )');
 

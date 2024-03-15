@@ -19,9 +19,7 @@ import { Input } from "@/shadui/ui/input";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
 } from "@/shadui/ui/select";
 import { Checkbox } from "@/shadui/ui/checkbox";
 import { Button } from "@/shadui/ui/button";

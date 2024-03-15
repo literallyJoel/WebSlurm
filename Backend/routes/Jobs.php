@@ -67,217 +67,329 @@ class Jobs
         return "#!/bin/bash\n#SBATCH --job-name=*{name}*\n#SBATCH --output=*{out}*" . "\n" . implode("\n", array_slice(explode("\n", $script), 3));
     }
 
-    public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+
+    private function scheduleSlurmJob($script, $scriptDir, $jobID)
     {
-        //Grab the users information from their decoded token
-        $decodedToken = $request->getAttribute("decoded");
-        //Grab the user ID to store with the job type
-        $userID = $decodedToken->userID;
-        //Grab the Job ID, Job Name, and Parameters from the request body
-        $body = json_decode($request->getBody());
-        $jobID = $body->jobID;
-        $jobName = $body->jobName;
-        $parameters = $body->parameters;
-        $fileID = isset($body->fileID) ? $body->fileID : null;
+        //Create the name for the script file and save it to the file system
+        $scriptFile = $jobID . "-" . date('Y-m-d+H-i-s') . ".sh";
+        $scriptPath = $scriptDir . $scriptFile;
+        file_put_contents($scriptPath, $this->replaceLineBreaks($script));
 
+        //Execute the script in SLURM
+        $output = shell_exec("cd " . $scriptDir . "&& sbatch " . $scriptFile);
+        $resp = array("output" => $output);
 
+        //Attempt to update the database and rollback if there are any issues
         $pdo = new PDO(DB_CONN);
-
-
-        //If there is a fileID included, we check if it is a valid fileID associated with the user
-        if ($fileID !== null) {
-
-            $stmt = $pdo->prepare("SELECT * FROM fileIDs WHERE fileID = :fileID AND userID = :userID");
-            $stmt->bindParam(":fileID", $fileID);
-            $stmt->bindParam(":userID", $userID);
+        try {
+            $stmt = $pdo->prepare("UPDATE jobs SET slurmID = :slurmID WHERE jobID = :jobID");
+            $slurmID = $this->extractJobID($output);
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":slurmID", $slurmID);
             $stmt->execute();
-            $file = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!$file) {
-                $response->getBody()->write("Bad Request");
-                return $response->withStatus(400);
-            }
+            return json_encode($resp);
+        } catch (Exception $e) {
+            error_log($e);
+            $stmt = $pdo->prepare("DELETE FROM jobs WHERE jobID = :jobID");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":slurmID", $slurmID);
+            $stmt->execute();
+            return false;
         }
+    }
 
+    private function replaceScriptTemplate($jobName, $jobID, $outDir, $parameters, $script): string
+    {
+        //Adds in the job name
+        $script = str_replace("*{name}*", escapeshellarg($jobName), $script);
+        //Adds in the output directory
+        $script = str_replace("*{out}*", $outDir . "/slurmout", $script);
 
-        //Grab the job type information from the database
-        $stmt = $pdo->prepare("SELECT * FROM jobTypes WHERE jobTypeID = :jobID");
-        $stmt->bindParam(":jobID", $jobID);
-
-        $stmt->execute();
-        $job = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        // Check if jobID exists
-        if (!$job) {
-            $response->getBody()->write("Unknown Job Type");
-            // Return 404 response if jobID doesn't exist
-            return $response->withStatus(404);
-        }
-
-        //Format the script - this just makes sure the correct 3 starting lines are in place.
-        $script = $this->formatScript($job["script"]);
-
-        //Loop through and swap out the parameters in the script
+        //Fills in the user provided parameters
         foreach ($parameters as $parameter) {
             $key = $parameter->key;
             $value = $parameter->value;
 
-            // Replace placeholders in the script
+            //Replace placeholders in the script
             $script = str_replace("{{" . $key . "}}", escapeshellarg($value), $script);
         }
 
+        //Append the job completion script to the script
+        $script .= "\nphp " . __DIR__ . "/../script/jobComplete.php " . $jobID;
 
-        //This is in every script, as is enforced by both the frontend and backend.
-        $script = str_replace("*{name}*", escapeshellarg($jobName), $script);
-        $dir = __DIR__ . "/../usr/out/" . $userID;
-        if (!file_exists($dir)) mkdir(__DIR__ . "/../usr/out/" . $userID, 0775, true);
+        return $script;
+
+    }
+
+    private function setupInputFiles($fileID, $fileUploadCount, $inDir, $script)
+    {   
+        if($fileUploadCount === 0){
+            return $script;
+        }
+        //Check how many files are uploaded
+        if ($fileUploadCount === 1) {
+            //If there's only one we can just fill it in
+            $filePath = "file0=" . $inDir . $fileID;
+            $scriptArr = explode("\n", $script);
+            array_splice($scriptArr, 4, 0, $filePath);
+            $script = implode("\n", $scriptArr);
+        } else {
+
+            //If there's multiple, it'll be a ZIP archive, so we need to unzip the and store the files
+            $zip = new ZipArchive();
+            $zipPath = $inDir . $fileID;
+            $extractDir = $inDir . $fileID . "-extracted";
+            if(!is_dir($extractDir)){
+                mkdir($extractDir, 0775, true);
+            }
+            $open = $zip->open($zipPath);
+
+            if ($open === true) {
+                $zip->extractTo($extractDir);
+                //Now we go through all the extracted files and remove the file extensions
+                $extractedFiles = glob($extractDir . "/*");
+                foreach($extractedFiles as $file){
+                    $newName = preg_replace('/\\.[^.\\s]{3,4}$/', '', $file);
+                    rename($file, $newName);
+                }
+                $zip->close();
+            } else {
+                return false;
+            }
+
+           
+
+            //We then fill in the script with the file paths
+            for ($i = 0; $i < (int)$fileUploadCount; $i++) {
+                $filePath = "file" . $i . "=" . $inDir . $fileID . "-extracted/file" . $i;
+                $scriptArr = explode("\n", $script);
+                array_splice($scriptArr, 4 + $i, 0, $filePath);
+                $script = implode("\n", $scriptArr);
+            }
+        }
+
+        return $script;
+    }
 
 
-        //The script needs the database ID of the Job in order to update the database when it is complete.
-        //In order to achieve this, we create the record, run the slurm job, and then update the record with the correct slurm ID.
+    private function setupOutputFiles($outputCount, $outDir, $script)
+    {
+
+        try {
+            $outputVars = [];
+
+            for ($i = 0; $i < $outputCount; $i++) {
+                $outputVars[] = "out" . $i . "=" . $outDir . "out" . $i;
+            }
+
+            $outputVars = implode("\n", $outputVars);
+            $scriptArr = explode("\n", $script);
+            array_splice($scriptArr, 4, 0, $outputVars);
+            return implode("\n", $scriptArr);
+        } catch (Exception $e) {
+            error_log($e);
+            return false;
+        }
+
+    }
+
+    private function setupDirectories(string $userID, string $jobID)
+    {
+        try {
+            $inDir = __DIR__ . "/../usr/in/" . $userID . "/";
+            $outDir = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID . "/";
+            $scriptDir = __DIR__ . "/../usr/script/" . $userID . "/" . $jobID . "/";
+
+            if (!is_dir($inDir)) {
+                mkdir($inDir, 0775, true);
+            }
+
+            if (!is_dir($outDir)) {
+                mkdir($outDir, 0775, true);
+            }
+
+            if (!is_dir($scriptDir)) {
+                mkdir($scriptDir, 0775, true);
+            }
+
+            return ['in' => $inDir, 'out' => $outDir, 'script' => $scriptDir];
+        } catch (Exception $e) {
+            error_log($e);
+            return false;
+        }
+    }
+
+    private function createIntialJobRecord(string $userID, string $jobTypeID, string $jobName, $fileID)
+    {
+        $pdo = new PDO(DB_CONN);
+
         try {
             $query = "INSERT INTO jobs (slurmID, userID, jobStartTime, jobComplete, jobTypeID, jobName, jobComplete";
             $query = $fileID !== null ? $query . ", fileID)" : $query . ")";
             $query = $query . " VALUES (-1, :userID, :jobStartTime, :jobComplete, :jobTypeID, :jobName, :jobComplete";
             $query = $fileID !== null ? $query . ", :fileID)" : $query . ")";
+
             $stmt = $pdo->prepare($query);
             $stmt->bindParam(":userID", $userID);
             $currentTime = time();
             $stmt->bindParam(":jobStartTime", $currentTime);
             $jobComplete = 0;
             $stmt->bindParam(":jobComplete", $jobComplete);
-            $stmt->bindParam(":jobTypeID", $jobID);
+            $stmt->bindParam(":jobTypeID", $jobTypeID);
             $stmt->bindParam(":jobName", $jobName);
+
             if ($fileID !== null) {
                 $stmt->bindParam(":fileID", $fileID);
             }
+
             $stmt->execute();
-            $newId = $pdo->lastInsertId();
+            return $pdo->lastInsertId();
         } catch (Exception $e) {
             error_log($e);
-            $response->getBody()->write("Error creating job");
-            return $response->withStatus(500);
+            return false;
+        }
+    }
+
+
+    private function getJobTypeInfo($jobTypeID)
+    {
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT * FROM jobTypes WHERE jobTypeID = :jobTypeID");
+        $stmt->bindParam(":jobTypeID", $jobTypeID);
+        $stmt->execute();
+
+        $jobType = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        //Check if job type exists;
+        if (!$jobType) {
+            return false;
         }
 
+        return $jobType;
+    }
 
-        //We insert the parameters provided into the database for logging purposes.
-        try {
-            foreach ($parameters as $parameter) {
-                $stmt = $pdo->prepare("INSERT INTO jobParameters (jobID, key, value) VALUES (:jobID, :key, :value)");
-                $stmt->bindParam(":jobID", $newId);
-                $stmt->bindParam(":key", $parameter->key);
-                $stmt->bindParam(":value", $parameter->value);
-                $stmt->execute();
+    private function validateFileID(string $fileID, string $userID): bool
+    {
+        //Check if the fileID was generated by the server for the current user
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT * FROM fileIDs WHERE fileID = :fileID AND userID = :userID");
+        $stmt->bindParam(":fileID", $fileID);
+        $stmt->bindParam(":userID", $userID);
+        $stmt->execute();
+
+        $file = $stmt->fetch(PDO::FETCH_ASSOC);
+        return !!$file;
+    }
+
+    public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    {
+        //Grab the users token and get their user idea
+        $decodedToken = $request->getAttribute("decoded");
+        $userID = $decodedToken->userID;
+        //Grab the job info from the request body
+        $body = json_decode($request->getBody());
+        $jobTypeID = $body->jobID;
+        $jobName = $body->jobName;
+        $parameters = $body->parameters;
+        $fileID = $body->fileID ?? null;
+        //If there is a fileID included, we check if it is a valid file ID associated with the user
+        if (!!$fileID) {
+            if (!$this->validateFileID($fileID, $userID)) {
+                $response->getBody()->write("Bad Request");
+                return $response->withStatus(400);
             }
-        } catch (Exception $e) {
-            error_log($e);
-            $response->getBody()->write("Error creating job");
+        }
+
+        //Get Job Type Information and 400 if it doesn't exist
+        $jobType = $this->getJobTypeInfo($jobTypeID);
+        if (!$jobType) {
+            $response->getBody()->write("Bad Request");
+            return $response->withStatus(400);
+        }
+
+        //Grab the job script and format it
+        $script = $this->formatScript($jobType['script']);
+
+        //The script needs the jobID generated by the database in order to update the database when it's complete
+        //So we need to create a record and grab its ID, so we can then update it later with the script.
+        $jobID = $this->createIntialJobRecord($userID, $jobTypeID, $jobName, $fileID);
+
+        if (!$jobID || $jobID == -1) {
+            error_log("Invalid new Job ID");
+            $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
 
-        if ($newId == -1) {
-            error_log("Error creating job");
-            $response->getBody()->write("Error creating job");
+        //Setup the directory structure for input and output files
+        $dirs = $this->setupDirectories($userID, $jobID);
+
+        if (!$dirs) {
+            error_log("Failed to create directories");
+            $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
-        try {
-            $script .= "\nphp ../../script/jobComplete.php " . $newId;
-            //Appends the self deletion to the script
-            // $script .= "\n";
-            // $script .= 'rm -- ' . __DIR__ . "/../usr/script/" . $userID . "-" . $jobID . "-" . date('Y-m-d_H-i-s') . ".sh";
-            //Writes the script to a file so Slurm can run it
-            $script = str_replace("*{out}*", __DIR__ . "/../usr/out/" . $userID . "/" . $newId, $script);
 
-            //Append the file input location to the script
-            if ($fileID !== null) {
-                //If there's only one file, we can just append the file path to the script
-                if ($job["fileUploadCount"] === 1) {
-                    $filePath = "file0=" . __DIR__ . "/../usr/in/" . $userID . "/" . $fileID;
-                    $scriptArr = explode("\n", $script);
-                    array_splice($scriptArr, 4, 0, $filePath);
-                    $script = implode("\n", $scriptArr);
-                    //If there's more than one file, we need to extract them from the zip folder
-                } else {
-                    $zip = new ZipArchive();
-                    $dir = __DIR__ . "/../usr/in/" . $userID . "/" . $fileID;
+        //Fill in the template in the script
+        $script = $this->replaceScriptTemplate($jobName, $jobID, $dirs['out'], $parameters, $script);
 
-                    $open = $zip->open($dir);
-                    $extractDir = __DIR__ . "/../usr/in/" . $userID . "/" . $newId . "/";
-                    if ($open === true) {
-                        $zip->extractTo($extractDir);
-                        $zip->close();
-                    } else {
 
-                        error_log("Error extracting zip file for Job with ID " . $newId);
-                        error_log("Error code: " . $open);
-                        $response->getBody()->write("Internal Server Error");
-                        return $response->withStatus(500);
-
-                    }
-
-                    //Strip out the file extensions from the extracted files
-                    $dir = $extractDir;
-                    if ($handle = opendir($dir)) {
-                        while (($file = readdir($handle)) !== false) {
-                            if ($file !== "." && $file !== "..") {
-                                $currentFile = pathinfo($file, PATHINFO_FILENAME);
-                                rename($dir . DIRECTORY_SEPARATOR . $file, $dir . DIRECTORY_SEPARATOR . $currentFile);
-                            }
-                        }
-                        closeDir($handle);
-                    } else {
-                        error_log("Error opening directory for Job with ID " . $newId);
-                        $response->getBody()->write("Internal Server Error");
-                        return $response->withStatus(500);
-                    }
-
-                    //Append the file paths to the script
-                    for ($i = 0; $i < (int)$job["fileUploadCount"]; $i++) {
-                        $filePath = "file" . $i . "=" . __DIR__ . "/../usr/in/" . $userID . "/" . $newId . "/" . "file" . $i;
-                        $scriptArr = explode("\n", $script);
-                        array_splice($scriptArr, 4 + $i, 0, $filePath);
-                        $script = implode("\n", $scriptArr);
-                    }
-                }
+        //If the jobType has custom outputs we need to do some more variable replacement in the script
+        if ($jobType['hasOutputFile'] === 1) {
+            $script = $this->setupOutputFiles($jobType['outputCount'], $dirs['out'], $script);
+            if (!$script) {
+                error_log("Failed to setup output files");
+                $response->getBody()->write("Internal Server Error");
+                return $response->withStatus(500);
             }
-            file_put_contents(__DIR__ . "/../usr/script/" . $userID . "-" . $newId . "-" . date('Y-m-d_H-i-s') . ".sh", $this->replaceLineBreaks($script));
+        }
 
-        } catch (Exception $e) {
-            //If it fails here we want to rollback the database changes.
-            //I've opted not to use transactions for this, because otherwise I have to handld:\Users\Joel\OneDrive - JDVivian\Design Docs.docxe concurrency myself
-            //And risk the lastInserID function returning the wrong value, if I don't use transactions, SQLite handles this.
-            $stmt = $pdo->prepare("DELETE FROM jobs WHERE jobID = :jobID");
-            $stmt->bindParam(":jobID", $newId);
-            $stmt->execute();
-            error_log($e);
-            $response->getBody()->write("Error creating job");
+        //Sets up the input files
+        $script = $this->setupInputFiles($fileID, $jobType['fileUploadCount'], $dirs['in'], $script);
+        if (!$script) {
+            error_log("Failed to setup input files");
+            $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
 
+        //Schedule the Slurm Job
+        $resp = $this->scheduleSlurmJob($script, $dirs['script'], $jobID);
 
-        //Run the script in slurm and return the output to the client
-        $output = shell_exec('cd ' . __DIR__ . '/../usr/script/ && sbatch ' . $userID . "-" . $newId . "-" . date('Y-m-d_H-i-s') . ".sh");
-        $resp = array("output" => $output);
-        $response->getBody()->write(json_encode($resp));
-        try {
-            //Once the job has been submitted, add it to the database.
-            $stmt = $pdo->prepare("UPDATE jobs SET slurmID = :slurmID WHERE jobID = :jobID");
-            $slurmID = $this->extractJobID($output);
-            $stmt->bindParam(":jobID", $newId);
-            $stmt->bindParam(":slurmID", $slurmID);
-            $stmt->execute();
-        } catch (Exception $e) {
-            //Once again if it fails we want to rollback the database changes.
-            $stmt = $pdo->prepare("DELETE FROM jobs WHERE jobID = :jobID");
-            $stmt->bindParam(":jobID", $newId);
-            $stmt->execute();
-            error_log($e);
-            $response->getBody()->write("Error creating job");
+        if (!$resp) {
+            error_log("Failed to schedule Slurm Job");
+            $response->getBody()->write("Internal Server Error");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             return $response->withStatus(500);
-        };
+        }
 
-        return $response->withStatus(200);
+        $response->getBody()->write($resp);
+        return $response->withStatus(500);
 
     }
+
 
     public function handleFileUpload(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
@@ -869,19 +981,73 @@ class Jobs
         return $response->withStatus(200);
     }
 
+
     public function downloadOutputFile(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        //Grab userID and JobID
         $decoded = $request->getAttribute("decoded");
         $userID = $decoded->userID;
         $jobID = $args["jobID"];
+        //Check the database to see if this job has custom output or just uses the SLURM default
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT * FROM jobs JOIN jobTypes on jobs.jobTypeID = jobTypes.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID AND jobTypes.hasOutputFile = 1");
+        $stmt->bindParam(":jobID", $jobID);
+        $stmt->bindParam(":userID", $userID);
+        $stmt->execute();
+        $job = $stmt->fetch(PDO::FETCH_ASSOC);
+        //If the job has custom output, we grab all the files from the directory and just return the metadata
+        if ($job) {
+            $dir = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID;
+            error_log("DIR: " . $dir);
+            $files = scandir($dir);
+            $files = array_filter($files, function ($file) {
+                return $file !== "." && $file !== "..";
+            });
+            $result = [];
+            foreach ($files as $file) {
+                $fileName = pathinfo($file, PATHINFO_FILENAME);
+                if (!empty($fileName)) {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $mime = $finfo->file($dir . "/" . $file);
+                    $ext = $this->getExtension($mime);
+                    if ($ext !== false) $result[] = ["fileName" => $fileName, "fileExtension" => $ext];
+                }
+            }
+            $response->getBody()->write(json_encode($result));
+            //Otherwise we just return the slurmout file
+        } else {
+            $filePath = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID . "/slurmout";
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($filePath);
+            $response = $response->withHeader("Content-Type", $mime);
+            $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $jobID . "." . $this->getExtension($mime));
+            $response->getBody()->write(file_get_contents($filePath));
+        }
+        return $response->withStatus(200);
 
-        $filePath = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID;
+
+    }
+
+    public function downloadMultiOut(ServerRequestInterface $request, ResponseInterface $response, array $args){
+        $decoded = $request->getAttribute("decoded");
+        $userID = $decoded->userID;
+        $jobID = $args["jobID"];
+        $file = $args["file"];
+
+        try{
+        $filePath = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID . "/" . $file;
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($filePath);
         $response = $response->withHeader("Content-Type", $mime);
-        $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $jobID . "." . $this->getExtension($mime));
+        $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $file . "." . $this->getExtension($mime));
         $response->getBody()->write(file_get_contents($filePath));
         return $response->withStatus(200);
+        }catch(Exception $e){
+            error_log($e);
+            $response->getBody()->write("Internal Server Error");
+            
+        }
+
     }
 
     public function getZipData(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
@@ -903,12 +1069,23 @@ class Jobs
             return $response->withStatus(400);
         }
 
+        $stmt = $pdo->prepare("SELECT fileID from jobs WHERE jobID = :jobID AND userID = :userID");
+        $stmt->bindParam(":jobID", $jobID);
+        $stmt->bindParam(":userID", $userId);
+        $stmt->execute();
+        $fileID = $stmt->fetch(PDO::FETCH_ASSOC)["fileID"];
+
+
         //If the job has more than one file, we know the application will have already extracted them into this folder.
         //We can therefore assume the folder already exists and contains files
-        $dir = __DIR__ . "/../usr/in/" . $userId . "/" . $jobID;
+        $dir = __DIR__ . "/../usr/in/" . $userId . "/" . $fileID . "-extracted";
 
         $files = scandir($dir);
 
+        if (!$files) {
+            $response->getBody()->write("No output files associated with job");
+            return $response->withStatus(400);
+        }
         // Filter out unwanted entries (e.g., ".", "..")
         $files = array_filter($files, function ($file) {
             return $file !== "." && $file !== "..";
@@ -923,17 +1100,21 @@ class Jobs
                 $finfo = new finfo(FILEINFO_MIME_TYPE);
                 $mime = $finfo->file($dir . "/" . $file);
                 $ext = $this->getExtension($mime);
-                $result[] = ["fileName" => $fileName, "fileExtension" => $ext];
+                if ($ext !== false) {
+                    $result[] = ["fileName" => $fileName, "fileExtension" => $ext];
+                }
+
             }
         }
 
-// Now $result contains the desired array
+        //Now $result contains the desired array
         $response->getBody()->write(json_encode($result));
         return $response->withStatus(200);
 
     }
 
-    public function getExtractedFile(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface{
+    public function getExtractedFile(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    {
         $decoded = $request->getAttribute("decoded");
         $userId = $decoded->userID;
         $jobID = $args["jobID"];
@@ -952,7 +1133,12 @@ class Jobs
             return $response->withStatus(400);
         }
 
-        $dir = __DIR__ . "/../usr/in/" . $userId . "/" .  $jobID  . "/" . "file" . $fileNum;
+        $stmt = $pdo->prepare("SELECT fileID from jobs WHERE jobID = :jobID AND userID = :userID");
+        $stmt->bindParam(":jobID", $jobID);
+        $stmt->bindParam(":userID", $userId);
+        $stmt->execute();
+        $fileID = $stmt->fetch(PDO::FETCH_ASSOC)["fileID"];
+        $dir = __DIR__ . "/../usr/in/" . $userId . "/" . $fileID . "-extracted/" . "file" . $fileNum;
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($dir);
         $response = $response->withHeader("Content-Type", $mime);
@@ -960,4 +1146,35 @@ class Jobs
         $response->getBody()->write(file_get_contents($dir));
         return $response->withStatus(200);
     }
-}   
+
+    public function downloadZip(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface{
+        $decoded = $request->getAttribute("decoded");
+        $userId = $decoded->userID;
+        $jobID = $args["jobID"];
+        $pdo = new PDO(DB_CONN);
+        $stmt = $pdo->prepare("SELECT fileUploadCount FROM jobTypes JOIN jobs on JobTypes.jobTypeID = jobs.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID");
+        $stmt->bindParam(":jobID", $jobID);
+        $stmt->bindParam(":userID", $userId);
+        $stmt->execute();
+        $job = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$job) {
+            $response->getBody()->write("Job not found");
+            return $response->withStatus(404);
+        } elseif ((int)$job["fileUploadCount"] < 2) {
+            $response->getBody()->write("Bad Request");
+            return $response->withStatus(400);
+        }
+
+        $stmt = $pdo->prepare("SELECT fileID from jobs WHERE jobID = :jobID AND userID = :userID");
+        $stmt->bindParam(":jobID", $jobID);
+        $stmt->bindParam(":userID", $userId);
+        $stmt->execute();
+        $fileID = $stmt->fetch(PDO::FETCH_ASSOC)["fileID"];
+        $filePath = __DIR__ . "/../usr/in/" . $userId . "/" . $fileID;
+        $file = file_get_contents($filePath);
+        $response = $response->withHeader("Content-Type", "application/zip");
+        $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $fileID . ".zip");
+        $response->getBody()->write($file);
+        return $response->withStatus(200);
+    }
+}

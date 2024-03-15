@@ -1,5 +1,5 @@
 //This contains functions for validating inputs
-import type { Parameter } from "@/pages/admin/settings/JobTypes/jobTypes";
+import type { JobTypeParameter } from "./jobTypes";
 //=======================================//
 //================Users=================//
 //=====================================//
@@ -17,7 +17,7 @@ export const validatePassword = (password: string) => {
   return /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(password);
 };
 
-export const validateParameters = (parameters: Parameter[]): number[] => {
+export const validateParameters = (parameters: JobTypeParameter[]): number[] => {
   const invalidIndices: number[] = [];
   parameters.forEach((parameter, index) => {
     if (parameter.type === "Undefined") {

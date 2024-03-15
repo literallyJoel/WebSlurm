@@ -33,6 +33,8 @@ const NewJobType = (): JSX.Element => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [hasFileUpload, setHasFileUpload] = useState(false);
+  const [hasOutputFiles, setHasOutputFiles] = useState(false);
+  const [outputCount, setOutputCount] = useState(0);
   const [isDescriptionValid, setIsDescriptionValid] = useState(true);
   const [fileCount, setFileCount] = useState(0);
   const [isNameValid, setIsNameValid] = useState(true);
@@ -63,6 +65,8 @@ const NewJobType = (): JSX.Element => {
         parameters: parameters,
         description: description,
         token: token,
+        hasOutputFile: hasOutputFiles,
+        outputCount: outputCount,
         fileUploadCount: fileCount,
       });
     }
@@ -99,7 +103,7 @@ const NewJobType = (): JSX.Element => {
           </div>
           <div className="space-y-2 flex flex-col">
             <Label htmlFor="jobDescription">Job Description</Label>
-            {(fileCount !== 0) && (
+            {fileCount !== 0 && (
               <Label className="text-sm text-rose-500">
                 Your description should indicate which files are which, i.e what
                 file0 should be, and what file1 should be.
@@ -139,9 +143,7 @@ const NewJobType = (): JSX.Element => {
           <div>
             <div className="flex flex-row w-full justify-evenly">
               <div>
-                <Label htmlFor="fileUpload">
-                  Accepts File Uploads (PDF, DOCX, etc.)
-                </Label>
+                <Label htmlFor="fileUpload">Accepts File Uploads</Label>
                 <Input
                   className="cursor-pointer bg-uol"
                   id="fileUpload"
@@ -153,7 +155,20 @@ const NewJobType = (): JSX.Element => {
                   }}
                 />
               </div>
-              
+
+              <div>
+                <Label htmlFor="fileUpload">Outputs Files?</Label>
+                <Input
+                  className="cursor-pointer bg-uol"
+                  id="fileUpload"
+                  type="checkbox"
+                  checked={hasOutputFiles}
+                  onChange={(e) => {
+                    setHasOutputFiles(e.target.checked);
+                    if (!e.target.checked) setOutputCount(0);
+                  }}
+                />
+              </div>
             </div>
 
             <div className="flex flex-row w-full justify-evenly gap-2 p-2">
@@ -172,6 +187,25 @@ const NewJobType = (): JSX.Element => {
                     value={fileCount}
                     onChange={(e) => {
                       setFileCount(Number(e.target.value));
+                    }}
+                  />
+                </div>
+              )}
+              {hasOutputFiles && (
+                <div className="flex flex-col w-1/2">
+                  <Label htmlFor="fileCount">
+                    How many files will be output?
+                  </Label>
+                  <Label className="text-red-500 text-sm">
+                    When referring to files in your script, please use bash
+                    variables out0, out1, etc.
+                  </Label>
+                  <Input
+                    className="outputCount"
+                    type="number"
+                    value={outputCount}
+                    onChange={(e) => {
+                      setOutputCount(Number(e.target.value));
                     }}
                   />
                 </div>

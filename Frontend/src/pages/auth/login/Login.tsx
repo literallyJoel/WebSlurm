@@ -39,15 +39,11 @@ const Login = ({ isExpired }: props): JSX.Element => {
               ? (window.location.href = "/")
               : window.location.reload();
           },
-          onSettled(data, error, variables, context) {
-            console.log("yeet");
+          onSettled(_, error) {
             if (error) {
               setIsAccountError(true);
               console.log(error);
             }
-
-            const response = context as { response: { status: number } };
-            console.log("ye: ", response.response.status);
           },
         }
       );
@@ -62,7 +58,9 @@ const Login = ({ isExpired }: props): JSX.Element => {
           <CardHeader>
             <CardTitle>Login</CardTitle>
             <Label
-              className={`text-xs text-red-500 ${isExpired && !isAccountError ? "" : "hidden"}`}
+              className={`text-xs text-red-500 ${
+                isExpired && !isAccountError ? "" : "hidden"
+              }`}
             >
               Your session has expired. Please login again.
             </Label>
@@ -123,8 +121,9 @@ const Login = ({ isExpired }: props): JSX.Element => {
               <hr className="border border-slate-500 w-full" />
             </span>
 
-            <Button className="w-7/12 bg-uol rounded-lg">
-              Sign in with MWS
+            <Button disabled className="w-7/12 bg-uol rounded-lg flex flex-col">
+              <div>Sign in with MWS</div>
+              <div>(coming soon...)</div>
             </Button>
           </CardFooter>
         </Card>

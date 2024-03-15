@@ -26,14 +26,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 
 if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
-    $buildPath = __DIR__ . "/build";
     // Check if the build folder exists
-    if (file_exists($buildPath)) {
+
+        //favicon
+        if ($_SERVER['REQUEST_URI'] === "/favicon") {
+            header('Content-Type: image/x-icon');
+            readfile(__DIR__ . '/assets/jdvlogo.ico');
+            die();
+        }
+
+        error_log("REQUESTURI: " . $_SERVER['REQUEST_URI']);
+        if(str_starts_with($_SERVER['REQUEST_URI'], "/assets")){
+            error_log("ASSET REDIRECT");
+            $assetPath = __DIR__ . '/dist' . $_SERVER['REQUEST_URI'];
+            if(file_exists($assetPath)){
+                readfile($assetPath);
+                die();
+            }
+        }
         // Serve the index.html file from the build folder
         header('Content-Type: text/html');
-        readfile($buildPath . '/index.html');
-    }
+        readfile(__DIR__ . '/assets/index.html');
 
+    die();
 } else {
     $authenticate = new requiresAuthentication();
 
@@ -124,10 +139,12 @@ if (!str_starts_with($_SERVER['REQUEST_URI'], "/api")) {
     $app->any('/api/jobs/upload[/{id}]', [Jobs::class, 'handleFileUpload'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/{jobID}/download/in", [Jobs::class, 'downloadInputFile'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/{jobID}/download/out", [Jobs::class, 'downloadOutputFile'])->add(new RequiresAuthentication());
+    $app->get("/api/jobs/{jobID}/download/out/{file}", [Jobs::class, 'downloadMultiOut'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/{jobID}/parameters", [Jobs::class, 'getParameters'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/{jobID}", [Jobs::class, 'getJob'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/{jobID}/zipinfo", [Jobs::class, 'getZipData'])->add(new RequiresAuthentication());
     $app->get("/api/jobs/{jobID}/extracted/{file}", [Jobs::class, 'getExtractedFile'])->add(new RequiresAuthentication());
+    $app->get("/api/jobs/{jobID}/download/zip", [Jobs::class, 'downloadZip'])->add(new RequiresAuthentication());
     $app->run();
 }
 

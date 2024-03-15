@@ -38,6 +38,8 @@ export const UpdateJobType = (): JSX.Element => {
   const [parameters, setParameters] = useState<JobTypeParameter[]>([]);
   const [invalidParams, setInvalidParams] = useState<number[]>([]);
   const [name, setName] = useState(currentJob.data?.name ?? "");
+  const [hasOutputFiles, setHasOutputFiles] = useState(false);
+  const [outputCount, setOutputCount] = useState(0);
   const [description, setDescription] = useState(
     currentJob.data?.description ?? ""
   );
@@ -82,8 +84,8 @@ export const UpdateJobType = (): JSX.Element => {
       }
     }
   }, [currentJob.data]);
-  const createJobTypeRequest = useMutation(
-    "createJobType",
+  const updateJobTypeRequest = useMutation(
+    "updateJobType",
     (jobType: JobTypeUpdate) => {
       return updateJobType(jobType);
     },
@@ -101,13 +103,15 @@ export const UpdateJobType = (): JSX.Element => {
     setIsNameValid(name !== "");
     setIsDescriptionValid(description !== "");
     if (_invalidParams.length === 0 && name !== "" && description !== "") {
-      createJobTypeRequest.mutate({
+      updateJobTypeRequest.mutate({
         id: Number.parseInt(id ?? ""),
         name: name,
         script: script,
         parameters: parameters,
         description: description,
         token: token,
+        hasOutputFile: hasOutputFiles,
+        outputCount: outputCount,
         fileUploadCount: fileCount,
       });
     }
@@ -144,7 +148,7 @@ export const UpdateJobType = (): JSX.Element => {
           </div>
           <div className="space-y-2 flex flex-col">
             <Label htmlFor="jobDescription">Job Description</Label>
-            {(fileCount !== 0) && (
+            {fileCount !== 0 && (
               <Label className="text-sm text-rose-500">
                 Your description should indicate which files are which, i.e what
                 file0 should be, and what file1 should be.
@@ -184,9 +188,7 @@ export const UpdateJobType = (): JSX.Element => {
           <div>
             <div className="flex flex-row w-full justify-evenly">
               <div>
-                <Label htmlFor="fileUpload">
-                  Accepts File Uploads (PDF, DOCX, etc.)
-                </Label>
+                <Label htmlFor="fileUpload">Accepts File Uploads</Label>
                 <Input
                   className="cursor-pointer bg-uol"
                   id="fileUpload"
@@ -195,6 +197,20 @@ export const UpdateJobType = (): JSX.Element => {
                   onChange={(e) => {
                     setHasFileUpload(e.target.checked);
                     if (!e.target.checked) setFileCount(0);
+                  }}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="fileUpload">Outputs Files?</Label>
+                <Input
+                  className="cursor-pointer bg-uol"
+                  id="fileUpload"
+                  type="checkbox"
+                  checked={hasOutputFiles}
+                  onChange={(e) => {
+                    setHasOutputFiles(e.target.checked);
+                    if(!e.target.checked) setOutputCount(0);
                   }}
                 />
               </div>
@@ -216,6 +232,26 @@ export const UpdateJobType = (): JSX.Element => {
                     value={fileCount}
                     onChange={(e) => {
                       setFileCount(Number(e.target.value));
+                    }}
+                  />
+                </div>
+              )}
+
+              {hasOutputFiles && (
+                <div className="flex flex-col w-1/2">
+                  <Label htmlFor="fileCount">
+                    How many files will be outputted?
+                  </Label>
+                  <Label className="text-red-500 text-sm">
+                    When referring to output files in your script, please use bash
+                    variables out0, out1, etc.
+                  </Label>
+                  <Input
+                    className="outputCount"
+                    type="number"
+                    value={outputCount}
+                    onChange={(e) => {
+                      setOutputCount(Number(e.target.value));
                     }}
                   />
                 </div>

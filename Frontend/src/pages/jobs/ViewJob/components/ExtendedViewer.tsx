@@ -1,11 +1,10 @@
 import FileViewer from "react-file-viewer";
-import type { File } from "@/helpers/jobs";
+import type { OutputFile } from "@/helpers/jobs";
 import { Textarea } from "@/shadui/ui/textarea";
-import { FileBrowser, FileList } from "chonky";
-import { ZipViewer } from "./ZipViewer";
+import { FolderView } from "./FolderView";
 
 interface ExtendedViewerProps {
-  file: File;
+  file: OutputFile;
   jobID: string;
 }
 
@@ -13,20 +12,29 @@ interface ExtendedViewerProps {
 //Abstracting the file viewer out into this extended viewer components allows me to handle specific file types
 //in an appopriate way, using a single file viewer component
 const ExtendedViewer = ({ file, jobID }: ExtendedViewerProps): JSX.Element => {
-  if (file.fileExt === "txt") {
-    return (
-      <div className="p-2">
-        <Textarea
-          className="bg-slate-100"
-          readOnly
-          value={file.fileContents!}
+  if (file.type === "file") {
+    if (file.content.fileExt === "txt") {
+      return (
+        <div className="p-2">
+          <Textarea
+            className="bg-slate-100"
+            readOnly
+            value={file.content.fileContents!}
+          />
+        </div>
+      );
+    } else if (file.content.fileExt === "zip") {
+      return <FolderView file={file} jobID={jobID} />;
+    } else {
+      return (
+        <FileViewer
+          fileType={file.content.fileExt}
+          filePath={file.content.fileURL}
         />
-      </div>
-    );
-  } else if (file.fileExt === "zip") {
-    return <ZipViewer file={file} jobID={jobID} />;
+      );
+    }
   } else {
-    return <FileViewer fileType={file.fileExt} filePath={file.fileURL} />;
+    return <FolderView file={file} jobID={jobID} />;
   }
 };
 

@@ -20,13 +20,17 @@ import Tus from "@uppy/tus";
 import Webcam from "@uppy/webcam";
 import ViewJobs from "./pages/jobs/ViewJob/ViewJobs.tsx";
 import JobInfo from "./pages/jobs/ViewJob/JobInfo.tsx";
-
+import { getFileID } from "./helpers/jobs.ts";
 
 const queryClient = new QueryClient();
 
-
 const Router = () => {
   const getNewUppy = () => {
+    if (!fileID) {
+      getFileID(localStorage.getItem("token") ?? "").then((data) => {
+        setFileID(data.fileID);
+      });
+    }
     return new Uppy({
       autoProceed: false,
       allowMultipleUploads: false,

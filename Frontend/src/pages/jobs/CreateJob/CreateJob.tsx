@@ -297,7 +297,7 @@ const CreateJob = ({
                               className="flex flex-col items-center w-full gap-2"
                             >
                               <Label htmlFor={param.key}>
-                                {param.key.split("¬N¬")[1]}
+                                {param.key.split("¬S¬")[1]}
                               </Label>
                               <Input
                                 type="text"
