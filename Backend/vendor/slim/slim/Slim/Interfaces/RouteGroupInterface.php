@@ -1,41 +1,46 @@
 <?php
-
 /**
  * Slim Framework (https://slimframework.com)
  *
- * @license https://github.com/slimphp/Slim/blob/4.x/LICENSE.md (MIT License)
+ * @link      https://github.com/slimphp/Slim
+ * @copyright Copyright (c) 2011-2017 Josh Lockhart
+ * @license   https://github.com/slimphp/Slim/blob/3.x/LICENSE.md (MIT License)
  */
-
-declare(strict_types=1);
-
 namespace Slim\Interfaces;
 
-use Psr\Http\Server\MiddlewareInterface;
-use Slim\MiddlewareDispatcher;
+use Slim\App;
 
+/**
+ * RouteGroup Interface
+ *
+ * @package Slim
+ * @since   3.0.0
+ */
 interface RouteGroupInterface
 {
-    public function collectRoutes(): RouteGroupInterface;
-
     /**
-     * Add middleware to the route group
+     * Get route pattern
      *
-     * @param MiddlewareInterface|string|callable $middleware
+     * @return string
      */
-    public function add($middleware): RouteGroupInterface;
+    public function getPattern();
 
     /**
-     * Add middleware to the route group
+     * Prepend middleware to the group middleware collection
+     *
+     * @param callable|string $callable The callback routine
+     *
+     * @return RouteGroupInterface
      */
-    public function addMiddleware(MiddlewareInterface $middleware): RouteGroupInterface;
+    public function add($callable);
 
     /**
-     * Append the group's middleware to the MiddlewareDispatcher
+     * Execute route group callable in the context of the Slim App
+     *
+     * This method invokes the route group object's callable, collecting
+     * nested route objects
+     *
+     * @param App $app
      */
-    public function appendMiddlewareToDispatcher(MiddlewareDispatcher $dispatcher): RouteGroupInterface;
-
-    /**
-     * Get the RouteGroup's pattern
-     */
-    public function getPattern(): string;
+    public function __invoke(App $app);
 }

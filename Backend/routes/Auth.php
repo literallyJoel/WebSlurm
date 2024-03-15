@@ -115,7 +115,7 @@ class Auth
         return $response->withStatus(401);
     }
 
-    public function login(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    public function login(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         $body = json_decode($request->getBody());
         if ($body === null || $body->email === null || $body->password === null) {

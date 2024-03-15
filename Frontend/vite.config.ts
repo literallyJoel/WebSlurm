@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
   build:{
-    assetsDir: "./",
+    assetsDir: "./assets",
     outDir: "../Backend/assets",
   }
 });

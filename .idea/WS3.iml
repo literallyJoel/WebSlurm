@@ -5,6 +5,8 @@
       <sourceFolder url="file://$MODULE_DIR$/Backend/routes" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/spec" isTestSource="true" />
       <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/Backend/spec" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/Backend/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/composer" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/defuse/php-encryption" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/fig/http-message-util" />
@@ -22,7 +24,6 @@
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/http-factory" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/http-message" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/http-server-handler" />
-      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/http-server-middleware" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/psr/log" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/ralouphie/getallheaders" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/slim/psr7" />
@@ -69,6 +70,8 @@
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/symfony/translation" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/symfony/translation-contracts" />
       <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/symfony/var-exporter" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/container-interop/container-interop" />
+      <excludeFolder url="file://$MODULE_DIR$/Backend/vendor/pimple/pimple" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

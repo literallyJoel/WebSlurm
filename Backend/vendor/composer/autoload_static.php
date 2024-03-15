@@ -89,6 +89,7 @@ class ComposerStaticInit026509606a55be5c56c243e48adc6597
         'I' => 
         array (
             'Invoker\\' => 8,
+            'Interop\\Container\\' => 18,
         ),
         'G' => 
         array (
@@ -234,7 +235,6 @@ class ComposerStaticInit026509606a55be5c56c243e48adc6597
         'Psr\\Http\\Server\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/http-server-handler/src',
-            1 => __DIR__ . '/..' . '/psr/http-server-middleware/src',
         ),
         'Psr\\Http\\Message\\' => 
         array (
@@ -306,6 +306,10 @@ class ComposerStaticInit026509606a55be5c56c243e48adc6597
         array (
             0 => __DIR__ . '/..' . '/php-di/invoker/src',
         ),
+        'Interop\\Container\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/container-interop/container-interop/src/Interop/Container',
+        ),
         'GuzzleHttp\\Psr7\\' => 
         array (
             0 => __DIR__ . '/..' . '/guzzlehttp/psr7/src',
@@ -356,6 +360,16 @@ class ComposerStaticInit026509606a55be5c56c243e48adc6597
         0 => __DIR__ . '/../..' . '/routes',
     );
 
+    public static $prefixesPsr0 = array (
+        'P' => 
+        array (
+            'Pimple' => 
+            array (
+                0 => __DIR__ . '/..' . '/pimple/pimple/src',
+            ),
+        ),
+    );
+
     public static $classMap = array (
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
@@ -384,6 +398,7 @@ class ComposerStaticInit026509606a55be5c56c243e48adc6597
             $loader->prefixLengthsPsr4 = ComposerStaticInit026509606a55be5c56c243e48adc6597::$prefixLengthsPsr4;
             $loader->prefixDirsPsr4 = ComposerStaticInit026509606a55be5c56c243e48adc6597::$prefixDirsPsr4;
             $loader->fallbackDirsPsr4 = ComposerStaticInit026509606a55be5c56c243e48adc6597::$fallbackDirsPsr4;
+            $loader->prefixesPsr0 = ComposerStaticInit026509606a55be5c56c243e48adc6597::$prefixesPsr0;
             $loader->classMap = ComposerStaticInit026509606a55be5c56c243e48adc6597::$classMap;
 
         }, null, ClassLoader::class);
