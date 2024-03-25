@@ -7,14 +7,13 @@ import { CreationSuccess } from "./pages/accounts/create/CreationSuccess.tsx";
 import { CreationFailure } from "./pages/accounts/create/CreationFailure.tsx";
 import ResetPassword from "./pages/accounts/resetPassword/ResetPassword.tsx";
 import Login from "./pages/auth/login/Login.tsx";
-import { QueryClient, QueryClientProvider } from "react-query";
-import AuthProvider from "./providers/AuthProvider/AuthProvider.tsx";
+
 import AdminSettings from "./pages/admin/settings/Settings.tsx";
 import NewJobType from "./pages/admin/settings/JobTypes/NewJobType/NewJobType.tsx";
 import JobTypes from "./pages/admin/settings/JobTypes/JobTypes.tsx";
 import { UpdateJobType } from "./pages/admin/settings/JobTypes/UpdateJobTypes/UpdateJobTypes.tsx";
 import CreateJob from "./pages/jobs/CreateJob/CreateJob.tsx";
-import { useState } from "react";
+import { ComponentType, useState } from "react";
 import Uppy from "@uppy/core";
 import Tus from "@uppy/tus";
 import Webcam from "@uppy/webcam";
@@ -25,7 +24,7 @@ import Users from "./pages/admin/settings/Users/Users.tsx";
 import Organisations from "./pages/admin/settings/Organisations/Organisations.tsx";
 import CreateOrganisation from "./pages/admin/settings/Organisations/CreateOrganisation.tsx";
 import { apiEndpoint } from "./config/config.ts";
-const queryClient = new QueryClient();
+import AuthProvider from "./providers/AuthProvider/AuthProvider.tsx";
 
 const Router = () => {
   const getNewUppy = () => {
@@ -77,21 +76,35 @@ const Router = () => {
     setUppy(getNewUppy());
   };
 
+  const withAuth = <P extends object>(Component: ComponentType<P>) => {
+    return (props: P) => (
+      <AuthProvider>
+        <Component {...props} />
+      </AuthProvider>
+    );
+  };
+
   const router = createBrowserRouter(
     [
-      { path: "/", element: <Home /> },
-      { path: "/accounts/create", element: <CreateAccount /> },
-      { path: "/accounts/create/success", element: <CreationSuccess /> },
-      { path: "/accounts/create/failure", element: <CreationFailure /> },
+      { path: "/", element: withAuth(Home)({}) },
+      { path: "/accounts/create", element: withAuth(CreateAccount)({}) },
+      {
+        path: "/accounts/create/success",
+        element: withAuth(CreationSuccess)({}),
+      },
+      {
+        path: "/accounts/create/failure",
+        element: withAuth(CreationFailure)({}),
+      },
       {
         path: "/accounts/settings/resetpassword",
-        element: <ResetPassword />,
+        element: withAuth(ResetPassword)({}),
       },
-      { path: "/accounts/settings", element: <AccountSettings /> },
-      { path: "/auth/login", element: <Login /> },
+      { path: "/accounts/settings", element: withAuth(AccountSettings)({}) },
+      { path: "/auth/login", element: withAuth(Login)({}) },
       {
         path: "/admin",
-        element: <AdminSettings />,
+        element: withAuth(AdminSettings)({}),
         children: [
           { path: "/admin/jobtypes/new", element: <NewJobType /> },
           { path: "/admin/jobtypes", element: <JobTypes /> },
@@ -109,41 +122,33 @@ const Router = () => {
       },
       {
         path: "/jobs/create",
-        element: (
-          <CreateJob
-            uppy={uppy}
-            isUploadComplete={isUploadComplete}
-            setFileID={setFileID}
-            fileID={fileID}
-            resetUppy={resetUppy}
-            setAllowedTypes={setAllowedTypes}
-            allowedTypes={allowedTypes}
-          />
-        ),
+        element: withAuth(CreateJob)({
+          uppy: uppy,
+          isUploadComplete: isUploadComplete,
+          setFileID: setFileID,
+          fileID: fileID,
+          resetUppy: resetUppy,
+          setAllowedTypes: setAllowedTypes,
+          allowedTypes: allowedTypes,
+        }),
       },
       {
         path: "/jobs/",
-        element: <ViewJobs />,
+        element: withAuth(ViewJobs)({}),
         children: [
           {
             path: "/jobs/:jobID",
-            element: <JobInfo />,
+            element: withAuth(JobInfo)({}),
           },
         ],
       },
     ],
     {
-      basename: "/~sgjvivia",
+      basename: process.env.NODE_ENV === "development" ? "" : "/~sgjvivia",
     }
   );
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <RouterProvider router={router} />
-      </AuthProvider>
-    </QueryClientProvider>
-  );
+  return <RouterProvider router={router} />;
 };
 
 export default Router;

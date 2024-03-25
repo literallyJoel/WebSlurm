@@ -1,4 +1,4 @@
-import { ReactNode, useState, createContext } from "react";
+import { ReactNode, useState, createContext, useContext } from "react";
 import { jwtDecode } from "jwt-decode";
 import {
   logout as logoutHelper,
@@ -110,5 +110,5 @@ const AuthProvider = ({ children }: props): JSX.Element => {
     </AuthContext.Provider>
   );
 };
-
 export default AuthProvider;
+export const useAuthContext = () => useContext(AuthContext);
