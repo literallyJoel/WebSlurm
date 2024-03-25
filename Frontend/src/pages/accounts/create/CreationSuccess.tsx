@@ -10,6 +10,8 @@ import {
 import { useEffect, useState } from "react";
 import { CiMedicalClipboard } from "react-icons/ci";
 import { FaRegCheckCircle } from "react-icons/fa";
+import { Link } from "react-router-dom";
+
 export const CreationSuccess = (): JSX.Element => {
   const [copyStatus, setCopyStatus] = useState(0);
   const [generatedPass, setGeneratedPass] = useState<string | undefined>();
@@ -69,14 +71,11 @@ export const CreationSuccess = (): JSX.Element => {
             )}
           </CardContent>
           <CardFooter className="justify-center">
-            <Button
-              onClick={() => {
-                window.location.pathname = "/";
-              }}
-              className="w-5/12 border-uol border-2 rounded-xl shadow-2xl hover:text-white hover:bg-uol hover:shadow-inner"
-            >
-              Back to home
-            </Button>
+            <Link to="/">
+              <Button className="w-5/12 border-uol border-2 rounded-xl shadow-2xl hover:text-white hover:bg-uol hover:shadow-inner">
+                Back to home
+              </Button>
+            </Link>
           </CardFooter>
         </Card>
       </div>

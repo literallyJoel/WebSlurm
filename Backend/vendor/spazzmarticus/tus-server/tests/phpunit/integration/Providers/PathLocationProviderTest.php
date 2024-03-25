@@ -13,6 +13,7 @@ use Laminas\Diactoros\ServerRequest;
 
 class PathLocationProviderTest extends AbstractLocationProviderTest
 {
+
     protected PathLocationProvider $provider;
 
     public function setUp(): void

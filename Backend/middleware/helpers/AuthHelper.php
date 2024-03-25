@@ -1,6 +1,6 @@
 <?php
 use Firebase\JWT\JWT;
-use Slim\Psr7\Response;
+use Slim\Http\Response;
 function isTokenValid($decoded): bool
 {
     $valid = true;
@@ -66,7 +66,5 @@ function decodeJWT($token)
     
 
     $key = new \Firebase\JWT\Key("thisShouldBeAnEnvironmentVariable", "HS256");
-    $decoded = JWT::decode($token, $key);
-
-    return $decoded;
+    return JWT::decode($token, $key);
 }

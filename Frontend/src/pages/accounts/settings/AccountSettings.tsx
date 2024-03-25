@@ -10,7 +10,7 @@ import { Label } from "@/shadui/ui/label";
 import { Input } from "@/shadui/ui/input";
 import { Button } from "@/shadui/ui/button";
 import Nav from "@/components/Nav";
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { MdEdit } from "react-icons/md";
 import {
@@ -25,6 +25,7 @@ import {
 } from "@/helpers/accounts";
 import { useMutation } from "react-query";
 import { verifyPass } from "@/pages/auth/auth";
+import { Link } from "react-router-dom";
 const AccountSettings = (): JSX.Element => {
   const { getUser, getToken } = useContext(AuthContext);
   const user = getUser();
@@ -40,7 +41,7 @@ const AccountSettings = (): JSX.Element => {
   const [confirmPass, setConfirmPass] = useState("");
   const [isPassValid, setIsPassValid] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-
+  const hiddenRef = useRef<HTMLAnchorElement>(null);
   const updateUserRequest = useMutation(
     "updateUser",
     (updatedUser: UpdateAccountObject) => {
@@ -274,6 +275,11 @@ const AccountSettings = (): JSX.Element => {
               />
             </CardContent>
             <CardFooter className="flex flex-row">
+              <Link
+                to="/accounts/settings"
+                className="hidden"
+                ref={hiddenRef}
+              />
               <Button
                 variant="destructive"
                 onClick={() => {
@@ -284,7 +290,7 @@ const AccountSettings = (): JSX.Element => {
                         if (isVerified?.ok) {
                           deleteAccountRequest.mutate(token, {
                             onSuccess: () => {
-                              window.location.reload();
+                              hiddenRef.current?.click();
                             },
                           });
                         }

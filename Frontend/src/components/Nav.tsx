@@ -11,9 +11,9 @@ const Nav = (): JSX.Element => {
   return (
     <nav className="bg-uol">
       <div className="container mx-auto flex justify-between items-center h-12">
-        <a href="/" className="text-white font-bold text-xl">
+        <Link to="/" className="text-white font-bold text-xl">
           WebSlurm
-        </a>
+        </Link>
 
         <div
           className={`${
@@ -36,7 +36,7 @@ const Nav = (): JSX.Element => {
                   Account Settings
                 </Link>
               </div>
-              {user.role === 1 && (
+              {Number(user.role) === 1 && (
                 <div className="text-center">
                   <Link
                     to="/admin"

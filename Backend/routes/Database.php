@@ -1,11 +1,10 @@
 <?php
-
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-
-require_once __DIR__ . "/../config/config.php";
-
-class Database
+    use Psr\Http\Message\ResponseInterface;
+    use Psr\Http\Message\ServerRequestInterface;
+    include_once __DIR__ . "/../config/Config.php";
+    require_once __DIR__ . "/../helpers/Logger.php";
+    
+    class Database
 {
     public function __construct()
     {
@@ -152,16 +151,16 @@ class Database
                 $db->close();
             }
 
+            Logger::info("Database Created", $request->getRequestTarget());
             $response->getBody()->write("Database Created");
             return $response->withStatus(201);
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
 
     }
-
 
 
 }

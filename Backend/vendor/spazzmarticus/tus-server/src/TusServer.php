@@ -23,7 +23,6 @@ use SpazzMarticus\Tus\Exceptions\RuntimeException;
 use SpazzMarticus\Tus\Factories\FilenameFactoryInterface;
 use SpazzMarticus\Tus\Providers\LocationProviderInterface;
 use SpazzMarticus\Tus\Services\FileService;
-use SpazzMarticus\Tus\Services\MetadataService;
 use SplFileInfo;
 
 /**
@@ -48,7 +47,6 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
     protected FileService $fileService;
     protected FilenameFactoryInterface $targetFileFactory;
     protected LocationProviderInterface $locationProvider;
-    protected MetadataService $metadataService;
 
     /**
      * Size Settings
@@ -84,7 +82,6 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
         $this->fileService = new FileService();
         $this->targetFileFactory = $targetFileFactory;
         $this->locationProvider = $locationProvider;
-        $this->metadataService = new MetadataService();
     }
 
     /**
@@ -174,19 +171,13 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
             return $this->createResponse(404);
         }
 
-        $storage = $this->storage->get($uuid->getHex()->toString());
+        $storage = $this->storage->get($uuid->getHex());
 
         if (!$storage) {
             return $this->createResponse(404);
         }
 
         $targetFile = $this->fileService->instance($storage['file']);
-
-        if (!$this->fileService->exists($targetFile)) {
-            $this->storage->delete($uuid->getHex()->toString());
-            return $this->createResponse(404);
-        }
-
         $size = $this->fileService->size($targetFile);
 
         $response = $this->createResponse(200)
@@ -216,7 +207,7 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
 
         $uuid = Uuid::uuid4();
 
-        $metadata = $this->metadataService->getMetadata($request);
+        $metadata = $this->getMetadata($request);
 
         $targetFile = $this->targetFileFactory->generateFilename($uuid, $metadata);
 
@@ -231,13 +222,12 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
             'metadata' => $metadata,
             'file' => $targetFile->getPathname(),
         ];
-
-        $this->storage->set($uuid->getHex()->toString(), $storage);
+        $this->storage->set($uuid->getHex(), $storage);
 
         try {
             $this->fileService->create($targetFile);
         } catch (RuntimeException $exception) {
-            $this->storage->delete($uuid->getHex()->toString());
+            $this->storage->delete($uuid->getHex());
             throw $exception;
         }
 
@@ -277,7 +267,7 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
         /**
          * @var array $storage
          */
-        $storage = $this->storage->get($uuid->getHex()->toString());
+        $storage = $this->storage->get($uuid->getHex());
 
         if (!$storage) {
             return $this->createResponse(404);
@@ -293,7 +283,7 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
                 }
                 $storage['length'] = $length;
                 $storage['defer'] = $defer =  false;
-                $this->storage->set($uuid->getHex()->toString(), $storage);
+                $this->storage->set($uuid->getHex(), $storage);
             }
         }
 
@@ -315,7 +305,7 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
         }
 
         if ($this->useIntermediateChunk) {
-            $chunkFile = new SplFileInfo(tempnam($this->chunkDirectory, $uuid->getHex()->toString()));
+            $chunkFile = new SplFileInfo(tempnam($this->chunkDirectory, $uuid->getHex()));
             $chunkHandle = $this->fileService->open($chunkFile);
         }
 
@@ -333,7 +323,6 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
              * Delete upload on Conflict, because upload size was exceeded
              */
             $this->tryDeleteFile($targetFile);
-            $this->storage->delete($uuid->getHex()->toString());
             return $this->createResponse(409); //Conflict
         }
 
@@ -363,8 +352,7 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
                  * Clean up and rethrow
                  */
                 unset($fileHandle);
-                $this->tryDeleteFile($chunkFile);
-                $this->storage->delete($uuid->getHex()->toString());
+                $this->tryDeleteFile($targetFile);
                 if ($exception) {
                     throw $exception;
                 }
@@ -376,13 +364,11 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
         if ($defer) {
             if ($offset + $bytesTransfered > $this->maxSize) {
                 $this->tryDeleteFile($targetFile);
-                $this->storage->delete($uuid->getHex()->toString());
                 return $this->createResponse(409, $response);
             }
         } else {
             if ($offset + $bytesTransfered !== $size) {
                 $this->tryDeleteFile($targetFile);
-                $this->storage->delete($uuid->getHex()->toString());
                 return $this->createResponse(409, $response);
             }
         }
@@ -399,7 +385,7 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
              * - Dispatch UploadComplete Event
              */
             $storage['complete'] = true;
-            $this->storage->set($uuid->getHex()->toString(), $storage, $this->storageTTLAfterUploadComplete);
+            $this->storage->set($uuid->getHex(), $storage, $this->storageTTLAfterUploadComplete);
 
             $this->eventDispatcher->dispatch(new UploadComplete($uuid, $targetFile, $storage['metadata']));
         }
@@ -423,7 +409,7 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
             return $this->createResponse(400);
         }
 
-        $storage = $this->storage->get($uuid->getHex()->toString());
+        $storage = $this->storage->get($uuid->getHex());
 
         if (!$storage) {
             return $this->createResponse(404);
@@ -477,7 +463,32 @@ class TusServer implements RequestHandlerInterface, LoggerAwareInterface
      */
     protected function getHeaderScalar(RequestInterface $request, string $key): ?string
     {
-        return $request->getHeaderLine($key) ?: null;
+        if ($request->hasHeader($key)) {
+            return $request->getHeader($key)[0];
+        }
+        return null;
+    }
+
+    /**
+     * Extract metadata-arry from request
+     * @see https://tus.io/protocols/resumable-upload.html#upload-metadata
+     */
+    protected function getMetadata(RequestInterface $request): array
+    {
+        $metadata = [];
+        $metadataHeader = $this->getHeaderScalar($request, 'Upload-Metadata') ?? null;
+
+        if ($metadataHeader) {
+            foreach (explode(',', $metadataHeader) as $keyValuePair) {
+                $keyValuePair = explode(' ', $keyValuePair);
+                if (!isset($keyValuePair[0])) {
+                    continue;
+                }
+                $metadata[$keyValuePair[0]] = isset($keyValuePair[1]) ? base64_decode($keyValuePair[1]) : null;
+            }
+        }
+
+        return $metadata;
     }
 
     protected function tryDeleteFile(SplFileInfo $file): void

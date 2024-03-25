@@ -1,31 +1,22 @@
 <?php
 
 
-use DI\Container;
-use Psr\EventDispatcher\EventDispatcherInterface;
-use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Message\StreamFactoryInterface;
-use Psr\SimpleCache\CacheInterface as SimpleCacheInterface;
 use Nyholm\Psr7\Factory\Psr17Factory;
-use SpazzMarticus\Tus\Factories\FilenameFactoryInterface;
-use SpazzMarticus\Tus\Factories\OriginalFilenameFactory;
-use SpazzMarticus\Tus\Providers\LocationProviderInterface;
-use SpazzMarticus\Tus\Providers\PathLocationProvider;
-use SpazzMarticus\Tus\TusServer;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
-use Symfony\Component\Cache\Psr16Cache;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
+use TusPhp\Tus\Server;
 
-require_once __DIR__ . "/../config/config.php";
-
+include_once __DIR__ . "/../config/Config.php";
+require_once __DIR__ . "/../helpers/Logger.php";
 class Jobs
 {
-
+    private $server;
     public function __construct()
 
     {
+         $this->server= new Server();
+          $this->server->setMaxUploadSize(0)->setApiPath('/api/jobs/upload');
 
     }
 
@@ -40,7 +31,7 @@ class Jobs
         preg_match('/\d+/', $str, $matches);
         $out = isset($matches[0]) ? (int)$matches[0] : null;
         if ($out == null) {
-            error_log("Invalid input: Received: " . $str);
+            Logger::error("Invalid input: Received: " . $str, "Jobs/extractJobID");
         }
 
         return $out;
@@ -48,7 +39,6 @@ class Jobs
 
     private function formatOutput($jobs): array
     {
-        error_log(print_r($jobs, true));
         return array_map(function ($job) {
             return [
                 'job_id' => $job->job_id,
@@ -56,8 +46,6 @@ class Jobs
                 'name' => $job->name,
             ];
         }, $jobs);
-
-
     }
 
     private function formatScript($script): string
@@ -72,10 +60,13 @@ class Jobs
         //Create the name for the script file and save it to the file system
         $scriptFile = $jobID . "-" . date('Y-m-d+H-i-s') . ".sh";
         $scriptPath = $scriptDir . $scriptFile;
+        Logger::info("Created new script file $scriptPath", "Jobs/scheduleSlurmJob");
         file_put_contents($scriptPath, $this->replaceLineBreaks($script));
 
         //Execute the script in SLURM
+
         $output = shell_exec("cd " . $scriptDir . "&& sbatch " . $scriptFile);
+        Logger::info("Scheduled Slurm Job: $output", "Jobs/scheduleSlurmJob");
         $resp = array("output" => $output);
 
         //Attempt to update the database and rollback if there are any issues
@@ -88,7 +79,7 @@ class Jobs
             $stmt->execute();
             return json_encode($resp);
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, "Jobs/scheduleSlurmJob");
             $stmt = $pdo->prepare("DELETE FROM jobs WHERE jobID = :jobID");
             $stmt->bindParam(":jobID", $jobID);
             $stmt->bindParam(":slurmID", $slurmID);
@@ -114,7 +105,9 @@ class Jobs
         }
 
         //Append the job completion script to the script
-        $script .= "\nphp " . __DIR__ . "/../script/jobComplete.php " . $jobID;
+       
+        $url = "https://pgb.liv.ac.uk/~sgjvivia/api/jobs/" . $jobID . "/markcomplete";
+        $script .= "\ncurl -X POST " . $url . " > /dev/null 2>&1";  
 
         return $script;
 
@@ -122,18 +115,18 @@ class Jobs
 
     private function setupInputFiles($fileID, $fileUploadCount, $inDir, $script)
     {   
-        if($fileUploadCount === 0){
+
+        if($fileUploadCount === 0 || $fileUploadCount === "0"){
             return $script;
         }
         //Check how many files are uploaded
-        if ($fileUploadCount === 1) {
+        if ($fileUploadCount === 1 || $fileUploadCount === "1") {
             //If there's only one we can just fill it in
             $filePath = "file0=" . $inDir . $fileID;
             $scriptArr = explode("\n", $script);
             array_splice($scriptArr, 4, 0, $filePath);
             $script = implode("\n", $scriptArr);
         } else {
-
             //If there's multiple, it'll be a ZIP archive, so we need to unzip the and store the files
             $zip = new ZipArchive();
             $zipPath = $inDir . $fileID;
@@ -186,7 +179,7 @@ class Jobs
             array_splice($scriptArr, 4, 0, $outputVars);
             return implode("\n", $scriptArr);
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, "Jobs/setupOutputFiles");
             return false;
         }
 
@@ -213,12 +206,12 @@ class Jobs
 
             return ['in' => $inDir, 'out' => $outDir, 'script' => $scriptDir];
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, "Jobs/setupDirectories");
             return false;
         }
     }
 
-    private function createIntialJobRecord(string $userID, string $jobTypeID, string $jobName, $fileID)
+    private function createInitialJobRecord(string $userID, string $jobTypeID, string $jobName, $fileID)
     {
         $pdo = new PDO(DB_CONN);
 
@@ -242,10 +235,12 @@ class Jobs
             }
 
             $stmt->execute();
-            return $pdo->lastInsertId();
+            $lastId = $pdo->lastInsertId();
+             Logger::info("Created new job record {$lastId} for user with id {$userID}", "Jobs/createInitialJobRecord");
+            return $lastId;
         } catch (Exception $e) {
-            error_log($e);
-            return false;
+            Logger::error($e, "Jobs/createInitialJobRecord");
+            return ["success" => "false", "err" => $pdo->error_get_last()];
         }
     }
 
@@ -277,6 +272,10 @@ class Jobs
         $stmt->execute();
 
         $file = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if(!$file){
+            Logger::warning("User with ID $userID attempted to access file with ID $fileID", "Jobs/validateFileID");
+        }
         return !!$file;
     }
 
@@ -311,10 +310,11 @@ class Jobs
 
         //The script needs the jobID generated by the database in order to update the database when it's complete
         //So we need to create a record and grab its ID, so we can then update it later with the script.
-        $jobID = $this->createIntialJobRecord($userID, $jobTypeID, $jobName, $fileID);
+        $jobID = $this->createInitialJobRecord($userID, $jobTypeID, $jobName, $fileID);
 
-        if (!$jobID || $jobID == -1) {
-            error_log("Invalid new Job ID");
+        Logger::debug("New jobID: " . $jobID, $request->getRequestTarget());
+        if (!$jobID || $jobID == -1 || isset($jobID["err"])) {
+            Logger::error("Failed to create job record: " . $jobID["err"], $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -323,7 +323,7 @@ class Jobs
         $dirs = $this->setupDirectories($userID, $jobID);
 
         if (!$dirs) {
-            error_log("Failed to create directories");
+            Logger::warning("Failed to create directories for job with ID $jobID", $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -336,7 +336,7 @@ class Jobs
         if ($jobType['hasOutputFile'] === 1) {
             $script = $this->setupOutputFiles($jobType['outputCount'], $dirs['out'], $script);
             if (!$script) {
-                error_log("Failed to setup output files");
+                Logger::warning("Failed to setup output files for job with ID $jobID", $request->getRequestTarget());
                 $response->getBody()->write("Internal Server Error");
                 return $response->withStatus(500);
             }
@@ -345,7 +345,7 @@ class Jobs
         //Sets up the input files
         $script = $this->setupInputFiles($fileID, $jobType['fileUploadCount'], $dirs['in'], $script);
         if (!$script) {
-            error_log("Failed to setup input files");
+            Logger::warning("Failed to setup input files for job with ID $jobID", $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -354,36 +354,11 @@ class Jobs
         $resp = $this->scheduleSlurmJob($script, $dirs['script'], $jobID);
 
         if (!$resp) {
-            error_log("Failed to schedule Slurm Job");
+            Logger::warning("Failed to schedule Slurm Job for job with ID $jobID", $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             return $response->withStatus(500);
         }
-
+        Logger::info("Created new job with ID $jobID for user with ID $userID", $request->getRequestTarget());
         $response->getBody()->write($resp);
         return $response->withStatus(500);
 
@@ -404,31 +379,15 @@ class Jobs
                 mkdir($path, 0775, true);
             }
 
-            $container = new Container();
+            $this->server->setUploadDir($path);
+            $psr17Factory = new Psr17Factory();
+            $psrHttpFactory = new PsrHttpFactory($psr17Factory, $psr17Factory, $psr17Factory, $psr17Factory);
+            
+            $resp = $this->server->serve();
+            return $psrHttpFactory->createResponse($resp);
 
-            $container->set(ResponseFactoryInterface::class, new Psr17Factory());
-            $container->set(StreamFactoryInterface::class, new Psr17Factory());
-            $container->set(SimpleCacheInterface::class, new Psr16Cache(new FilesystemAdapter()));
-            $container->set(EventDispatcherInterface::class, new EventDispatcher());
-            $container->set(FilenameFactoryInterface::class, function () use ($path) {
-                return new OriginalFilenameFactory($path);
-            });
-
-            $container->set(LocationProviderInterface::class, new PathLocationProvider);
-            $tus = new TusServer(
-                $container->get(ResponseFactoryInterface::class),
-                $container->get(StreamFactoryInterface::class),
-                $container->get(SimpleCacheInterface::class),
-                $container->get(EventDispatcherInterface::class),
-                $container->get(FilenameFactoryInterface::class),
-                $container->get(LocationProviderInterface::class)
-            );
-
-
-            $tus->setMaxSize(10737419264 * 1.5);
-            return $tus->handle($request);
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, "Jobs/handleFileUpload");
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -452,9 +411,10 @@ class Jobs
             $stmt->execute();
             $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $response->getBody()->write(json_encode($jobs));
+            Logger::info("Retrieved all jobs for user with ID $userID", $request->getRequestTarget());
             return $response->withStatus(200);
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -473,6 +433,7 @@ class Jobs
         $stmt->execute();
         $job = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($job) {
+            Logger::info("Retrieved job with ID $jobID for user with ID $userID", $request->getRequestTarget());
             $response->getBody()->write(json_encode($job));
             return $response->withStatus(200);
         } else {
@@ -483,22 +444,29 @@ class Jobs
 
     public function getParameters(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $decodedToken = $request->getAttribute("decoded");
-        $userID = $decodedToken->userID;
-        $jobID = $args["jobID"];
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("SELECT jobParameters.key, jobParameters.value from jobParameters JOIN jobs ON jobParameters.jobID = jobs.jobID WHERE jobParameters.jobID = :jobID AND jobs.userID = :userID");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->bindParam(":userID", $userID);
-        $stmt->execute();
-        $parameters = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        error_log(print_r($parameters, true));
-        if ($parameters) {
-            $response->getBody()->write(json_encode($parameters));
-            return $response->withStatus(200);
-        } else {
-            $response->getBody()->write("Job not found");
-            return $response->withStatus(404);
+
+        try {
+            $decodedToken = $request->getAttribute("decoded");
+            $userID = $decodedToken->userID;
+            $jobID = $args["jobID"];
+            $pdo = new PDO(DB_CONN);
+            $stmt = $pdo->prepare("SELECT jobParameters.key, jobParameters.value from jobParameters JOIN jobs ON jobParameters.jobID = jobs.jobID WHERE jobParameters.jobID = :jobID AND jobs.userID = :userID");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":userID", $userID);
+            $stmt->execute();
+            $parameters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log(print_r($parameters, true));
+            if ($parameters) {
+                $response->getBody()->write(json_encode($parameters));
+                return $response->withStatus(200);
+            } else {
+                $response->getBody()->write("Job not found");
+                return $response->withStatus(404);
+            }
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
         }
     }
 
@@ -546,7 +514,7 @@ class Jobs
             $response->getBody()->write(json_encode($jobs));
             return $response->withStatus(200);
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -582,11 +550,10 @@ class Jobs
                 $query .= " LIMIT :limit";
                 $params[":limit"] = $limit;
             }
-            error_log($query);
+
             $stmt = $pdo->prepare($query);
             if (isset($params)) {
                 foreach ($params as $key => &$val) {
-                    error_log($key . " " . $val);
                     $stmt->bindParam($key, $val);
                 }
             }
@@ -595,9 +562,9 @@ class Jobs
             $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $slurmJobs = shell_exec("squeue --nohead --format=%F | uniq");
-            error_log($slurmJobs);
+
             $slurmJobs = explode("\n", $slurmJobs);
-            error_log(print_r($slurmJobs, true));
+
             $runningJobs = array_filter($jobs, function ($job) use ($slurmJobs) {
                 foreach ($slurmJobs as $slurmJob) {
                     if ($job["slurmID"] == $slurmJob) {
@@ -620,69 +587,71 @@ class Jobs
 
     private function updateFailed($userID)
     {
-        //Open the DB
+        try {
+            //Open the DB
+            $pdo = new PDO(DB_CONN);
+            $query = "SELECT * FROM jobs WHERE jobComplete = 0 ";
 
-        $pdo = new PDO(DB_CONN);
-        $query = "SELECT * FROM jobs WHERE jobComplete = 0 ";
-
-        if ($userID !== null) {
-            $query .= "AND userID = :userID ";
-            $params[":userID"] = $userID;
-        }
-
-        //We grab all the jobs that are marked as running in the database
-        $stmt = $pdo->prepare($query);
-        if (isset($params)) {
-            foreach ($params as $key => &$val) {
-                error_log($key . " " . $val);
-                $stmt->bindParam($key, $val);
+            if ($userID !== null) {
+                $query .= "AND userID = :userID ";
+                $params[":userID"] = $userID;
             }
-        }
 
-        $stmt->execute();
-        $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        //Now we get the list of jobs Slurm says is running
-        $slurmJobs = shell_exec("squeue --nohead --format=%F | uniq");
-
-        //Get it into an array
-        $slurmJobs = explode("\n", $slurmJobs);
-
-        //Grab the jobs that are actually running in both Slurm and the database
-        $runningJobs = array_filter($slurmJobs, function ($slurmJob) use ($jobs) {
-            foreach ($jobs as $job) {
-                if ($slurmJob == $job["slurmID"]) {
-                    return true;
+            //We grab all the jobs that are marked as running in the database
+            $stmt = $pdo->prepare($query);
+            if (isset($params)) {
+                foreach ($params as $key => &$val) {
+                    error_log($key . " " . $val);
+                    $stmt->bindParam($key, $val);
                 }
             }
-            return false;
-        });
 
-        //Form a SQL statement to grab all the jobs that are not running in Slurm but are marked as running in the database
-        $placeholders = implode(',', array_fill(0, count($runningJobs), '?'));
+            $stmt->execute();
+            $jobs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $stmt = $pdo->prepare("SELECT * FROM jobs WHERE jobID NOT IN ($placeholders) AND jobComplete = 0");
-        foreach ($runningJobs as $key => $id) {
-            $stmt->bindValue(($key + 1), $id, PDO::PARAM_INT);
+            //Now we get the list of jobs Slurm says is running
+            $slurmJobs = shell_exec("squeue --nohead --format=%F | uniq");
+
+            //Get it into an array
+            $slurmJobs = explode("\n", $slurmJobs);
+
+            //Grab the jobs that are actually running in both Slurm and the database
+            $runningJobs = array_filter($slurmJobs, function ($slurmJob) use ($jobs) {
+                foreach ($jobs as $job) {
+                    if ($slurmJob == $job["slurmID"]) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+            //Form a SQL statement to grab all the jobs that are not running in Slurm but are marked as running in the database
+            $placeholders = implode(',', array_fill(0, count($runningJobs), '?'));
+
+            $stmt = $pdo->prepare("SELECT * FROM jobs WHERE jobID NOT IN ($placeholders) AND jobComplete = 0");
+            foreach ($runningJobs as $key => $id) {
+                $stmt->bindValue(($key + 1), $id, PDO::PARAM_INT);
+            }
+
+            $stmt->execute();
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            //Map this into a list of IDs
+            $results = array_map(function ($job) {
+                return $job["jobID"];
+
+            }, $results);
+
+            //Update them in the database to say they failed
+            $placeholders = implode(',', array_fill(0, count($results), '?'));
+            $stmt = $pdo->prepare("UPDATE jobs SET jobComplete = 2 WHERE jobID IN ($placeholders)");
+            foreach ($results as $key => $id) {
+                $stmt->bindValue(($key + 1), $id, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+        }catch(Exception $e){
+            Logger::error($e, "Jobs/updateFailed");
         }
-
-        $stmt->execute();
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        //Map this into a list of IDs
-        $results = array_map(function ($job) {
-            return $job["jobID"];
-
-        }, $results);
-
-        //Update them in the database to say they failed
-        $placeholders = implode(',', array_fill(0, count($results), '?'));
-        $stmt = $pdo->prepare("UPDATE jobs SET jobComplete = 2 WHERE jobID IN ($placeholders)");
-        foreach ($results as $key => $id) {
-            $stmt->bindValue(($key + 1), $id, PDO::PARAM_INT);
-        }
-        $stmt->execute();
-
 
     }
 
@@ -732,9 +701,10 @@ class Jobs
             $stmt->execute();
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $response->getBody()->write(json_encode($results));
+            Logger::info("Retrieved all failed jobs for user with ID $userID", $request->getRequestTarget());
             return $response->withStatus(200);
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -742,19 +712,25 @@ class Jobs
 
     public function generateFileID(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $decoded = $request->getAttribute("decoded");
-        $userID = $decoded->userID;
+        try {
+            $decoded = $request->getAttribute("decoded");
+            $userID = $decoded->userID;
 
-        $fileID = uniqid();
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("INSERT INTO fileIDS (fileID, userID) VALUES (:fileID, :userID)");
-        $stmt->bindParam(":fileID", $fileID);
-        $stmt->bindParam(":userID", $userID);
+            $fileID = uniqid();
+            $pdo = new PDO(DB_CONN);
+            $stmt = $pdo->prepare("INSERT INTO fileIDS (fileID, userID) VALUES (:fileID, :userID)");
+            $stmt->bindParam(":fileID", $fileID);
+            $stmt->bindParam(":userID", $userID);
 
-        $stmt->execute();
-
-        $response->getBody()->write(json_encode(["fileID" => $fileID]));
-        return $response->withStatus(200);
+            $stmt->execute();
+            Logger::info("Generated new file ID $fileID for user with ID $userID", "Jobs/generateFileID");
+            $response->getBody()->write(json_encode(["fileID" => $fileID]));
+            return $response->withStatus(200);
+        }catch(Exception $e){
+            Logger::error($e, "Jobs/generateFileID");
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
     }
 
     //Used for getting the correct file extension for a given mime type
@@ -953,31 +929,37 @@ class Jobs
 
     public function downloadInputFile(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $decoded = $request->getAttribute("decoded");
-        $userID = $decoded->userID;
-        $jobID = $args["jobID"];
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("SELECT fileID FROM jobs WHERE jobID = :jobID AND userID = :userID");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->bindParam(":userID", $userID);
-        $stmt->execute();
-        $data = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$data) {
-            $response->getBody()->write("Job not found");
-            return $response->withStatus(404);
+        try {
+            $decoded = $request->getAttribute("decoded");
+            $userID = $decoded->userID;
+            $jobID = $args["jobID"];
+            $pdo = new PDO(DB_CONN);
+            $stmt = $pdo->prepare("SELECT fileID FROM jobs WHERE jobID = :jobID AND userID = :userID");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":userID", $userID);
+            $stmt->execute();
+            $data = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$data) {
+                $response->getBody()->write("Job not found");
+                return $response->withStatus(404);
+            }
+
+            $fileID = $data["fileID"];
+
+            $filePath = __DIR__ . "/../usr/in/" . $userID . "/" . $fileID;
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($filePath);
+
+            //Return the file to the client, appending the correct extension to the response for the given mime type
+            $response = $response->withHeader('Content-Type', $mime);
+            $response = $response->withHeader('Content-Disposition', 'attachment; filename=' . $fileID . "." . $this->getExtension($mime));
+            $response->getBody()->write(file_get_contents($filePath));
+            return $response->withStatus(200);
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
         }
-
-        $fileID = $data["fileID"];
-
-        $filePath = __DIR__ . "/../usr/in/" . $userID . "/" . $fileID;
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($filePath);
-
-        //Return the file to the client, appending the correct extension to the response for the given mime type
-        $response = $response->withHeader('Content-Type', $mime);
-        $response = $response->withHeader('Content-Disposition', 'attachment; filename=' . $fileID . "." . $this->getExtension($mime));
-        $response->getBody()->write(file_get_contents($filePath));
-        return $response->withStatus(200);
     }
 
 
@@ -987,42 +969,50 @@ class Jobs
         $decoded = $request->getAttribute("decoded");
         $userID = $decoded->userID;
         $jobID = $args["jobID"];
-        //Check the database to see if this job has custom output or just uses the SLURM default
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("SELECT * FROM jobs JOIN jobTypes on jobs.jobTypeID = jobTypes.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID AND jobTypes.hasOutputFile = 1");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->bindParam(":userID", $userID);
-        $stmt->execute();
-        $job = $stmt->fetch(PDO::FETCH_ASSOC);
-        //If the job has custom output, we grab all the files from the directory and just return the metadata
-        if ($job) {
-            $dir = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID;
-            error_log("DIR: " . $dir);
-            $files = scandir($dir);
-            $files = array_filter($files, function ($file) {
-                return $file !== "." && $file !== "..";
-            });
-            $result = [];
-            foreach ($files as $file) {
-                $fileName = pathinfo($file, PATHINFO_FILENAME);
-                if (!empty($fileName)) {
-                    $finfo = new finfo(FILEINFO_MIME_TYPE);
-                    $mime = $finfo->file($dir . "/" . $file);
-                    $ext = $this->getExtension($mime);
-                    if ($ext !== false) $result[] = ["fileName" => $fileName, "fileExtension" => $ext];
+        try {
+            //Check the database to see if this job has custom output or just uses the SLURM default
+            $pdo = new PDO(DB_CONN);
+            $stmt = $pdo->prepare("SELECT * FROM jobs JOIN jobTypes on jobs.jobTypeID = jobTypes.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID AND jobTypes.hasOutputFile = 1");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":userID", $userID);
+            $stmt->execute();
+            $job = $stmt->fetch(PDO::FETCH_ASSOC);
+            //If the job has custom output, we grab all the files from the directory and just return the metadata
+            if ($job) {
+                $dir = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID;
+                error_log("DIR: " . $dir);
+                $files = scandir($dir);
+                $files = array_filter($files, function ($file) {
+                    return $file !== "." && $file !== "..";
+                });
+                $result = [];
+                foreach ($files as $file) {
+                    $fileName = pathinfo($file, PATHINFO_FILENAME);
+                    if (!empty($fileName)) {
+                        $finfo = new finfo(FILEINFO_MIME_TYPE);
+                        $mime = $finfo->file($dir . "/" . $file);
+                        $ext = $this->getExtension($mime);
+                        if ($ext !== false) $result[] = ["fileName" => $fileName, "fileExtension" => $ext];
+                    }
                 }
+                Logger::info("Retrieved output files for job with ID $jobID for user with ID $userID", $request->getRequestTarget());
+                $response->getBody()->write(json_encode($result));
+                //Otherwise we just return the slurmout file
+            } else {
+                $filePath = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID . "/slurmout";
+                $finfo = new finfo(FILEINFO_MIME_TYPE);
+                $mime = $finfo->file($filePath);
+                $response = $response->withHeader("Content-Type", $mime);
+                $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $jobID . "." . $this->getExtension($mime));
+                Logger::info("Retrieved output file for job with ID $jobID for user with ID $userID", $request->getRequestTarget());
+                $response->getBody()->write(file_get_contents($filePath));
             }
-            $response->getBody()->write(json_encode($result));
-            //Otherwise we just return the slurmout file
-        } else {
-            $filePath = __DIR__ . "/../usr/out/" . $userID . "/" . $jobID . "/slurmout";
-            $finfo = new finfo(FILEINFO_MIME_TYPE);
-            $mime = $finfo->file($filePath);
-            $response = $response->withHeader("Content-Type", $mime);
-            $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $jobID . "." . $this->getExtension($mime));
-            $response->getBody()->write(file_get_contents($filePath));
+            return $response->withStatus(200);
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
         }
-        return $response->withStatus(200);
 
 
     }
@@ -1040,11 +1030,12 @@ class Jobs
         $response = $response->withHeader("Content-Type", $mime);
         $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $file . "." . $this->getExtension($mime));
         $response->getBody()->write(file_get_contents($filePath));
+        Logger::info("Retrieved output file $file for job with ID $jobID for user with ID $userID", $request->getRequestTarget());
         return $response->withStatus(200);
         }catch(Exception $e){
-            error_log($e);
+            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
-            
+            return $response->withStatus(500);
         }
 
     }
@@ -1054,61 +1045,75 @@ class Jobs
         $decoded = $request->getAttribute("decoded");
         $userId = $decoded->userID;
         $jobID = $args["jobID"];
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("SELECT fileUploadCount FROM jobTypes JOIN jobs on JobTypes.jobTypeID = jobs.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->bindParam(":userID", $userId);
-        $stmt->execute();
-        $job = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$job) {
-            $response->getBody()->write("Job not found");
-            return $response->withStatus(404);
-        } elseif ((int)$job["fileUploadCount"] < 2) {
-            $response->getBody()->write("Bad Request");
-            return $response->withStatus(400);
-        }
-
-        $stmt = $pdo->prepare("SELECT fileID from jobs WHERE jobID = :jobID AND userID = :userID");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->bindParam(":userID", $userId);
-        $stmt->execute();
-        $fileID = $stmt->fetch(PDO::FETCH_ASSOC)["fileID"];
-
-
-        //If the job has more than one file, we know the application will have already extracted them into this folder.
-        //We can therefore assume the folder already exists and contains files
-        $dir = __DIR__ . "/../usr/in/" . $userId . "/" . $fileID . "-extracted";
-
-        $files = scandir($dir);
-
-        if (!$files) {
-            $response->getBody()->write("No output files associated with job");
-            return $response->withStatus(400);
-        }
-        // Filter out unwanted entries (e.g., ".", "..")
-        $files = array_filter($files, function ($file) {
-            return $file !== "." && $file !== "..";
-        });
-
-        // Initialize an empty array to store the results
-        $result = [];
-
-        foreach ($files as $file) {
-            $fileName = pathinfo($file, PATHINFO_FILENAME);
-            if (!empty($fileName)) {
-                $finfo = new finfo(FILEINFO_MIME_TYPE);
-                $mime = $finfo->file($dir . "/" . $file);
-                $ext = $this->getExtension($mime);
-                if ($ext !== false) {
-                    $result[] = ["fileName" => $fileName, "fileExtension" => $ext];
-                }
-
+        try {
+            $pdo = new PDO(DB_CONN);
+            $stmt = $pdo->prepare("SELECT fileUploadCount FROM jobTypes JOIN jobs on JobTypes.jobTypeID = jobs.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":userID", $userId);
+            $stmt->execute();
+            $job = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$job) {
+                $response->getBody()->write("Job not found");
+                return $response->withStatus(404);
+            } elseif ((int)$job["fileUploadCount"] < 2) {
+                $response->getBody()->write("Bad Request");
+                return $response->withStatus(400);
             }
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
         }
 
-        //Now $result contains the desired array
-        $response->getBody()->write(json_encode($result));
-        return $response->withStatus(200);
+        try {
+            $stmt = $pdo->prepare("SELECT fileID from jobs WHERE jobID = :jobID AND userID = :userID");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":userID", $userId);
+            $stmt->execute();
+            $fileID = $stmt->fetch(PDO::FETCH_ASSOC)["fileID"];
+
+
+            //If the job has more than one file, we know the application will have already extracted them into this folder.
+            //We can therefore assume the folder already exists and contains files
+            $dir = __DIR__ . "/../usr/in/" . $userId . "/" . $fileID . "-extracted";
+
+            $files = scandir($dir);
+
+            if (!$files) {
+                $response->getBody()->write("No output files associated with job");
+                return $response->withStatus(400);
+            }
+            // Filter out unwanted entries (e.g., ".", "..")
+            $files = array_filter($files, function ($file) {
+                return $file !== "." && $file !== "..";
+            });
+
+            // Initialize an empty array to store the results
+            $result = [];
+
+            foreach ($files as $file) {
+                $fileName = pathinfo($file, PATHINFO_FILENAME);
+                if (!empty($fileName)) {
+                    $finfo = new finfo(FILEINFO_MIME_TYPE);
+                    $mime = $finfo->file($dir . "/" . $file);
+                    $ext = $this->getExtension($mime);
+                    if ($ext !== false) {
+                        $result[] = ["fileName" => $fileName, "fileExtension" => $ext];
+                    }
+
+                }
+            }
+
+            //Now $result contains the desired array
+            $response->getBody()->write(json_encode($result));
+            Logger::info("Retrieved output files for job with ID $jobID for user with ID $userId", $request->getRequestTarget());
+            return $response->withStatus(200);
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+
+        }
 
     }
 
@@ -1118,62 +1123,118 @@ class Jobs
         $userId = $decoded->userID;
         $jobID = $args["jobID"];
         $fileNum = $args["file"];
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("SELECT fileUploadCount FROM jobTypes JOIN jobs on JobTypes.jobTypeID = jobs.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->bindParam(":userID", $userId);
-        $stmt->execute();
-        $job = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$job) {
-            $response->getBody()->write("Job not found");
-            return $response->withStatus(404);
-        } elseif ((int)$job["fileUploadCount"] < 2) {
-            $response->getBody()->write("Bad Request");
-            return $response->withStatus(400);
+        try {
+            $pdo = new PDO(DB_CONN);
+            $stmt = $pdo->prepare("SELECT fileUploadCount FROM jobTypes JOIN jobs on JobTypes.jobTypeID = jobs.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":userID", $userId);
+            $stmt->execute();
+            $job = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$job) {
+                $response->getBody()->write("Job not found");
+                return $response->withStatus(404);
+            } elseif ((int)$job["fileUploadCount"] < 2) {
+                $response->getBody()->write("Bad Request");
+                return $response->withStatus(400);
+            }
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
         }
 
-        $stmt = $pdo->prepare("SELECT fileID from jobs WHERE jobID = :jobID AND userID = :userID");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->bindParam(":userID", $userId);
-        $stmt->execute();
-        $fileID = $stmt->fetch(PDO::FETCH_ASSOC)["fileID"];
-        $dir = __DIR__ . "/../usr/in/" . $userId . "/" . $fileID . "-extracted/" . "file" . $fileNum;
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($dir);
-        $response = $response->withHeader("Content-Type", $mime);
-        $response = $response->withHeader("Content-Disposition", "attachment; filename=" . "file" . $fileNum . "." . $this->getExtension($mime));
-        $response->getBody()->write(file_get_contents($dir));
-        return $response->withStatus(200);
+        try {
+
+            $stmt = $pdo->prepare("SELECT fileID from jobs WHERE jobID = :jobID AND userID = :userID");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":userID", $userId);
+            $stmt->execute();
+            $fileID = $stmt->fetch(PDO::FETCH_ASSOC)["fileID"];
+            $dir = __DIR__ . "/../usr/in/" . $userId . "/" . $fileID . "-extracted/" . "file" . $fileNum;
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($dir);
+            $response = $response->withHeader("Content-Type", $mime);
+            $response = $response->withHeader("Content-Disposition", "attachment; filename=" . "file" . $fileNum . "." . $this->getExtension($mime));
+            Logger::info("Retrieved extracted file file$fileNum for job with ID $jobID for user with ID $userId", $request->getRequestTarget());
+            $response->getBody()->write(file_get_contents($dir));
+            return $response->withStatus(200);
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
     }
 
     public function downloadZip(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface{
         $decoded = $request->getAttribute("decoded");
         $userId = $decoded->userID;
         $jobID = $args["jobID"];
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("SELECT fileUploadCount FROM jobTypes JOIN jobs on JobTypes.jobTypeID = jobs.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->bindParam(":userID", $userId);
-        $stmt->execute();
-        $job = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$job) {
-            $response->getBody()->write("Job not found");
-            return $response->withStatus(404);
-        } elseif ((int)$job["fileUploadCount"] < 2) {
-            $response->getBody()->write("Bad Request");
-            return $response->withStatus(400);
+
+        try {
+            $pdo = new PDO(DB_CONN);
+            $stmt = $pdo->prepare("SELECT fileUploadCount FROM jobTypes JOIN jobs on JobTypes.jobTypeID = jobs.jobTypeID WHERE jobs.jobID = :jobID AND jobs.userID = :userID");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":userID", $userId);
+            $stmt->execute();
+            $job = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$job) {
+                $response->getBody()->write("Job not found");
+                return $response->withStatus(404);
+            } elseif ((int)$job["fileUploadCount"] < 2) {
+                $response->getBody()->write("Bad Request");
+                return $response->withStatus(400);
+            }
+
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
         }
 
-        $stmt = $pdo->prepare("SELECT fileID from jobs WHERE jobID = :jobID AND userID = :userID");
-        $stmt->bindParam(":jobID", $jobID);
-        $stmt->bindParam(":userID", $userId);
-        $stmt->execute();
-        $fileID = $stmt->fetch(PDO::FETCH_ASSOC)["fileID"];
-        $filePath = __DIR__ . "/../usr/in/" . $userId . "/" . $fileID;
-        $file = file_get_contents($filePath);
-        $response = $response->withHeader("Content-Type", "application/zip");
-        $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $fileID . ".zip");
-        $response->getBody()->write($file);
-        return $response->withStatus(200);
+        try {
+            $stmt = $pdo->prepare("SELECT fileID from jobs WHERE jobID = :jobID AND userID = :userID");
+            $stmt->bindParam(":jobID", $jobID);
+            $stmt->bindParam(":userID", $userId);
+            $stmt->execute();
+            $fileID = $stmt->fetch(PDO::FETCH_ASSOC)["fileID"];
+            $filePath = __DIR__ . "/../usr/in/" . $userId . "/" . $fileID;
+            $file = file_get_contents($filePath);
+            $response = $response->withHeader("Content-Type", "application/zip");
+            $response = $response->withHeader("Content-Disposition", "attachment; filename=" . $fileID . ".zip");
+            $response->getBody()->write($file);
+            Logger::info("Retrieved input files for job with ID $jobID for user with ID $userId", $request->getRequestTarget());
+            return $response->withStatus(200);
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+    }
+
+    //This is called by the scripts. I used to use php directly in the bash script but the server doesn't always support php commands
+    public function markComplete(ServerRequestInterface $request, ResponseInterface $response, array $args):ResponseInterface{
+        
+            $jobID = $args["jobId"];
+            if(!isset($jobID)){
+                $response->getBody()->write("Bad Request");
+                return $response->withStatus(400);
+            }
+
+            $jobCompleteTime = time();
+            $jobComplete = true;
+            try{
+                $pdo = new PDO(DB_CONN);
+                $stmt = $pdo->prepare("UPDATE jobs SET jobCompleteTime = :jobCompleteTime, jobComplete = :jobComplete WHERE jobID = :jobID");
+                $stmt->bindParam(":jobCompleteTime", $jobCompleteTime);
+                $stmt->bindParam(":jobComplete", $jobComplete);
+                $stmt->bindParam(":jobID", $jobID);
+                $stmt->execute();
+                $response->getBody()->write("Record Updated");
+                return $response->withStatus(204);
+            }catch(Exception $e){
+                Logger::error($e, $request->getRequestTarget());
+                $response->getBody()->write("Internal Server Error");
+                return $response->withStatus(500);
+            }
     }
 }

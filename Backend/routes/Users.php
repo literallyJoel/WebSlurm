@@ -5,8 +5,9 @@ use Psr\Http\Message\ServerRequestInterface;
 
 use function PHPSTORM_META\type;
 
-require __DIR__ . "/../helpers/Validator.php";
-require_once __DIR__ . "/../config/config.php";
+require_once __DIR__ . "/../helpers/Validator.php";
+include_once __DIR__ . "/../config/Config.php";
+require_once __DIR__ . "/../helpers/Logger.php";
 
 class Users
 {
@@ -14,7 +15,7 @@ class Users
     {
     }
 
-    private function generatePass()
+    private function generatePass(): string
     {
         $characters =
             "23456789abcdefghijkmnpqrstuvwxyzABCDEFGHIJKMNPQRSTUVWXYZ@!~#!$%^&*()";
@@ -69,7 +70,8 @@ class Users
 
             $stmt->execute();
         } catch (Exception $e) {
-            error_log($e->getMessage());
+
+            Logger::error($e, $request->getRequestTarget());
             $pdo->rollBack();
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
@@ -78,6 +80,7 @@ class Users
         $success = $pdo->commit();
 
         if ($success) {
+            Logger::info("User created with ID: {$pdo->lastInsertId()}", $request->getRequestTarget());
             if ($generatePass) {
                 $response->getBody()->write(json_encode(["userID" => $userID, "generatedPass" => $generatedPassword]));
             } else {
@@ -86,6 +89,7 @@ class Users
 
             return $response->withStatus(201);
         } else {
+            Logger::error("Failed to commit transaction. Err: {$pdo->errorInfo()}", $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -104,6 +108,7 @@ class Users
 
         if ($userID !== null) {
             if ($decodedToken->role !== 1 && $decodedToken->userID !== $userID) {
+                Logger::warning("Unauthorised attempt by user with ID {$decodedToken->userID} to update user with ID $userID", $request->getRequestTarget());
                 $response->getBody()->write("Bad Request");
                 return $response->withStatus(400);
             }
@@ -116,7 +121,7 @@ class Users
 
         $validator = new Validator();
 
-        if (!$validator->validateAccountUpdate($body, $email, $name, $password, $role)) {
+        if (!$validator->validateAccountUpdate($body, $email, $name, $password)) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
         }
@@ -156,12 +161,11 @@ class Users
             }else{
                 $stmt->bindParam("userID", $decodedToken->userID);
             }
-
             //Execute the statement
             $stmt->execute();
 
         } catch (Exception $e) {
-            error_log($e->getMessage());
+            Logger::error($e, $request->getRequestTarget());
             $pdo->rollBack();
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
@@ -170,9 +174,11 @@ class Users
         $success = $pdo->commit();
 
         if ($success) {
+            Logger::info("User with ID {$decodedToken->userID} updated with ID: $userID", $request->getRequestTarget());
             $response->getBody()->write(json_encode(["userID" => $userID, "message" => "Successfully updated user with ID: $userID", "OK" => true]));
             return $response->withStatus(201);
         } else {
+            Logger::error("Failed to commit transaction. Err: {$pdo->errorInfo()}", $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -185,6 +191,7 @@ class Users
 
         if ($userID !== null) {
             if ($decodedToken->role !== 1 && $decodedToken->userID !== $userID) {
+                Logger::warning("Unauthorised attempt by user with ID {$decodedToken->userID} to delete user with ID $userID", $request->getRequestTarget());
                 $response->getBody()->write("Bad Request");
                 return $response->withStatus(400);
             }
@@ -207,19 +214,19 @@ class Users
             if(is_null($userID)){
                 $userID = $decodedToken->userID;
             }
-            
+
             $stmt->bindParam("userID", $userID);
             $cleanupTokens->bindParam("userID", $userID);
             $cleanupCommands->bindParam("userID", $userID);
-            
-            
+
+
             //Execute the statement
             $cleanupCommands->execute();
             $cleanupTokens->execute();
             $stmt->execute();
 
         } catch (Exception $e) {
-            error_log($e->getMessage());
+            Logger::error($e, $request->getRequestTarget());
             $pdo->rollBack();
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
@@ -228,9 +235,11 @@ class Users
         $success = $pdo->commit();
 
         if ($success) {
+            Logger::info("User with ID {$decodedToken->userID} deleted user with ID: $userID", $request->getRequestTarget());
             $response->getBody()->write(json_encode(["userID" => $userID, "message" => "Successfully deleted user with ID: $userID", "OK" => true]));
             return $response->withStatus(201);
         } else {
+            Logger::error("Failed to commit transaction. Err: {$pdo->errorInfo()}", $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -238,34 +247,53 @@ class Users
 
     public function getShouldSetup(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface{
         $pdo = new PDO(DB_CONN);
+
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM users");
         $stmt->execute();
         $count = $stmt->fetchColumn();
-        error_log("COUNT: $count");
-        if($count === 1){
+
+        if($count === "1"){
             $response->getBody()->write(json_encode(["shouldSetup" => true]));
             return $response->withStatus(200);
         }else{
             $response->getBody()->write(json_encode(["shouldSetup" => false]));
             return $response->withStatus(200);
-        }
+        }   
     }
 
     public function getAll(ServerRequestInterface $request, ResponseInterface $response):ResponseInterface{
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("SELECT userID, userName, userEmail, role FROM users WHERE userID != 'default'");
-        $stmt->execute();
-        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $response->getBody()->write(json_encode($users));   
-        return $response->withStatus(200);
+       try {
+           $decoded = $request->getAttribute("decoded");
+           $userId = $decoded->userID;
+           $pdo = new PDO(DB_CONN);
+           $stmt = $pdo->prepare("SELECT userID, userName, userEmail, role FROM users WHERE userID != 'default'");
+           $stmt->execute();
+           $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+           Logger::info("User with ID $userId retrieved all users", $request->getRequestTarget());
+           $response->getBody()->write(json_encode($users));
+           return $response->withStatus(200);
+       } catch (Exception $e) {
+           Logger::error($e, $request->getRequestTarget());
+           $response->getBody()->write("Internal Server Error");
+           return $response->withStatus(500);
+       }
     }
 
     public function getCount(ServerRequestInterface $request, ResponseInterface $response):ResponseInterface{
-        $pdo = new PDO(DB_CONN);
-        $stmt = $pdo->prepare("SELECT COUNT (*) FROM USERS WHERE userID != 'default'");
-        $stmt->execute();
-        $count = $stmt->fetchColumn();
-        $response->getBody()->write(json_encode(["count" => $count]));
-        return $response->withStatus(200);
+        try {
+            $decoded = $request->getAttribute("decoded");
+            $userId = $decoded->userID;
+            $pdo = new PDO(DB_CONN);
+            $stmt = $pdo->prepare("SELECT COUNT (*) FROM USERS WHERE userID != 'default'");
+            $stmt->execute();
+            $count = $stmt->fetchColumn();
+            $response->getBody()->write(json_encode(["count" => $count]));
+            Logger::info("User count retrieved by user with ID $userId", $request->getRequestTarget());
+            return $response->withStatus(200);
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
     }
 }   

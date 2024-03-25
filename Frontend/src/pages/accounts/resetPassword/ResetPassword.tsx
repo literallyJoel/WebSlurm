@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shadui/ui/card";
 import { Label } from "@radix-ui/react-label";
 import { Input } from "@/shadui/ui/input";
 import { Button } from "@/shadui/ui/button";
-
+import { Link } from "react-router-dom";
+import { useRef } from "react";
 interface props {
   isRequired?: boolean;
 }
@@ -16,6 +17,7 @@ const ResetPassword = ({ isRequired }: props): JSX.Element => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordValid, setIsPasswordValid] = useState(true);
+  const hiddenRef = useRef<HTMLAnchorElement>(null);
   const updatePasswordRequest = useMutation(
     "updatePassword",
     (password: string) => {
@@ -29,7 +31,7 @@ const ResetPassword = ({ isRequired }: props): JSX.Element => {
     } else {
       updatePasswordRequest.mutate(password, {
         onSuccess: () => {
-          window.location.href = "/";
+          hiddenRef.current?.click();
         },
       });
     }
@@ -38,6 +40,7 @@ const ResetPassword = ({ isRequired }: props): JSX.Element => {
   return (
     <div className="flex flex-col h-screen">
       <Nav />
+      <Link to="/" className="hidden" ref={hiddenRef} />
       <div className="mt-10 w-full flex flex-col items-center">
         <Card className="max-w-2xl w-4/12 mx-auto">
           <CardHeader>

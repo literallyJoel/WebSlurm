@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import {
   type JobTypeParameter,
   extractParams,
@@ -25,6 +25,7 @@ import { validateParameters } from "@/helpers/validation";
 import { useMutation, useQuery } from "react-query";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export const UpdateJobType = (): JSX.Element => {
   const { id } = useParams();
@@ -55,7 +56,7 @@ export const UpdateJobType = (): JSX.Element => {
   const [isNameValid, setIsNameValid] = useState(true);
   const { getToken } = useContext(AuthContext);
   const token = getToken();
-
+  const hiddenRef = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     if (currentJob.data) {
       console.log(currentJob.data);
@@ -91,7 +92,7 @@ export const UpdateJobType = (): JSX.Element => {
     },
     {
       onSuccess: () => {
-        window.location.href = "/admin/jobtypes";
+        hiddenRef.current?.click();
       },
     }
   );
@@ -127,6 +128,7 @@ export const UpdateJobType = (): JSX.Element => {
   return (
     <div className="flex flex-col w-full items-center">
       <Card className="w-full max-w-2xl">
+        <Link to="/admin/jobtypes" className="hidden" ref={hiddenRef} />
         <CardHeader>
           <CardTitle>UpdateJob Type</CardTitle>
           <CardDescription>
@@ -210,7 +212,7 @@ export const UpdateJobType = (): JSX.Element => {
                   checked={hasOutputFiles}
                   onChange={(e) => {
                     setHasOutputFiles(e.target.checked);
-                    if(!e.target.checked) setOutputCount(0);
+                    if (!e.target.checked) setOutputCount(0);
                   }}
                 />
               </div>
@@ -243,8 +245,8 @@ export const UpdateJobType = (): JSX.Element => {
                     How many files will be outputted?
                   </Label>
                   <Label className="text-red-500 text-sm">
-                    When referring to output files in your script, please use bash
-                    variables out0, out1, etc.
+                    When referring to output files in your script, please use
+                    bash variables out0, out1, etc.
                   </Label>
                   <Input
                     className="outputCount"

@@ -1,4 +1,5 @@
 import crypto from "crypto-js";
+import { apiEndpoint } from "@/config/config";
 export type LoginObject = {
   email: string;
   password: string;
@@ -33,7 +34,7 @@ export async function login(loginObject: LoginObject): Promise<LoginResponse> {
   const hashedPass = crypto.SHA512(pass).toString();
   loginObject.password = hashedPass;
   return (
-    await fetch("/api/auth/login", {
+    await fetch(apiEndpoint + "/auth/login", {
       method: "POST",
       body: JSON.stringify(loginObject),
     })
@@ -41,7 +42,7 @@ export async function login(loginObject: LoginObject): Promise<LoginResponse> {
 }
 
 export async function logout(token: string) {
-  return await fetch("/api/auth/logout", {
+  return await fetch(apiEndpoint + "/auth/logout", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -52,25 +53,27 @@ export async function verifyPass(
   token: string
 ): Promise<VerifyPasswordResponse> {
   const hashedPass = crypto.SHA512(pass).toString();
-  return await fetch("api/auth/verifypass", {
+  return await fetch(apiEndpoint + "/auth/verifypass", {
     method: "POST",
     body: JSON.stringify({ password: hashedPass }),
     headers: { Authorization: `Bearer ${token}` },
   });
 }
 
-export async function verifyToken(token: string): Promise<{ok: boolean, err?: number}> {
-  const resp = await fetch("/api/auth/verify", {
+export async function verifyToken(
+  token: string
+): Promise<{ ok: boolean; err?: number }> {
+  const resp = await fetch(apiEndpoint + "/auth/verify", {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
-  
+
   if (resp.status === 200) {
-    return {ok: true};
-  }else{
-    if(await resp.text() === "Token Expired"){
-      return {ok: false, err: 4011}
+    return { ok: true };
+  } else {
+    if ((await resp.text()) === "Token Expired") {
+      return { ok: false, err: 4011 };
     }
-    return {ok: false, err: resp.status};
+    return { ok: false, err: resp.status };
   }
 }

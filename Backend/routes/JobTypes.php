@@ -3,7 +3,8 @@
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
-require_once __DIR__ . "/../config/config.php";
+include_once __DIR__ . "/../config/Config.php";
+require_once __DIR__ . "/../helpers/Logger.php";
 class JobTypes
 {
     public function __construct()
@@ -70,16 +71,18 @@ class JobTypes
         } catch (Exception $e) {
             //If anything goes wrong, rollback the transaction and error out
             $pdo->rollBack();
-            error_log($e);
+            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
         //Else, commit the transaction and send an appropriate response to the client
         $ok = $pdo->commit();
         if ($ok) {
+            Logger::info("JobType with ID $jobTypeID created for user with ID $userID", $request->getRequestTarget());
             $response->getBody()->write(json_encode(["jobTypeID" => $jobTypeID]));
             return $response->withStatus(200);
         } else {
+            Logger::error("Failed to create job for user with ID: $userID. Reason: {$pdo->errorInfo()}", $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -145,9 +148,10 @@ class JobTypes
 
             //Send the data to the client
             $response->getBody()->write(json_encode(array_values($result)));
+            Logger::info("JobTypes retrieved", $request->getRequestTarget());
             return $response->withStatus(200);
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -212,10 +216,11 @@ class JobTypes
                 'createdByName' => $createdByName,
             ];
 
+
             $response->getBody()->write(json_encode($jobTypeData));
             return $response->withStatus(200);
         } catch (Exception $e) {
-            error_log($e);
+            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -224,7 +229,8 @@ class JobTypes
     public function updateById(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         $jobTypeId = $args['jobTypeID'];
-
+        $decoded = $request->getAttribute("decoded");
+        $userID = $decoded->userID;
 
         $body = json_decode($request->getBody());
         $name = $body->name ?? null;
@@ -276,11 +282,12 @@ class JobTypes
             }
 
             $pdo->commit();
+            Logger::info("JobType with ID $jobTypeId updated for user with ID $userID", $request->getRequestTarget());
             $response->getBody()->write("JobType updated successfully");
             return $response->withStatus(200);
         } catch (Exception $e) {
             $pdo->rollBack();
-            error_log($e);
+            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
@@ -288,6 +295,8 @@ class JobTypes
 
     public function deleteById(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
+        $decoded = $request->getAttribute("decoded");
+        $userID = $decoded->userID;
         $jobTypeId = $args['jobTypeID'];
 
         
@@ -307,11 +316,12 @@ class JobTypes
             $deleteJobTypeStmt->execute();
 
             $pdo->commit();
+            Logger::info("JobType with ID $jobTypeId deleted for user with ID $userID", $request->getRequestTarget());
             $response->getBody()->write("JobType and parameters removed successfully");
             return $response->withStatus(200);
         } catch (Exception $e) {
             $pdo->rollBack();
-            error_log($e);
+            Logger::info($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }

@@ -16,6 +16,8 @@ interface props {
 const UserCard = ({ id, name, role, userCount }: props): JSX.Element => {
   const queryClient = useQueryClient();
   const token = useContext(AuthContext).getToken();
+  const user = useContext(AuthContext).getUser();
+
   const deleteUser = useMutation(
     "deleteCard",
     (id: string) => {
@@ -30,25 +32,32 @@ const UserCard = ({ id, name, role, userCount }: props): JSX.Element => {
 
   return (
     <Card className="relative">
-      {role === 1 && (
-        <div className="flex flex-row w-full absolute right0">
+      <div className="flex flex-row w-full absolute right-0 gal-0">
+        {role === 1 && (
           <Badge className="bg-emerald-500 rounded rounded-b-none rounded-tr-none w-12 text-xs justify-center">
             Admin
           </Badge>
-        </div>
-      )}
+        )}
+        {user?.id === id && (
+          <Badge className="bg-orange-500 rounded-none w-12 text-xs justify-center">
+            You
+          </Badge>
+        )}
+      </div>
 
+      {user?.id === id && (
+        <div className="flex flex-row w-full absolute -right-10"></div>
+      )}
       <CardHeader>
         <div className="flex flex-col justify-between w-full gap-2 border-b border-b-uol pb-2">
           <CardTitle className="pt-2 w-full">{name}</CardTitle>
         </div>
       </CardHeader>
-
       <CardFooter className="flex flex-row justify-center items-center">
         <Button
           onClick={() => deleteUser.mutate(id)}
           className="bg-red-500 border border-red-500 text-white hover:bg-transparent hover:text-red-500"
-          disabled={userCount === 1 ?? true}
+          disabled={(userCount === 1 ?? true) || user?.id === id}
         >
           Delete
         </Button>

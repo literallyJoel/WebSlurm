@@ -9,6 +9,7 @@ use Psr\Http\Message\ServerRequestInterface;
 
 abstract class AbstractLocationProviderTest extends TestCase
 {
+
     protected function getRequest(UriInterface $uri): ServerRequestInterface
     {
         parse_str($uri->getQuery(), $params);

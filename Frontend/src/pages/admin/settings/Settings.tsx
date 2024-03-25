@@ -32,11 +32,11 @@ const AdminSettings = (): JSX.Element => {
               >
                 Application Management
               </a>
-            </li>
-            <li>
+            </li> */}
+            {/* <li>
               <a
                 className="flex justify-center py-2 text-lg font-semibold text-gray-700 dark:text-gray-300"
-                href="/admin/orgs"
+                href="/admin/organisations"
               >
                 Organisation Management
               </a>

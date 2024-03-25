@@ -11,6 +11,7 @@ use Laminas\Diactoros\ServerRequest;
 
 class ParameterLocationProviderTest extends AbstractLocationProviderTest
 {
+
     protected ParameterLocationProvider $provider;
 
     public function setUp(): void

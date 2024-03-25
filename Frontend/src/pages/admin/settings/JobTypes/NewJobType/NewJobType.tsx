@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import {
   type JobTypeParameter,
   extractParams,
@@ -23,6 +23,7 @@ import { Button } from "@/shadui/ui/button";
 import { validateParameters } from "@/helpers/validation";
 import { useMutation } from "react-query";
 import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
+import { Link } from "react-router-dom";
 
 const NewJobType = (): JSX.Element => {
   const scriptStart =
@@ -39,7 +40,9 @@ const NewJobType = (): JSX.Element => {
   const [fileCount, setFileCount] = useState(0);
   const [isNameValid, setIsNameValid] = useState(true);
   const { getToken } = useContext(AuthContext);
+  const hiddenRef = useRef<HTMLAnchorElement>(null);
   const token = getToken();
+
   const createJobTypeRequest = useMutation(
     "createJobType",
     (jobType: JobTypeCreation) => {
@@ -47,7 +50,7 @@ const NewJobType = (): JSX.Element => {
     },
     {
       onSuccess: () => {
-        window.location.href = "/admin/jobtypes";
+        hiddenRef.current?.click();
       },
     }
   );
@@ -82,6 +85,11 @@ const NewJobType = (): JSX.Element => {
   return (
     <div className="flex flex-col w-full items-center">
       <Card className="w-full max-w-2xl">
+        <Link
+          to="/admin/settings/jobTypes"
+          className="hidden"
+          ref={hiddenRef}
+        />
         <CardHeader>
           <CardTitle>Create a New Job Type</CardTitle>
           <CardDescription>

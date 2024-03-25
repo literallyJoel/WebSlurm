@@ -7,6 +7,7 @@ use SplFileInfo;
 
 class OriginalFilenameFactory implements FilenameFactoryInterface
 {
+
     protected $directory;
 
     public function __construct(string $directory)
@@ -17,7 +18,7 @@ class OriginalFilenameFactory implements FilenameFactoryInterface
     public function generateFilename(UuidInterface $uuid, array $metadata): SplFileInfo
     {
         $filename = $metadata['name'] ?? $metadata['filename'] ?? null;
-        error_log("FILENAME: " . $filename);
+
         /**
          * Fallback to UUID if no $filename given, or file already exists
          */

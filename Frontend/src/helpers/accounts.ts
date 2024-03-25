@@ -1,5 +1,6 @@
 import crypto from "crypto-js";
-
+import { jwtDecode } from "jwt-decode";
+import { apiEndpoint } from "@/config/config";
 //=======================================//
 //===========Type Definitions===========//
 //=====================================//
@@ -16,6 +17,16 @@ export type NewAccountObject = {
   password?: string;
 };
 
+export type DecodedToken = {
+  tokenId: string;
+  exp: number;
+  userId: string;
+  email: string;
+  name: string;
+  role: number;
+  requiresPasswordReset: string;
+  local: boolean;
+};
 /*
 Defines the shape of the response sent by 
 the server after updating an account
@@ -88,7 +99,7 @@ export async function createAccount(
 ): Promise<CreateAccountResponse> {
   if (generatePass === true) {
     return (
-      await fetch("/api/users/create", {
+      await fetch(apiEndpoint + "/users/create", {
         method: "POST",
         body: JSON.stringify({
           name: name,
@@ -108,7 +119,7 @@ export async function createAccount(
     */
     const hashedPass = crypto.SHA512(password!).toString();
     return (
-      await fetch("/api/users/create", {
+      await fetch(apiEndpoint + "/users/create", {
         method: "POST",
         body: JSON.stringify({
           name: name,
@@ -140,7 +151,7 @@ export async function updateAccount(
   }
 
   return (
-    await fetch("/api/users/update", {
+    await fetch(apiEndpoint + "/users/update", {
       method: "PUT",
       body: JSON.stringify(updateAccountObject),
     })
@@ -156,7 +167,7 @@ and potentially a user ID for admin actions,
 and calls for account deletion on the backend
 */
 export async function deleteAccount(token: string, userID?: string) {
-  return await fetch("/api/users/delete", {
+  return await fetch(apiEndpoint + "/users/delete", {
     method: "DELETE",
     body: JSON.stringify({ userID: userID }),
     headers: { Authorization: `Bearer ${token}` },
@@ -164,21 +175,27 @@ export async function deleteAccount(token: string, userID?: string) {
 }
 
 export async function getShouldSetup() {
-  return (await fetch("/api/users/shouldsetup")).json() as Promise<{
+  return (await fetch(apiEndpoint + "/users/shouldsetup")).json() as Promise<{
     shouldSetup: boolean;
   }>;
 }
 
 export async function getAllAccounts(token: string): Promise<User[]> {
   return (
-    await fetch("/api/users", {
+    await fetch(apiEndpoint + "/users", {
       headers: { Authorization: `bearer ${token}` },
     })
   ).json();
 }
 
-export async function getUserCount(token: string): Promise<{count:number}>{
-  return (await fetch("/api/users/count", {
-    headers: { Authorization: `bearer ${token}` },
-  })).json();
+export async function getUserCount(token: string): Promise<{ count: number }> {
+  return (
+    await fetch(apiEndpoint + "/users/count", {
+      headers: { Authorization: `bearer ${token}` },
+    })
+  ).json();
+}
+
+export function decodeToken(token: string): DecodedToken {
+  return jwtDecode(token);
 }

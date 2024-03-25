@@ -1,0 +1,16 @@
+13 /home/sgjvivia/public_html/routes/../usr/in/65fdd7e3deb020.20104980/66016d8638ea9
+https://pgb.liv.ac.uk/~sgjvivia/api/jobs/21/markcomplete
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100  2176  100  2176    0     0   4413      0 --:--:-- --:--:-- --:--:--  4404
+<html><head><meta http-equiv='Content-Type' content='text/html; charset=utf-8'><title>Slim Application Error</title><style>body{margin:0;padding:30px;font:12px/1.5 Helvetica,Arial,Verdana,sans-serif;}h1{margin:0;font-size:48px;font-weight:normal;line-height:48px;}strong{display:inline-block;width:65px;}</style></head><body><h1>Slim Application Error</h1><p>The application could not run because of the following error:</p><h2>Details</h2><div><strong>Type:</strong> Error</div><div><strong>Message:</strong> Call to undefined function execute()</div><div><strong>File:</strong> /home/sgjvivia/public_html/routes/Jobs.php</div><div><strong>Line:</strong> 1231</div><h2>Trace</h2><pre>#0 [internal function]: Jobs-&gt;markComplete(Object(Slim\Http\Request), Object(Slim\Http\Response), Array)
+#1 /home/sgjvivia/public_html/vendor/slim/slim/Slim/Handlers/Strategies/RequestResponse.php(41): call_user_func(Array, Object(Slim\Http\Request), Object(Slim\Http\Response), Array)
+#2 /home/sgjvivia/public_html/vendor/slim/slim/Slim/Route.php(356): Slim\Handlers\Strategies\RequestResponse-&gt;__invoke(Array, Object(Slim\Http\Request), Object(Slim\Http\Response), Array)
+#3 /home/sgjvivia/public_html/vendor/slim/slim/Slim/MiddlewareAwareTrait.php(117): Slim\Route-&gt;__invoke(Object(Slim\Http\Request), Object(Slim\Http\Response))
+#4 /home/sgjvivia/public_html/vendor/slim/slim/Slim/Route.php(334): Slim\Route-&gt;callMiddlewareStack(Object(Slim\Http\Request), Object(Slim\Http\Response))
+#5 /home/sgjvivia/public_html/vendor/slim/slim/Slim/App.php(515): Slim\Route-&gt;run(Object(Slim\Http\Request), Object(Slim\Http\Response))
+#6 /home/sgjvivia/public_html/vendor/slim/slim/Slim/MiddlewareAwareTrait.php(117): Slim\App-&gt;__invoke(Object(Slim\Http\Request), Object(Slim\Http\Response))
+#7 /home/sgjvivia/public_html/vendor/slim/slim/Slim/App.php(405): Slim\App-&gt;callMiddlewareStack(Object(Slim\Http\Request), Object(Slim\Http\Response))
+#8 /home/sgjvivia/public_html/vendor/slim/slim/Slim/App.php(313): Slim\App-&gt;process(Object(Slim\Http\Request), Object(Slim\Http\Response))
+#9 /home/sgjvivia/public_html/index.php(207): Slim\App-&gt;run()
+#10 {main}</pre></body></html>

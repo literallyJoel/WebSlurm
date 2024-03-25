@@ -7,6 +7,7 @@ use Ramsey\Uuid\UuidInterface;
 
 class UuidFilenameFactory implements FilenameFactoryInterface
 {
+
     protected $directory;
 
     public function __construct(string $directory)

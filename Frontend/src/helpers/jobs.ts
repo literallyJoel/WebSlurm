@@ -1,3 +1,4 @@
+import { apiEndpoint } from "@/config/config";
 export type JobParameter = {
   key: string;
   value: string | number | boolean;
@@ -56,7 +57,7 @@ export async function createJob(
 ): Promise<CreateJobResponse> {
   console.log("fileID: ", job.fileID);
   return (
-    await fetch("/api/jobs/create", {
+    await fetch(apiEndpoint + "/jobs/create", {
       method: "POST",
       body: JSON.stringify(job),
       headers: {
@@ -68,7 +69,7 @@ export async function createJob(
 
 export async function getJobs(token: string): Promise<Job[]> {
   return (
-    await fetch("/api/jobs", {
+    await fetch(apiEndpoint + "/jobs", {
       headers: { Authorization: `Bearer ${token}` },
     })
   ).json();
@@ -80,7 +81,7 @@ export const getCompletedJobs = async (
   userID?: string
 ): Promise<Job[]> => {
   return (
-    await fetch(`/api/jobs/complete?limit=${limit}&userID=${userID}`, {
+    await fetch(`${apiEndpoint}/jobs/complete?limit=${limit}&userID=${userID}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -94,7 +95,7 @@ export const getRunningJobs = async (
   userID?: string
 ): Promise<Job[]> => {
   return (
-    await fetch(`/api/jobs/running?limit=${limit}&userID=${userID}`, {
+    await fetch(`${apiEndpoint}/jobs/running?limit=${limit}&userID=${userID}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -108,7 +109,7 @@ export const getFailedJobs = async (
   userID?: string
 ): Promise<Job[]> => {
   return (
-    await fetch(`/api/jobs/failed?limit=${limit}&userID=${userID}`, {
+    await fetch(`${apiEndpoint}/jobs/failed?limit=${limit}&userID=${userID}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -120,7 +121,7 @@ export const getJob = async (
   jobID: string,
   token: string
 ): Promise<Job | false> => {
-  const res = await fetch(`/api/jobs/${jobID}`, {
+  const res = await fetch(`${apiEndpoint}/jobs/${jobID}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -134,7 +135,7 @@ export const getParameters = async (
   token: string
 ): Promise<JobParameter[]> => {
   return (
-    await fetch(`/api/jobs/${jobID}/parameters`, {
+    await fetch(`${apiEndpoint}/jobs/${jobID}/parameters`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -143,7 +144,7 @@ export const getParameters = async (
 };
 export const getFileID = async (token: string): Promise<FileID> => {
   return (
-    await fetch(`/api/jobs/fileid`, {
+    await fetch(`${apiEndpoint}/jobs/fileid`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -155,7 +156,7 @@ export const downloadInputFile = async (
   token: string,
   jobID: string
 ): Promise<File | undefined> => {
-  const res = await fetch(`/api/jobs/${jobID}/download/in`, {
+  const res = await fetch(`${apiEndpoint}/jobs/${jobID}/download/in`, {
     headers: {
       authorization: `Bearer ${token}`,
     },
@@ -179,7 +180,7 @@ export const downloadInputFile = async (
     file.fileContents = text;
     file.fileURL = URL.createObjectURL(new Blob([text]));
   } else if (file.fileExt === "zip") {
-    const zipInfo = await fetch(`/api/jobs/${jobID}/zipinfo`, {
+    const zipInfo = await fetch(`${apiEndpoint}/jobs/${jobID}/zipinfo`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     const zipContents: FileMetadata[] = await zipInfo.json();
@@ -196,7 +197,7 @@ export const downloadOutputFile = async (
   token: string,
   jobID: string
 ): Promise<OutputFile | undefined> => {
-  const res = await fetch(`/api/jobs/${jobID}/download/out`, {
+  const res = await fetch(`${apiEndpoint}/jobs/${jobID}/download/out`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -238,17 +239,18 @@ export const downloadOutputFile = async (
 
 export const downloadZip = async (
   token: string,
-  jobID: string,
-):Promise<void> =>{
-  const res = await fetch(`/api/jobs/${jobID}/download/zip` , {
-    headers:{
-      Authorization: `Bearer ${token}`
-    }
+  jobID: string
+): Promise<void> => {
+  const res = await fetch(`${apiEndpoint}/jobs/${jobID}/download/zip`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
-  if (res.status === 200){
+  if (res.status === 200) {
     const contentDisposition = res.headers.get("Content-Disposition");
-    const fileName = contentDisposition?.split("filename=")[1] || "downloaded-file";
+    const fileName =
+      contentDisposition?.split("filename=")[1] || "downloaded-file";
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -257,18 +259,21 @@ export const downloadZip = async (
     link.click();
     URL.revokeObjectURL(url);
   }
-}
+};
 
 export const downloadFile = async (
   token: string,
   jobID: string,
   fileName: string
 ): Promise<void> => {
-  const res = await fetch(`/api/jobs/${jobID}/download/out/${fileName}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const res = await fetch(
+    `${apiEndpoint}/jobs/${jobID}/download/out/${fileName}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 
   if (res.status === 200) {
     const contentDisposition = res.headers.get("Content-Disposition");
@@ -288,7 +293,7 @@ export const downloadExtracted = async (
   file: number,
   token: string
 ): Promise<void> => {
-  const res = await fetch(`/api/jobs/${jobID}/extracted/${file}`, {
+  const res = await fetch(`${apiEndpoint}/jobs/${jobID}/extracted/${file}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },

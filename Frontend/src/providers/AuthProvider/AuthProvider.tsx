@@ -86,7 +86,7 @@ const AuthProvider = ({ children }: props): JSX.Element => {
 
   if (decoded && decoded.local) {
     if (isTokenValid.data?.ok !== true) {
-      if (isTokenValid.data?.err === 4011) {
+      if (isTokenValid.data?.err === 401) {
         console.log("expired");
         return <Login isExpired={true} />;
       }

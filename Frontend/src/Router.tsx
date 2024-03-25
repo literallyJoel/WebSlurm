@@ -22,7 +22,9 @@ import ViewJobs from "./pages/jobs/ViewJob/ViewJobs.tsx";
 import JobInfo from "./pages/jobs/ViewJob/JobInfo.tsx";
 import { getFileID } from "./helpers/jobs.ts";
 import Users from "./pages/admin/settings/Users/Users.tsx";
-
+import Organisations from "./pages/admin/settings/Organisations/Organisations.tsx";
+import CreateOrganisation from "./pages/admin/settings/Organisations/CreateOrganisation.tsx";
+import { apiEndpoint } from "./config/config.ts";
 const queryClient = new QueryClient();
 
 const Router = () => {
@@ -49,7 +51,7 @@ const Router = () => {
         endpoint:
           process.env.NODE_ENV === "development"
             ? "http://localhost:8080/api/jobs/upload"
-            : "/api/jobs/upload",
+            : `${apiEndpoint}/jobs/upload`,
         retryDelays: [0, 1000, 3000, 5000],
         limit: 1,
         removeFingerprintOnSuccess: true,
@@ -75,55 +77,65 @@ const Router = () => {
     setUppy(getNewUppy());
   };
 
-  const router = createBrowserRouter([
-    { path: "/", element: <Home /> },
-    { path: "/accounts/create", element: <CreateAccount /> },
-    { path: "/accounts/create/success", element: <CreationSuccess /> },
-    { path: "/accounts/create/failure", element: <CreationFailure /> },
+  const router = createBrowserRouter(
+    [
+      { path: "/", element: <Home /> },
+      { path: "/accounts/create", element: <CreateAccount /> },
+      { path: "/accounts/create/success", element: <CreationSuccess /> },
+      { path: "/accounts/create/failure", element: <CreationFailure /> },
+      {
+        path: "/accounts/settings/resetpassword",
+        element: <ResetPassword />,
+      },
+      { path: "/accounts/settings", element: <AccountSettings /> },
+      { path: "/auth/login", element: <Login /> },
+      {
+        path: "/admin",
+        element: <AdminSettings />,
+        children: [
+          { path: "/admin/jobtypes/new", element: <NewJobType /> },
+          { path: "/admin/jobtypes", element: <JobTypes /> },
+          {
+            path: "/admin/jobtypes/:id",
+            element: <UpdateJobType />,
+          },
+          { path: "/admin/users", element: <Users /> },
+          { path: "/admin/organisations/", element: <Organisations /> },
+          {
+            path: "/admin/organisations/create",
+            element: <CreateOrganisation />,
+          },
+        ],
+      },
+      {
+        path: "/jobs/create",
+        element: (
+          <CreateJob
+            uppy={uppy}
+            isUploadComplete={isUploadComplete}
+            setFileID={setFileID}
+            fileID={fileID}
+            resetUppy={resetUppy}
+            setAllowedTypes={setAllowedTypes}
+            allowedTypes={allowedTypes}
+          />
+        ),
+      },
+      {
+        path: "/jobs/",
+        element: <ViewJobs />,
+        children: [
+          {
+            path: "/jobs/:jobID",
+            element: <JobInfo />,
+          },
+        ],
+      },
+    ],
     {
-      path: "/accounts/settings/resetpassword",
-      element: <ResetPassword />,
-    },
-    { path: "/accounts/settings", element: <AccountSettings /> },
-    { path: "/auth/login", element: <Login /> },
-    {
-      path: "/admin",
-      element: <AdminSettings />,
-      children: [
-        { path: "/admin/jobtypes/new", element: <NewJobType /> },
-        { path: "/admin/jobtypes", element: <JobTypes /> },
-        {
-          path: "/admin/jobtypes/:id",
-          element: <UpdateJobType />,
-        },
-        { path: "/admin/users", element: <Users /> },
-      ],
-    },
-    {
-      path: "/jobs/create",
-      element: (
-        <CreateJob
-          uppy={uppy}
-          isUploadComplete={isUploadComplete}
-          setFileID={setFileID}
-          fileID={fileID}
-          resetUppy={resetUppy}
-          setAllowedTypes={setAllowedTypes}
-          allowedTypes={allowedTypes}
-        />
-      ),
-    },
-    {
-      path: "/jobs/",
-      element: <ViewJobs />,
-      children: [
-        {
-          path: "/jobs/:jobID",
-          element: <JobInfo />,
-        },
-      ],
-    },
-  ]);
+      basename: "/~sgjvivia",
+    }
+  );
 
   return (
     <QueryClientProvider client={queryClient}>

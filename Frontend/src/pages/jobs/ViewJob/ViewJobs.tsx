@@ -50,11 +50,17 @@ const ViewJobs = (): JSX.Element => {
   const handleFilter = () => {
     if (allJobs.data) {
       if (filter === "running") {
-        setFilteredJobs(allJobs.data.filter((job) => job.jobComplete === 0));
+        setFilteredJobs(
+          allJobs.data.filter((job) => Number(job.jobComplete) === 0)
+        );
       } else if (filter === "completed") {
-        setFilteredJobs(allJobs.data.filter((job) => job.jobComplete === 1));
+        setFilteredJobs(
+          allJobs.data.filter((job) => Number(job.jobComplete) === 1)
+        );
       } else if (filter === "failed") {
-        setFilteredJobs(allJobs.data.filter((job) => job.jobComplete === 2));
+        setFilteredJobs(
+          allJobs.data.filter((job) => Number(job.jobComplete) === 2)
+        );
       } else {
         setFilteredJobs(allJobs.data);
       }
@@ -195,7 +201,7 @@ const ViewJobs = (): JSX.Element => {
           <ul className="space-y-2">
             {filteredJobs.map((job) => (
               <Link
-                to={`/jobs/${job.jobID}`}
+                to={`/jobs/${job.jobID}${queryParams.get("filter")? `?filter=${filter}` : ""}`}
                 key={job.jobID}
                 className={`flex hover:bg-slate-200 ${
                   `${jobID}` === `${job.jobID}` ? "bg-slate-200" : ""

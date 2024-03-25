@@ -1,18 +1,21 @@
-<?php declare(strict_types=1);
+<?php
 
 namespace Invoker\ParameterResolver\Container;
 
 use Invoker\ParameterResolver\ParameterResolver;
 use Psr\Container\ContainerInterface;
 use ReflectionFunctionAbstract;
-use ReflectionNamedType;
 
 /**
  * Inject entries from a DI container using the type-hints.
+ *
+ * @author Matthieu Napoli <matthieu@mnapoli.fr>
  */
 class TypeHintContainerResolver implements ParameterResolver
 {
-    /** @var ContainerInterface */
+    /**
+     * @var ContainerInterface
+     */
     private $container;
 
     /**
@@ -27,7 +30,7 @@ class TypeHintContainerResolver implements ParameterResolver
         ReflectionFunctionAbstract $reflection,
         array $providedParameters,
         array $resolvedParameters
-    ): array {
+    ) {
         $parameters = $reflection->getParameters();
 
         // Skip parameters already resolved
@@ -36,27 +39,10 @@ class TypeHintContainerResolver implements ParameterResolver
         }
 
         foreach ($parameters as $index => $parameter) {
-            $parameterType = $parameter->getType();
-            if (! $parameterType) {
-                // No type
-                continue;
-            }
-            if (! $parameterType instanceof ReflectionNamedType) {
-                // Union types are not supported
-                continue;
-            }
-            if ($parameterType->isBuiltin()) {
-                // Primitive types are not supported
-                continue;
-            }
+            $parameterClass = $parameter->getClass();
 
-            $parameterClass = $parameterType->getName();
-            if ($parameterClass === 'self') {
-                $parameterClass = $parameter->getDeclaringClass()->getName();
-            }
-
-            if ($this->container->has($parameterClass)) {
-                $resolvedParameters[$index] = $this->container->get($parameterClass);
+            if ($parameterClass && $this->container->has($parameterClass->name)) {
+                $resolvedParameters[$index] = $this->container->get($parameterClass->name);
             }
         }
 

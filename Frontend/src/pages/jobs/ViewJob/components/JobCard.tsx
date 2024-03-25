@@ -3,10 +3,11 @@ import type { Job } from "@/helpers/jobs";
 
 interface props {
   job: Job;
+
 }
-const JobCard = ({ job }: props): JSX.Element => {
+const JobCard = ({ job}: props): JSX.Element => {
   const ProgressDiv = () => {
-    if (job.jobComplete === 0) {
+    if (Number(job.jobComplete) === 0) {
       return (
         <div className="p-2 text-sm flex flex-row">
           <Spinner />
@@ -16,7 +17,7 @@ const JobCard = ({ job }: props): JSX.Element => {
           ).toLocaleDateString("en-GB")}
         </div>
       );
-    } else if (job.jobComplete === 1) {
+    } else if (Number(job.jobComplete) === 1) {
       return (
         <div className="p-2 text-sm">
           🟢Completed{" "}

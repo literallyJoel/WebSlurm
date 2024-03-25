@@ -1,6 +1,6 @@
 import Nav from "@/components/Nav";
 import { LoginObject, login } from "@/pages/auth/auth";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Label } from "@/shadui/ui/label";
 import { Input } from "@/shadui/ui/input";
 import { Button } from "@/shadui/ui/button";
@@ -15,6 +15,7 @@ import { useMutation, useQuery } from "react-query";
 import { validateEmail } from "@/helpers/validation";
 import { getShouldSetup } from "@/helpers/accounts";
 import CreateAccount from "@/pages/accounts/create/CreateAccount";
+import { Link } from "react-router-dom";
 
 interface props {
   isExpired?: boolean;
@@ -26,6 +27,8 @@ const Login = ({ isExpired }: props): JSX.Element => {
   const [isEmailValid, setIsEmailValid] = useState(true);
   const [isAccountError, setIsAccountError] = useState(false);
   const [shouldSetup, setShouldSetup] = useState<boolean>();
+  const homeRef = useRef<HTMLAnchorElement>(null);
+  const authRef = useRef<HTMLAnchorElement>(null);
   useQuery(
     "shouldSetup",
     () => {
@@ -51,8 +54,8 @@ const Login = ({ isExpired }: props): JSX.Element => {
           onSuccess: (data) => {
             localStorage.setItem("token", data.token);
             window.location.pathname === "/auth/login"
-              ? (window.location.href = "/")
-              : window.location.reload();
+              ? homeRef.current?.click()
+              : authRef.current?.click();
           },
           onSettled(_, error) {
             if (error) {
@@ -69,6 +72,8 @@ const Login = ({ isExpired }: props): JSX.Element => {
     return (
       <div className="flex flex-col h-screen">
         <Nav />
+        <Link to="/" className="hidden" ref={homeRef} />
+        <Link to="/accounts/create" className="hidden" ref={authRef} />
         <div className="mt-10 w-full flex flex-col h-full gap-2 items-center justify-center">
           <div role="status">
             <svg

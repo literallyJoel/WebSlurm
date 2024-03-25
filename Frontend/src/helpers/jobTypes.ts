@@ -1,10 +1,15 @@
+import { apiEndpoint } from "@/config/config";
 export type JobTypeParameter = {
   name: string;
   type: JobTypeParameterType;
   defaultValue: string | number | boolean | undefined;
 };
 
-export type JobTypeParameterType = "String" | "Number" | "Boolean" | "Undefined";
+export type JobTypeParameterType =
+  | "String"
+  | "Number"
+  | "Boolean"
+  | "Undefined";
 export type CreateJobResponse = { jobTypeID: string };
 export type JobTypeCreation = {
   parameters: JobTypeParameter[];
@@ -78,7 +83,7 @@ export const createJobType = async (
 ): Promise<CreateJobResponse> => {
   console.log(jobType.token);
   return (
-    await fetch("/api/jobtypes/create", {
+    await fetch(apiEndpoint + "/jobtypes/create", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${jobType.token}`,
@@ -91,7 +96,7 @@ export const createJobType = async (
 
 export const getJobTypes = async (token: string): Promise<JobType[]> => {
   return (
-    await fetch("/api/jobtypes", {
+    await fetch(apiEndpoint + "/jobtypes", {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -105,7 +110,7 @@ export const getJobType = async (
   id: string
 ): Promise<JobType> => {
   return (
-    await fetch(`/api/jobtypes/${id}`, {
+    await fetch(`${apiEndpoint}/jobtypes/${id}`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -117,7 +122,7 @@ export const getJobType = async (
 export const updateJobType = async (
   jobType: JobTypeUpdate
 ): Promise<{ ok: boolean }> => {
-  return await fetch(`/api/jobtypes/${jobType.id}`, {
+  return await fetch(`${apiEndpoint}/jobtypes/${jobType.id}`, {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${jobType.token}`,
@@ -128,7 +133,7 @@ export const updateJobType = async (
 };
 
 export const deleteJobType = async (jobTypeID: string, token: string) => {
-  return await fetch(`/api/jobtypes/${jobTypeID}`, {
+  return await fetch(`${apiEndpoint}/jobtypes/${jobTypeID}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${token}`,

@@ -1,7 +1,7 @@
 import Nav from "@/components/Nav";
 import { useMutation } from "react-query";
 import { createAccount, type NewAccountObject } from "@/helpers/accounts";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   validateEmail,
   validateName,
@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem } from "@/shadui/ui/select";
 import { Checkbox } from "@/shadui/ui/checkbox";
 import { Button } from "@/shadui/ui/button";
 import { SelectTrigger, SelectValue } from "@radix-ui/react-select";
+import { Link } from "react-router-dom";
 
 interface props {
   isSetup?: boolean;
@@ -37,7 +38,9 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
   const [isNameValid, setIsNameValid] = useState(true);
   const [isEmailValid, setIsEmailValid] = useState(true);
   const [isPasswordValid, setIsPasswordValid] = useState(true);
-
+  const isSetupCreationSuccessRef = useRef<HTMLAnchorElement>(null);
+  const creationSuccessRef = useRef<HTMLAnchorElement>(null);
+  const creationFailureRef = useRef<HTMLAnchorElement>(null);
   const _createAccount = (): void => {
     setIsNameValid(validateName(name));
     setIsEmailValid(validateEmail(email));
@@ -59,14 +62,18 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
         },
         {
           onSuccess: (data) => {
-            if (data.generatedPass) {
+            if (isSetup) {
+              isSetupCreationSuccessRef.current?.click();
+            } else if (data.generatedPass) {
               localStorage.setItem("gpass", data.generatedPass);
-              window.location.pathname = "/accounts/create/success";
+              creationSuccessRef.current?.click();
+            } else {
+              creationSuccessRef.current?.click();
             }
           },
           onError: (error) => {
             console.log(error);
-            window.location.pathname = "/accounts/create/failure";
+            creationFailureRef.current?.click();
           },
         }
       );
@@ -98,6 +105,18 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
   return (
     <div className="flex flex-col h-screen">
       <Nav />
+      {/* These exist because I can't use the navigate hook so I have to create invisible links and click them programatically. */}
+      <Link to="/" className="hidden" ref={isSetupCreationSuccessRef} />
+      <Link
+        to="/accounts/create/success"
+        className="hidden"
+        ref={creationSuccessRef}
+      />
+      <Link
+        to="/accounts/create/failure"
+        className="hidden"
+        ref={creationFailureRef}
+      />
       <div className="mt-10 flex-grow mb-10">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
@@ -185,19 +204,21 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
                 </Select>
               </div>
 
-              <div className="space-y-2 flex flex-col items-center">
-                <Label htmlFor="randomPass">Generate Random Password?</Label>
-                <Checkbox
-                  id="randomPass"
-                  checked={generatePass}
-                  onCheckedChange={(e) => {
-                    const val = e.valueOf();
-                    if (typeof val === "boolean") {
-                      setGeneratePass(val);
-                    }
-                  }}
-                />
-              </div>
+              {!isSetup && (
+                <div className="space-y-2 flex flex-col items-center">
+                  <Label htmlFor="randomPass">Generate Random Password?</Label>
+                  <Checkbox
+                    id="randomPass"
+                    checked={generatePass}
+                    onCheckedChange={(e) => {
+                      const val = e.valueOf();
+                      if (typeof val === "boolean") {
+                        setGeneratePass(val);
+                      }
+                    }}
+                  />
+                </div>
+              )}
               {!generatePass && (
                 <>
                   <div className="space-y-2 flex flex-col">

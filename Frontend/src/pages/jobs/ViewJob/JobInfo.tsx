@@ -96,7 +96,7 @@ const JobInfo = (): JSX.Element => {
       <div className="flex flex-col w-full justify-center items-center">
         <div className="flex flex-row w-8/12 justify-center border border-black rounded-md">
           <div className="w-1/2 flex flex-row justify-center p-4">
-            {jobInfo.jobComplete === 0 ? (
+            {Number(jobInfo.jobComplete) === 0 ? (
               <div className="p-2 text-sm flex flex-row items-center">
                 <Spinner />
                 Running since{" "}
@@ -104,11 +104,11 @@ const JobInfo = (): JSX.Element => {
                   jobInfo.jobCompleteTime ? jobInfo.jobCompleteTime * 1000 : 0
                 ).toLocaleDateString("en-GB")}
               </div>
-            ) : jobInfo.jobComplete === 1 ? (
+            ) : Number(jobInfo.jobComplete) === 1 ? (
               <div className="p-2 text-sm">
                 🟢 Completed{" "}
                 {new Date(
-                  jobInfo.jobCompleteTime ? jobInfo.jobCompleteTime * 1000 : 0
+                  jobInfo.jobCompleteTime ? Number(jobInfo.jobCompleteTime) * 1000 : 0
                 ).toLocaleString("en-GB")}
               </div>
             ) : (

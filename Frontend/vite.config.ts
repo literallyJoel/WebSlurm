@@ -8,8 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    }
-    
+    },
   },
   //Routes any calls to the /api route to 8080 during development
   server: {
@@ -17,8 +16,9 @@ export default defineConfig({
       "/api": "http://localhost:8080",
     },
   },
-  build:{
+  build: {
     assetsDir: "./assets",
     outDir: "../Backend/assets",
-  }
+    emptyOutDir: true,
+  },
 });

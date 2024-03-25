@@ -71,7 +71,7 @@ const CreateJob = ({
         setAllowedTypes([".zip"]);
       }
 
-      if (selectedJobType && selectedJobType.fileUploadCount === 1) {
+      if (selectedJobType && Number(selectedJobType.fileUploadCount) === 1) {
         await getFID();
         setAllowedTypes(undefined);
       }
@@ -97,10 +97,12 @@ const CreateJob = ({
   const handleJobTypeChange = (_selectedJobType: number): void => {
     //Updates the selected job type
     setSelectedJobTypeID(_selectedJobType);
+
     //Grabs the job associated with the provided ID
     const jobDetails = jobTypes.data?.find(
-      (jobType) => jobType.id === _selectedJobType
+      (jobType) => Number(jobType.id) === _selectedJobType
     );
+
     if (jobDetails) {
       setSelectedJobType(jobDetails);
       //Format them into a format that we can use

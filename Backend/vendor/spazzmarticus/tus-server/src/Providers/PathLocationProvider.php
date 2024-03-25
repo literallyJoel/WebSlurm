@@ -10,11 +10,11 @@ use Psr\Http\Message\UriInterface;
 
 class PathLocationProvider extends AbstractLocationProvider implements LocationProviderInterface
 {
+
     public function provideLocation(UuidInterface $uuid, ServerRequestInterface $request): UriInterface
     {
         $uri = $request->getUri();
-        $path = rtrim($uri->getPath(), '/');
-        return $uri->withPath($path . '/' . $uuid->toString());
+        return $uri->withPath($uri->getPath() . '/' . $uuid->toString());
     }
 
     public function provideUuid(ServerRequestInterface $request): UuidInterface
