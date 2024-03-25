@@ -54,8 +54,8 @@ const Login = ({ isExpired }: props): JSX.Element => {
           onSuccess: (data) => {
             localStorage.setItem("token", data.token);
             window.location.pathname === "/auth/login"
-              ? homeRef.current?.click()
-              : authRef.current?.click();
+              ? (window.location.pathname = "/")
+              : window.location.reload();
           },
           onSettled(_, error) {
             if (error) {

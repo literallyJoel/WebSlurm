@@ -9,6 +9,7 @@ import {
 import { useMutation, useQuery } from "react-query";
 import Login from "@/pages/auth/login/Login";
 import ResetPassword from "@/pages/accounts/resetPassword/ResetPassword";
+
 interface props {
   children: ReactNode;
 }
@@ -38,6 +39,7 @@ const AuthProvider = ({ children }: props): JSX.Element => {
   const serverLogout = useMutation((_token: string) => {
     return logoutHelper(_token);
   });
+
 
   //Used to retreive the user object from other components
   const getUser = (): User => {
@@ -80,7 +82,9 @@ const AuthProvider = ({ children }: props): JSX.Element => {
     );
   }
 
+ 
   if (!token || !decoded) {
+    
     return <Login isExpired={false} />;
   }
 
