@@ -9,19 +9,42 @@ import { Input } from "@/shadui/ui/input";
 import { Button } from "@/shadui/ui/button";
 import { Link } from "react-router-dom";
 import { useRef } from "react";
+import { refreshToken } from "@/pages/auth/auth";
+
 interface props {
   isRequired?: boolean;
 }
 
 const ResetPassword = ({ isRequired }: props): JSX.Element => {
+  const token = localStorage.getItem("token");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordValid, setIsPasswordValid] = useState(true);
   const hiddenRef = useRef<HTMLAnchorElement>(null);
+  const refreshTokenRequest = useMutation(
+    "refreshToken",
+    () => {
+      return refreshToken(token ?? "");
+    },
+    {
+      onSuccess: (data) => {
+        localStorage.setItem("token", data.token);
+        window.location.reload();
+      },
+    }
+  );
   const updatePasswordRequest = useMutation(
     "updatePassword",
     (password: string) => {
-      return updateAccount({ password: password });
+      return updateAccount(
+        { password: password, requiresPasswordReset: false },
+        token ?? ""
+      );
+    },
+    {
+      onSuccess: () => {
+        refreshTokenRequest.mutate();
+      },
     }
   );
 
@@ -29,11 +52,7 @@ const ResetPassword = ({ isRequired }: props): JSX.Element => {
     if (!validatePassword(password)) {
       setIsPasswordValid(false);
     } else {
-      updatePasswordRequest.mutate(password, {
-        onSuccess: () => {
-          hiddenRef.current?.click();
-        },
-      });
+      updatePasswordRequest.mutate(password);
     }
   };
 

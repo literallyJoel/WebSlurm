@@ -7,8 +7,7 @@ import {
   downloadOutputFile,
   downloadZip,
 } from "@/helpers/jobs";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "react-query";
 import { useParams } from "react-router-dom";
 import { GrStatusUnknown } from "react-icons/gr";
@@ -16,10 +15,12 @@ import Spinner from "@/components/Spinner/Spinner";
 import { getJobType } from "@/helpers/jobTypes";
 import ExtendedViewer from "./components/ExtendedViewer";
 import { Button } from "@/shadui/ui/button";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 const JobInfo = (): JSX.Element => {
   const { jobID } = useParams();
-  const token = useContext(AuthContext).getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
   const [hasFileUpload, setHasFileUpload] = useState(false);
   const [inputFile, setInputFile] = useState<File>();
   const [outputFile, setOutputFile] = useState<OutputFile>();

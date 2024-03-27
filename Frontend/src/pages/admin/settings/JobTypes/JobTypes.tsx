@@ -1,14 +1,14 @@
 import { useQuery } from "react-query";
 import { getJobTypes } from "../../../../helpers/jobTypes";
-import { useContext } from "react";
 import { Button } from "@/shadui/ui/button";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { FaPlus } from "react-icons/fa";
 import JobCard from "./components/JobCard";
 import { Link } from "react-router-dom";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 const JobTypes = (): JSX.Element => {
-  const token = useContext(AuthContext).getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
   const getAllJobTypes = useQuery("getAllTypes", () => {
     return getJobTypes(token);
   });

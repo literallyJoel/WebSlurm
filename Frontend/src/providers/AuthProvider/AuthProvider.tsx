@@ -40,7 +40,6 @@ const AuthProvider = ({ children }: props): JSX.Element => {
     return logoutHelper(_token);
   });
 
-
   //Used to retreive the user object from other components
   const getUser = (): User => {
     if (decoded) {
@@ -82,9 +81,7 @@ const AuthProvider = ({ children }: props): JSX.Element => {
     );
   }
 
- 
   if (!token || !decoded) {
-    
     return <Login isExpired={false} />;
   }
 
@@ -103,7 +100,7 @@ const AuthProvider = ({ children }: props): JSX.Element => {
       return <Login isExpired={true} />;
     }
 
-    if (decoded.requiresPasswordReset) {
+    if (decoded.requiresPasswordReset === "1") {
       return <ResetPassword isRequired={true} />;
     }
   }

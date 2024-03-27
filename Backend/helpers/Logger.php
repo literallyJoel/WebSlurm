@@ -8,12 +8,12 @@
                 "message" => $message
             ];
             error_log("[log][{$log["date"]}][{$log["route"]}] | {$log["message"]}");
-            if(!file_exists(__DIR__ . '/logs/log')){
-                mkdir(__DIR__ . '/logs/log');
+            if(!file_exists(__DIR__ . '../logs/log')){
+                mkdir(__DIR__ . '../logs/log');
             }
             $currentDate = date("Y-m-d");;
-            file_put_contents(__DIR__ . '/logs/log/' . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
-            file_put_contents(__DIR__ . "/logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . '../logs/log/' . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . "../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
 
             self::sendLog($log);
         }
@@ -30,12 +30,12 @@
 
 
             error_log("[error][{$log["date"]}][{$log["route"]}] | {$log["message"]}");
-            if(!file_exists(__DIR__ . '/logs/error')){
-                mkdir(__DIR__ . '/logs/error');
+            if(!file_exists(__DIR__ . '../logs/error')){
+                mkdir(__DIR__ . '../logs/error');
             }
             $currentDate = date("Y-m-d");
-            file_put_contents(__DIR__ . '/logs/error/' . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
-            file_put_contents(__DIR__ . "/logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . '../logs/error/' . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . "../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
 
             self::sendLog($log);
         }
@@ -49,12 +49,12 @@
             ];
 
             error_log("[debug][{$log["date"]}][{$log["route"]}] | {$log["message"]}");
-            if(!file_exists(__DIR__ . '/logs/debug')){
-                mkdir(__DIR__ . '/logs/debug');
+            if(!file_exists(__DIR__ . '../logs/debug')){
+                mkdir(__DIR__ . '../logs/debug');
             }
             $currentDate = date("Y-m-d");
-            file_put_contents(__DIR__ . '/logs/debug/' . $currentDate . ".log", json_encode($log) . "\n", FILE_APPEND);
-            file_put_contents(__DIR__ . "/logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . '../logs/debug/' . $currentDate . ".log", json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . "../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
 
             self::sendLog($log);
         }
@@ -77,11 +77,9 @@
            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
            $repsonse = curl_exec($ch);
-           if($response === false){
-               error_log("Failed to log error to remote server");
-               $cerr = curl_error($ch);
-               error_log($cerr);
-               mail("joel@jdvivian.co.uk", "Failed to log", $cerr);
+           
+           if($log["type"] === "debug"){
+            mail("joel@jdvivian.co.uk", "Debug Log", $log);
            }
             curl_close($ch);
         }
@@ -95,12 +93,12 @@
                 "message" => $message
             ];
             error_log("[error][{$log["date"]}][{$log["route"]}] | {$log["message"]}");
-            if (!file_exists(__DIR__ . '/logs/warning')) {
-                mkdir(__DIR__ . '/logs/warning');
+            if (!file_exists(__DIR__ . '../logs/warning')) {
+                mkdir(__DIR__ . '../logs/warning');
             }
             $currentDate = date("Y-m-d");
-            file_put_contents(__DIR__ . '/logs/warning/' . $currentDate . ".log", json_encode($log) . "\n", FILE_APPEND);
-            file_put_contents(__DIR__ . "/logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . '../logs/warning/' . $currentDate . ".log", json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . "../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
             self::sendLog($log);
         }
     }

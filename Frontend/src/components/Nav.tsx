@@ -1,10 +1,12 @@
 import { RiAccountCircleFill } from "react-icons/ri";
-import { useContext, useState } from "react";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
+import { useState } from "react";
+
 import { Link } from "react-router-dom";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 const Nav = (): JSX.Element => {
-  const { getUser, logout } = useContext(AuthContext);
+  const authContext = useAuthContext();
+  const { logout, getUser } = authContext;
   const user = getUser();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 

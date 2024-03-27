@@ -1,19 +1,20 @@
 // import { useQuery } from "react-query";
 // import { getJobTypes } from "../../../../helpers/jobTypes";
-// import { useContext } from "react";
+
 import { getAllOrganisations } from "@/helpers/organisations";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { Button } from "@/shadui/ui/button";
-import { useContext } from "react";
-// import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
+
+
 import { FaPlus } from "react-icons/fa";
 import { useQuery } from "react-query";
 
 import { Link } from "react-router-dom";
 import OrganisationCard from "./components/OrganisationCard";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 const Organisations = (): JSX.Element => {
-  const token = useContext(AuthContext).getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
   const organisations = useQuery("getAllOrgs", () => {
     return getAllOrganisations(token);
   });

@@ -35,6 +35,9 @@ $container['Auth'] = function ($container) {
 $container['JobTypes'] = function ($container) {
     return new JobTypes();
 };
+$container['Jobs'] = function ($container){
+    return new Jobs();
+};
 
 $app->group("/api", function(App $app){
     //==============================//
@@ -94,10 +97,11 @@ $app->group("/api", function(App $app){
             //Returns the number of users - admin only (excludes default)
             $app->get("/count", "Users:getCount")->add(new RequiresAdmin());
             //Get all users - admin only
-            $app->get("/", "Users:getAll")->add(new RequiresAdmin());
+            $app->get("", "Users:getAll")->add(new RequiresAdmin());
 
             //================POST================//
             //Create User
+            //TODO: create custom route for creating first user so we can add auth to this
             $app->post("/create", "Users:create");
 
             //================PUT=================//
@@ -122,7 +126,9 @@ $app->group("/api", function(App $app){
             //Verify password (used for account updates and deletions)
             $app->post("/verifypass", "Auth:verifyPass")->add(new RequiresAuthentication());
             //Disabled all of a users tokens
-            $app->post("/disabletokens", "Auth:disableTokens")->add(new RequiresAuthentication());
+            $app->post("/disabletokens", "Auth:disableAllUserTokens")->add(new RequiresAuthentication());
+            //Refresh user token
+            $app->post("/refresh", "Auth:refreshToken")->add(new RequiresAuthentication());
         });
     
     //==============================//
@@ -168,7 +174,7 @@ $app->group("/api", function(App $app){
             //Get job output
             $app->get("/output", "Jobs:getJobOutput")->add(new RequiresAuthentication());
             //Get all jobs
-            $app->get("/", "Jobs:getAll")->add(new RequiresAuthentication());
+            $app->get("", "Jobs:getAll")->add(new RequiresAuthentication());
             //Upload a file
             $app->any('/upload[/{id}]', "Jobs:handleFileUpload")->add(new RequiresAuthentication());
             //Download jobs input file
@@ -224,7 +230,7 @@ $app->get("/assets/[{file:.*}]", function(ServerRequestInterface $request, Respo
 $app->get("/[{path:.*}]", function(ServerRequestInterface $request, ResponseInterface $response, $args){
     $file = __DIR__ . '/assets/index.html';
     $response->getBody()->write(file_get_contents($file));
-    return $response->withHeader("Content-Type", "text/html");
+    return $response;
 });
 
 //Run the app

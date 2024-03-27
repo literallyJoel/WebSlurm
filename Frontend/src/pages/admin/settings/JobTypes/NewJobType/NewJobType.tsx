@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   type JobTypeParameter,
   extractParams,
@@ -22,8 +22,8 @@ import ParameterEntry from "../components/ParameterEntry";
 import { Button } from "@/shadui/ui/button";
 import { validateParameters } from "@/helpers/validation";
 import { useMutation } from "react-query";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { Link } from "react-router-dom";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 const NewJobType = (): JSX.Element => {
   const scriptStart =
@@ -39,9 +39,9 @@ const NewJobType = (): JSX.Element => {
   const [isDescriptionValid, setIsDescriptionValid] = useState(true);
   const [fileCount, setFileCount] = useState(0);
   const [isNameValid, setIsNameValid] = useState(true);
-  const { getToken } = useContext(AuthContext);
+  const authContext = useAuthContext();
   const hiddenRef = useRef<HTMLAnchorElement>(null);
-  const token = getToken();
+  const token = authContext.getToken();
 
   const createJobTypeRequest = useMutation(
     "createJobType",
@@ -85,11 +85,7 @@ const NewJobType = (): JSX.Element => {
   return (
     <div className="flex flex-col w-full items-center">
       <Card className="w-full max-w-2xl">
-        <Link
-          to="/admin/settings/jobTypes"
-          className="hidden"
-          ref={hiddenRef}
-        />
+        <Link to="/admin/jobtypes" className="hidden" ref={hiddenRef} />
         <CardHeader>
           <CardTitle>Create a New Job Type</CardTitle>
           <CardDescription>

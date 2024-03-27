@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   type JobTypeParameter,
   extractParams,
@@ -23,9 +23,9 @@ import ParameterEntry from "../components/ParameterEntry";
 import { Button } from "@/shadui/ui/button";
 import { validateParameters } from "@/helpers/validation";
 import { useMutation, useQuery } from "react-query";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { useParams } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 export const UpdateJobType = (): JSX.Element => {
   const { id } = useParams();
@@ -54,8 +54,8 @@ export const UpdateJobType = (): JSX.Element => {
   );
 
   const [isNameValid, setIsNameValid] = useState(true);
-  const { getToken } = useContext(AuthContext);
-  const token = getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
   const hiddenRef = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     if (currentJob.data) {

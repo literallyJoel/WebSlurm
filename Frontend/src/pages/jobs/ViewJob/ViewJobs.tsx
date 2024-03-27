@@ -1,7 +1,6 @@
 import Nav from "@/components/Nav";
 import { getJobs, type Job } from "@/helpers/jobs";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
-import React, { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useQuery } from "react-query";
 import { Link, Outlet, useLocation, useParams } from "react-router-dom";
 import JobCard from "./components/JobCard";
@@ -16,6 +15,7 @@ import {
 } from "@/shadui/ui/dropdown-menu";
 import Spinner from "@/components/Spinner/Spinner";
 import { Button } from "@/shadui/ui/button";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 function useQueryParams() {
   const { search } = useLocation();
   return useMemo(() => new URLSearchParams(search), [search]);
@@ -24,7 +24,8 @@ function useQueryParams() {
 const ViewJobs = (): JSX.Element => {
   const { jobID } = useParams();
   const queryParams = useQueryParams();
-  const token = React.useContext(AuthContext).getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
   const filter = queryParams.get("filter") || "";
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [searchTerm, setSearchTerm] = useState("");

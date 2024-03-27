@@ -22,7 +22,7 @@ export type DecodedToken = {
   email: string;
   name: string;
   role: number;
-  requiresPasswordReset: boolean;
+  requiresPasswordReset: "0" | "1";
   local: boolean;
 };
 
@@ -37,6 +37,15 @@ export async function login(loginObject: LoginObject): Promise<LoginResponse> {
     await fetch(apiEndpoint + "/auth/login", {
       method: "POST",
       body: JSON.stringify(loginObject),
+    })
+  ).json();
+}
+
+export async function refreshToken(token: string): Promise<LoginResponse> {
+  return (
+    await fetch(apiEndpoint + "/auth/refresh", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
     })
   ).json();
 }

@@ -1,10 +1,9 @@
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { Badge } from "@/shadui/ui/badge";
 import { Button } from "@/shadui/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/shadui/ui/card";
-import { useContext } from "react";
 import { useMutation, useQueryClient } from "react-query";
 import { deleteAccount } from "@/helpers/accounts";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 interface props {
   id: string;
@@ -15,13 +14,14 @@ interface props {
 
 const UserCard = ({ id, name, role, userCount }: props): JSX.Element => {
   const queryClient = useQueryClient();
-  const token = useContext(AuthContext).getToken();
-  const user = useContext(AuthContext).getUser();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
+  const user = authContext.getUser();
 
   const deleteUser = useMutation(
     "deleteCard",
     (id: string) => {
-      return deleteAccount(id, token);
+      return deleteAccount(token, id);
     },
     {
       onSettled: () => {
@@ -33,7 +33,7 @@ const UserCard = ({ id, name, role, userCount }: props): JSX.Element => {
   return (
     <Card className="relative">
       <div className="flex flex-row w-full absolute right-0 gal-0">
-        {role === 1 && (
+        {Number(role) === 1 && (
           <Badge className="bg-emerald-500 rounded rounded-b-none rounded-tr-none w-12 text-xs justify-center">
             Admin
           </Badge>

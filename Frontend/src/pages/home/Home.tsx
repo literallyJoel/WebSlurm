@@ -1,6 +1,4 @@
 import Nav from "@/components/Nav";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
-import { useContext } from "react";
 import TaskView from "./components/TaskView";
 import { Button } from "@/shadui/ui/button";
 import { Link } from "react-router-dom";
@@ -10,13 +8,15 @@ import {
   getFailedJobs,
   getRunningJobs,
 } from "@/helpers/jobs";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 
 
 const Home = (): JSX.Element => {
-  const { getUser } = useContext(AuthContext);
+  const authContext = useAuthContext();
+  const { getUser, getToken } = authContext;
   const user = getUser();
-  const token = useContext(AuthContext).getToken();
+  const token = getToken();
   const completedJobs = useQuery("getCompletedJobs", () => {
     return getCompletedJobs(token, 3, user.id);
   });

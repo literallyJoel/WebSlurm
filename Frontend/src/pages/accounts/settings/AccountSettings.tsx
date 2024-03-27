@@ -10,8 +10,8 @@ import { Label } from "@/shadui/ui/label";
 import { Input } from "@/shadui/ui/input";
 import { Button } from "@/shadui/ui/button";
 import Nav from "@/components/Nav";
-import { useContext, useRef, useState } from "react";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
+import { useRef, useState } from "react";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { MdEdit } from "react-icons/md";
 import {
   validateEmail,
@@ -22,14 +22,15 @@ import {
   UpdateAccountObject,
   updateAccount as updateAccountHelper,
   deleteAccount as deleteAccountHelper,
+  disableUserTokens,
 } from "@/helpers/accounts";
 import { useMutation } from "react-query";
-import { verifyPass } from "@/pages/auth/auth";
+import { refreshToken, verifyPass } from "@/pages/auth/auth";
 import { Link } from "react-router-dom";
 const AccountSettings = (): JSX.Element => {
-  const { getUser, getToken } = useContext(AuthContext);
-  const user = getUser();
-  const token = getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
+  const user = authContext.getUser();
   const [isEditingName, setIsEditingName] = useState(false);
   const [name, setName] = useState(user.name);
   const [isNameValid, setIsNameValid] = useState(true);
@@ -42,10 +43,28 @@ const AccountSettings = (): JSX.Element => {
   const [isPassValid, setIsPassValid] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const hiddenRef = useRef<HTMLAnchorElement>(null);
+  const refreshTokenRequest = useMutation(
+    "RefreshToken",
+    () => {
+      return refreshToken(token);
+    },
+    {
+      onSuccess: (data) => {
+        localStorage.setItem("token", data.token);
+      },
+    }
+  );
+
   const updateUserRequest = useMutation(
     "updateUser",
     (updatedUser: UpdateAccountObject) => {
-      return updateAccountHelper(updatedUser);
+      return updateAccountHelper(updatedUser, token);
+    },
+    {
+      onSuccess: () => {
+        setIsEditingPassword(false);
+        refreshTokenRequest.mutate();
+      },
     }
   );
 
@@ -61,6 +80,17 @@ const AccountSettings = (): JSX.Element => {
     return deleteAccountHelper(token);
   });
 
+  const signOutEverywhereRequest = useMutation(
+    "signOutEverywhere",
+    (token: string) => {
+      return disableUserTokens(token);
+    },
+    {
+      onSuccess: () => {
+        window.location.reload();
+      },
+    }
+  );
   const validateEntry = (): boolean => {
     let valid = true;
     if (isEditingName && !validateName(name)) {
@@ -247,7 +277,11 @@ const AccountSettings = (): JSX.Element => {
           >
             Delete Account
           </Button>
-          <Button className="w-full" variant="outline">
+          <Button
+            onClick={() => signOutEverywhereRequest.mutate(token)}
+            className="w-full"
+            variant="outline"
+          >
             Sign Out Everywhere
           </Button>
         </CardContent>

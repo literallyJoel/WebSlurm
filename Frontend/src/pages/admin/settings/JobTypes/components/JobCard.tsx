@@ -1,11 +1,10 @@
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { Badge } from "@/shadui/ui/badge";
 import { Button } from "@/shadui/ui/button";
 import { Card, CardFooter, CardHeader, CardTitle } from "@/shadui/ui/card";
-import { useContext } from "react";
 import { useMutation, useQueryClient } from "react-query";
 import { Link } from "react-router-dom";
 import { deleteJobType } from "../../../../../helpers/jobTypes";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 interface props {
   id: string;
@@ -15,7 +14,8 @@ interface props {
 
 const JobCard = ({ id, name, createdBy }: props): JSX.Element => {
   const queryClient = useQueryClient();
-  const token = useContext(AuthContext).getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
   const deleteJT = useMutation(
     "deleteCard",
     (id: string) => {

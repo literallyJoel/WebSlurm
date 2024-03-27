@@ -25,8 +25,8 @@ import {
 } from "@/shadui/ui/card";
 import { useMutation, useQuery } from "react-query";
 import { JobType, getJobTypes } from "@/helpers/jobTypes";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
-import React, { useContext, useEffect, useState } from "react";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
+import React, { useEffect, useState } from "react";
 import { JobInput, JobParameter, createJob, getFileID } from "@/helpers/jobs";
 import CreationSuccess from "./CreationSuccess";
 import CreationFailure from "./CreationFailure";
@@ -51,7 +51,8 @@ const CreateJob = ({
   setAllowedTypes,
   allowedTypes,
 }: props): JSX.Element => {
-  const token = useContext(AuthContext).getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
 
   //Grabs a list of available job types
   const jobTypes = useQuery("allJobTypes", () => {
@@ -317,8 +318,8 @@ const CreateJob = ({
                   </div>
                 )}
 
-                {selectedJobType?.fileUploadCount !== 0 &&
-                  selectedJobType?.fileUploadCount !== undefined && (
+                {Number(selectedJobType?.fileUploadCount) !== 0 &&
+                  Number(selectedJobType?.fileUploadCount) !== undefined && (
                     <div className="p-2">
                       <Label
                         className="flex flex-col pb-2"
@@ -326,7 +327,7 @@ const CreateJob = ({
                       >
                         File Upload
                       </Label>
-                      {selectedJobType.fileUploadCount > 1 && (
+                      {Number(selectedJobType?.fileUploadCount) > 1 && (
                         <Label className="text-sm">
                           Upload a zip file with your files. Each file should be
                           named file0, file1 etc.
@@ -347,7 +348,8 @@ const CreateJob = ({
               <Button
                 disabled={
                   selectedJobType === undefined ||
-                  (selectedJobType.fileUploadCount !== 0 && !isUploadComplete)
+                  (Number(selectedJobType.fileUploadCount) !== 0 &&
+                    !isUploadComplete)
                 }
                 onClick={() => submitJob()}
               >

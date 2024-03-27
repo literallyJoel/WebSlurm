@@ -4,9 +4,9 @@ import {
   downloadExtracted,
   downloadFile,
 } from "@/helpers/jobs";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { FileBrowser, FileList, FileActionHandler } from "chonky";
-import { useCallback, useContext } from "react";
+import { useCallback } from "react";
 interface props {
   file: OutputFile;
   jobID: string;
@@ -14,7 +14,8 @@ interface props {
 
 export const FolderView = ({ file, jobID }: props): JSX.Element => {
   //Grab the user token so we can download files
-  const token = useContext(AuthContext).getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
 
   //This will download files if the user double clicks
   const handleDownload = useCallback<FileActionHandler>((data) => {
@@ -52,7 +53,7 @@ export const FolderView = ({ file, jobID }: props): JSX.Element => {
     return (
       //The FileBrowser comes from a library, and does work fine, but TypeScript gets upset at it.
       //@ts-ignore
-      <FileBrowser 
+      <FileBrowser
         files={fileTree}
         folderChain={folderChain}
         onFileAction={handleDownload}

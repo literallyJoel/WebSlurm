@@ -28,6 +28,21 @@ class Users
         return $randomString;
     }
 
+    private function sendPasswordEmail($name, $email, $password){
+        $mailTemplate = file_get_contents(__DIR__ . "/../data/mailtemplate.html");
+        $mailTemplate = str_replace('$name', $name, $mailTemplate);
+        $mailTemplate = str_replace('$password', $password, $mailTemplate);
+
+        $subject = "WebSlurm Account Created for Liverpool PGB";
+        $headers = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+        if(mail($email, $subject, $mailTemplate, $headers)){
+            Logger::info("Temporary password email sent", "Users/sendPasswordEmail");
+        }else{
+            Logger::error("Failed to send temporary password email", "Users/sendPasswordEmail");
+        }
+    }
+
     public function create(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         $body = json_decode($request->getBody());
@@ -48,6 +63,9 @@ class Users
 
         if ($generatePass) {
             $generatedPassword = $this->generatePass();
+            $this->sendPasswordEmail($name, $email, $generatedPassword);
+            //The frontend always sends a SHA512 so we do that here so they'll match
+            $generatedPassword = hash("sha512", $generatedPassword);
             $userPWHash = password_hash($generatedPassword, PASSWORD_BCRYPT);
         } else {
             $userPWHash = password_hash($password, PASSWORD_BCRYPT);
@@ -101,11 +119,12 @@ class Users
         $body = json_decode($request->getBody());
         $name = $body->name ?? null;
         $email = $body->email ?? null;
-        $password = $body->pass ?? null;
+        $password = $body->password ?? null;
         $role = $body->role ?? null;
         $userID = $body->userID ?? null;
+        $requiresPasswordReset = $body->requiresPasswordReset ?? null;
         $decodedToken = $request->getAttribute("decoded") ?? null;
-
+        
         if ($userID !== null) {
             if ($decodedToken->role !== 1 && $decodedToken->userID !== $userID) {
                 Logger::warning("Unauthorised attempt by user with ID {$decodedToken->userID} to update user with ID $userID", $request->getRequestTarget());
@@ -131,18 +150,32 @@ class Users
 
         try {
             $pdo->beginTransaction();
-            $stmt = $pdo->prepare("UPDATE users SET " .
+            $query = "UPDATE users SET " .
                 (!is_null($email) ? "userEmail = :userEmail, " : "") .
                 (!is_null($role) ? "role = :role, " : "") .
-                (!is_null($name) ? "userName = :userName" : "") .
-                (!is_null($password) ? "userPwHash = :userPwHash" : "") .
-                " WHERE userID = :userID");
+                (!is_null($name) ? "userName = :userName, " : "") .
+                (!is_null($requiresPasswordReset) ? "requiresPasswordReset = :requiresPasswordReset, " : "") .
+                (!is_null($password) ? "userPwHash = :userPwHash" : "");
 
+            if(substr_compare($query, ", ", -strlen(", ")) === 0){
+                $query = substr($query, 0, -strlen(", "));
+            }
+               
+            $query.=" WHERE userID = :userID";
+            $stmt = $pdo->prepare($query);
+            
+            if($stmt === false){
+                Logger::debug(print_r($pdo->errorInfo(), true), $request->getRequestTarget());
+        
+            }
             //Bind parameters
             if (!is_null($email)) {
                 $stmt->bindParam(':userEmail', $userEmail);
             }
 
+            if(!is_null($requiresPasswordReset)){
+                $stmt->bindParam(':requiresPasswordReset', $requiresPasswordReset);
+            }
             if (!is_null($role)) {
                 $stmt->bindParam(':role', $role);
             }
@@ -190,7 +223,7 @@ class Users
         $decodedToken = $request->getAttribute("decoded") ?? null;
 
         if ($userID !== null) {
-            if ($decodedToken->role !== 1 && $decodedToken->userID !== $userID) {
+            if ($decodedToken->role != 1 && $decodedToken->userID !== $userID) {
                 Logger::warning("Unauthorised attempt by user with ID {$decodedToken->userID} to delete user with ID $userID", $request->getRequestTarget());
                 $response->getBody()->write("Bad Request");
                 return $response->withStatus(400);
@@ -208,9 +241,10 @@ class Users
         try {
             $pdo->beginTransaction();
             $stmt = $pdo->prepare("DELETE FROM users WHERE userID = :userID");
-            $cleanupTokens = $pdo->prepare("DELETE FROM userCancelledTokens WHERE userID = :userID");
-            $cleanupCommands = $pdo->prepare("UPDATE slurmCommands SET userID = '0' WHERE userID = :userID");
-
+            $cleanupTokens = $pdo->prepare("DELETE FROM userTokens WHERE userID = :userID");
+         
+            $cleanupCommands = $pdo->prepare("UPDATE jobTypes SET userID = 'default' WHERE userID = :userID");
+       
             if(is_null($userID)){
                 $userID = $decodedToken->userID;
             }
@@ -296,4 +330,5 @@ class Users
             return $response->withStatus(500);
         }
     }
+
 }   

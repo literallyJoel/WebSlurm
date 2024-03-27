@@ -64,7 +64,8 @@ class Auth
         try{
             $pdo->beginTransaction();
             $stmt = $pdo->prepare("DELETE FROM userTokens WHERE userID = :userID");
-            $stmt->bindParam(":userID", is_null($providedID) ? $userID : $providedID);
+            $userIdParam = is_null($providedID) ? $userID : $providedID;
+            $stmt->bindParam(":userID", $userIdParam);
             $stmt->execute();
         }catch(Exception $e){
             Logger::error($e, $request->getRequestTarget());
@@ -223,6 +224,44 @@ class Auth
 
         $response->getBody()->write("Internal Server Error");
         return $response->withStatus(500);
+    }
+
+ public function refreshToken(ServerRequestInterface $request, ResponseInterface $response):ResponseInterface{
+        //Gets the users token
+        $decoded = $request->getAttribute("decoded") ?? null;
+        //Grab the ID of the user and generate a new token ID
+        $userId = $decoded->userID;
+        $tokenId = uniqid("", true);
+             $pdo = new PDO(DB_CONN);
+         try{
+            $pdo->beginTransaction();
+            //Get the user from the database
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE userID = :userId");
+            $stmt->bindParam("userId", $userId);
+            $stmt->execute();
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            //Generate a new token using their information
+            $token = $this->generateJWT($tokenId, $user["userEmail"], $user["userName"], $user["userID"], $user["role"], $user["requiresPasswordReset"]);
+            $stmt = $pdo->prepare("INSERT INTO userTokens (tokenID, userID) VALUES (:tokenID, :userID)");
+            $stmt->bindParam(":tokenID", $tokenId);
+            $stmt->bindParam(":userID", $userId);
+            $stmt->execute();
+            //Delete the old token
+            $stmt = $pdo->prepare("DELETE FROM userTokens WHERE tokenID = :tokenID AND userID = :userID");
+            $stmt->bindParam(":tokenID", $decoded->tokenID);
+            $stmt->bindParam(":userID", $userId);
+            $stmt->execute();
+        }catch(Exception $e){
+            $pdo->rollback();
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+        
+         $pdo->commit();
+         Logger::debug("User with ID $userId refreshed token", $request->getRequestTarget());
+         $response->getBody()->write(json_encode(["token" => $token]));
+         return $response->withStatus(200);
     }
 
 }

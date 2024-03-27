@@ -18,12 +18,12 @@ const AdminSettings = (): JSX.Element => {
               </Link>
             </li>
             <li>
-              <a
+              <Link
                 className="flex justify-center py-2 text-lg font-semibold text-gray-700 dark:text-gray-300"
-                href="/admin/users"
+                to="/admin/users"
               >
                 User Management
-              </a>
+              </Link>
             </li>
             {/* <li>
               <a

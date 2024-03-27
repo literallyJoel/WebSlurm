@@ -177,6 +177,8 @@ class Jobs
             $outputVars = implode("\n", $outputVars);
             $scriptArr = explode("\n", $script);
             array_splice($scriptArr, 4, 0, $outputVars);
+            $script = implode("\n", $scriptArr);
+            Logger::debug("File has $output files. \nScript:\n$script", "Jobs/setupOutputFiles");
             return implode("\n", $scriptArr);
         } catch (Exception $e) {
             Logger::error($e, "Jobs/setupOutputFiles");
@@ -332,8 +334,10 @@ class Jobs
         $script = $this->replaceScriptTemplate($jobName, $jobID, $dirs['out'], $parameters, $script);
 
 
+        
         //If the jobType has custom outputs we need to do some more variable replacement in the script
-        if ($jobType['hasOutputFile'] === 1) {
+        if ($jobType['hasOutputFile'] == 1) {
+            //Sets up the input files
             $script = $this->setupOutputFiles($jobType['outputCount'], $dirs['out'], $script);
             if (!$script) {
                 Logger::warning("Failed to setup output files for job with ID $jobID", $request->getRequestTarget());
@@ -342,7 +346,7 @@ class Jobs
             }
         }
 
-        //Sets up the input files
+   
         $script = $this->setupInputFiles($fileID, $jobType['fileUploadCount'], $dirs['in'], $script);
         if (!$script) {
             Logger::warning("Failed to setup input files for job with ID $jobID", $request->getRequestTarget());

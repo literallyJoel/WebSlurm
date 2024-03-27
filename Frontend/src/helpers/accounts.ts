@@ -56,6 +56,7 @@ export type UpdateAccountObject = {
   email?: string;
   password?: string;
   role?: number;
+  requiresPasswordReset?: boolean;
 };
 
 export type User = {
@@ -142,7 +143,8 @@ and calls the backend to update the users account
 */
 
 export async function updateAccount(
-  updateAccountObject: UpdateAccountObject
+  updateAccountObject: UpdateAccountObject,
+  token: string
 ): Promise<UpdateAccountResponse> {
   const pass = updateAccountObject.password;
 
@@ -154,6 +156,9 @@ export async function updateAccount(
     await fetch(apiEndpoint + "/users/update", {
       method: "PUT",
       body: JSON.stringify(updateAccountObject),
+      headers: {
+        Authorization: `bearer ${token}`,
+      },
     })
   ).json();
 }
@@ -170,7 +175,7 @@ export async function deleteAccount(token: string, userID?: string) {
   return await fetch(apiEndpoint + "/users/delete", {
     method: "DELETE",
     body: JSON.stringify({ userID: userID }),
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `bearer ${token}` },
   });
 }
 
@@ -198,4 +203,13 @@ export async function getUserCount(token: string): Promise<{ count: number }> {
 
 export function decodeToken(token: string): DecodedToken {
   return jwtDecode(token);
+}
+
+export function disableUserTokens(token: string): Promise<Response> {
+  return fetch(apiEndpoint + "/auth/disabletokens", {
+    method: "POST",
+    headers: {
+      Authorization: `bearer ${token}`,
+    },
+  });
 }

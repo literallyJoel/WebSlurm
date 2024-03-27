@@ -1,14 +1,14 @@
 import { useQuery } from "react-query";
-import { useContext } from "react";
 import { Button } from "@/shadui/ui/button";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { FaPlus } from "react-icons/fa";
 import UserCard from "./components/UserCard";
 import { Link } from "react-router-dom";
 import { getAllAccounts, getUserCount } from "@/helpers/accounts";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 const Users = (): JSX.Element => {
-  const token = useContext(AuthContext).getToken();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
   const allUsers = useQuery("getAllUsers", () => {
     return getAllAccounts(token);
   });

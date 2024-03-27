@@ -38,7 +38,6 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
   const [isNameValid, setIsNameValid] = useState(true);
   const [isEmailValid, setIsEmailValid] = useState(true);
   const [isPasswordValid, setIsPasswordValid] = useState(true);
-  const isSetupCreationSuccessRef = useRef<HTMLAnchorElement>(null);
   const creationSuccessRef = useRef<HTMLAnchorElement>(null);
   const creationFailureRef = useRef<HTMLAnchorElement>(null);
   const _createAccount = (): void => {
@@ -63,7 +62,7 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
         {
           onSuccess: (data) => {
             if (isSetup) {
-              isSetupCreationSuccessRef.current?.click();
+              window.location.reload();
             } else if (data.generatedPass) {
               localStorage.setItem("gpass", data.generatedPass);
               creationSuccessRef.current?.click();
@@ -106,7 +105,6 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
     <div className="flex flex-col h-screen">
       <Nav />
       {/* These exist because I can't use the navigate hook so I have to create invisible links and click them programatically. */}
-      <Link to="/" className="hidden" ref={isSetupCreationSuccessRef} />
       <Link
         to="/accounts/create/success"
         className="hidden"

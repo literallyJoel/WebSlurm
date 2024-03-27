@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "react-query";
 import { User, getAllAccounts } from "@/helpers/accounts";
-import { useContext, useState } from "react";
+import { useState } from "react";
 // import { validateName } from "@/helpers/validation";
 import {
   Card,
@@ -15,10 +15,10 @@ import { Select, SelectContent, SelectItem } from "@/shadui/ui/select";
 import { Button } from "@/shadui/ui/button";
 import { SelectTrigger, SelectValue } from "@radix-ui/react-select";
 import { NewOrganisation, createOrganisation } from "@/helpers/organisations";
-import { AuthContext } from "@/providers/AuthProvider/AuthProvider";
 import { Badge } from "@/shadui/ui/badge";
 import { CreationSuccess } from "./components/CreationSuccess";
 import { CreationFailure } from "./components/CreationFailure";
+import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
 const CreateOrganisation = (): JSX.Element => {
   const [organisationName, setOrganisationName] = useState("");
@@ -28,8 +28,9 @@ const CreateOrganisation = (): JSX.Element => {
   const [isOwnerValid, setIsOwnerValid] = useState(true);
   const [newOrgId, setNewOrgId] = useState("");
   const [view, setView] = useState<"create" | "success" | "failure">("create");
-  const token = useContext(AuthContext).getToken();
-  const currentUser = useContext(AuthContext).getUser();
+  const authContext = useAuthContext();
+  const token = authContext.getToken();
+  const currentUser = authContext.getUser();
   const _createOrganisation = (): void => {
     if (isOrganisationNameValid && isOwnerValid) {
       callCreateOrg.mutate(
