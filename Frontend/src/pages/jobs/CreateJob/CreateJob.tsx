@@ -319,7 +319,7 @@ const CreateJob = ({
                 )}
 
                 {Number(selectedJobType?.fileUploadCount) !== 0 &&
-                  Number(selectedJobType?.fileUploadCount) !== undefined && (
+                  selectedJobType?.fileUploadCount !== undefined && (
                     <div className="p-2">
                       <Label
                         className="flex flex-col pb-2"
