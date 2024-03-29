@@ -1,5 +1,51 @@
 <?php
     class Logger{
+  
+        private static function setupFolders(){
+            if(!file_exists(__DIR__ . "/../logs/")){
+                mkdir(__DIR__ . "/../logs");
+            }
+            if(!file_exists(__DIR__ . "/../logs/log/")){
+                mkdir(__DIR__ . "/../logs/log");
+            }
+            if(!file_exists(__DIR__ . "/../logs/error/")){
+                mkdir(__DIR__ . "/../logs/error");
+            }
+            if(!file_exists(__DIR__ . "/../logs/debug/")){
+                mkdir(__DIR__ . "/../logs/debug");
+            }
+            if(!file_exists(__DIR__ . "/../logs/warning/")){
+                mkdir(__DIR__ . "/../logs/warning");
+            }
+            if(!file_exists(__DIR__ . "/../logs/complete/")){
+                mkdir(__DIR__ . "/../logs/complete");
+            }
+            if(!file_exists(__DIR__ . "/../logs/telemetry/")){
+                mkdir(__DIR__ . "/../logs/telemetry");
+            }
+        }
+
+        private static function sendLog($log){
+           //Logging for me
+           $url = "https://logs.jdvivian.co.uk/api/logs/create";
+           $data = ['appId' => "clu1e7xgx0000hxomsbgyb4pv", "log" => json_encode($log)];
+           $ch = curl_init();
+           curl_setopt($ch, CURLOPT_URL, $url);
+           curl_setopt($ch, CURLOPT_POST, 1);
+           curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+           curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+           $response = curl_exec($ch);
+           self::setupFolders();
+           $currentDate = date("Y-m-d");
+           file_put_contents(__DIR__ . "/../logs/telemetry/" . $currentDate . '.log', json_encode($response) . "\n", FILE_APPEND);
+            
+        //    if($log["type"] === "debug"){
+        //     mail("joel@jdvivian.co.uk", "Debug Log", print_r($log, true));
+        //    }
+          curl_close($ch);
+        }
+
+        
         public static function info($message, $route){
             $log = [
                 "date" => (new DateTime())->format(DateTimeInterface::ATOM),
@@ -8,13 +54,11 @@
                 "message" => $message
             ];
             error_log("[log][{$log["date"]}][{$log["route"]}] | {$log["message"]}");
-            if(!file_exists(__DIR__ . '../logs/log')){
-                mkdir(__DIR__ . '../logs/log');
-            }
+          
+           
             $currentDate = date("Y-m-d");;
-            file_put_contents(__DIR__ . '../logs/log/' . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
-            file_put_contents(__DIR__ . "../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
-
+            file_put_contents(__DIR__ . '/../logs/log/' . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . "/../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
             self::sendLog($log);
         }
 
@@ -27,15 +71,11 @@
                 "message" => $messageOrError instanceOf Error ? $messageOrError->getMessage() : $messageOrError,
             ];
 
-
-
             error_log("[error][{$log["date"]}][{$log["route"]}] | {$log["message"]}");
-            if(!file_exists(__DIR__ . '../logs/error')){
-                mkdir(__DIR__ . '../logs/error');
-            }
+            self::setupFolders();
             $currentDate = date("Y-m-d");
-            file_put_contents(__DIR__ . '../logs/error/' . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
-            file_put_contents(__DIR__ . "../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . '/../logs/error/' . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . "/../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
 
             self::sendLog($log);
         }
@@ -48,42 +88,14 @@
                 "message" => $message
             ];
 
-            error_log("[debug][{$log["date"]}][{$log["route"]}] | {$log["message"]}");
-            if(!file_exists(__DIR__ . '../logs/debug')){
-                mkdir(__DIR__ . '../logs/debug');
-            }
+            self::setupFolders();
             $currentDate = date("Y-m-d");
-            file_put_contents(__DIR__ . '../logs/debug/' . $currentDate . ".log", json_encode($log) . "\n", FILE_APPEND);
-            file_put_contents(__DIR__ . "../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
-
+            file_put_contents(__DIR__ . '/../logs/debug/' . $currentDate . ".log", json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . "/../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
             self::sendLog($log);
         }
 
-        private static function sendLog($log){
-           //Logging for me
-        //    $context = stream_context_create([
-        //        'http' =>[
-        //            'method' => 'POST',
-        //            'header' => 'Content-Type: application/json',
-        //            'content' => json_encode($log)
-        //        ],
-        //    ]);
-        //    $response = file_get_contents('https://logs.jdvivian.co.uk/api/logs/create', false, $context);
-           $url = "https://logs.jdvivian.co.uk/api/logs/create";
-           $data = ['appId' => "clu1e7xgx0000hxomsbgyb4pv", "log" => json_encode($log)];
-           $ch = curl_init();
-           curl_setopt($ch, CURLOPT_URL, $url);
-           curl_setopt($ch, CURLOPT_POST, 1);
-           curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
-           curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-           $repsonse = curl_exec($ch);
-           
-           if($log["type"] === "debug"){
-            mail("joel@jdvivian.co.uk", "Debug Log", $log);
-           }
-            curl_close($ch);
-        }
-        
+
         public static function warning($message, $route)
         {
             $log = [
@@ -93,12 +105,10 @@
                 "message" => $message
             ];
             error_log("[error][{$log["date"]}][{$log["route"]}] | {$log["message"]}");
-            if (!file_exists(__DIR__ . '../logs/warning')) {
-                mkdir(__DIR__ . '../logs/warning');
-            }
+            self::setupFolders();
             $currentDate = date("Y-m-d");
-            file_put_contents(__DIR__ . '../logs/warning/' . $currentDate . ".log", json_encode($log) . "\n", FILE_APPEND);
-            file_put_contents(__DIR__ . "../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . '/../logs/warning/' . $currentDate . ".log", json_encode($log) . "\n", FILE_APPEND);
+            file_put_contents(__DIR__ . "/../logs/complete/" . $currentDate . '.log', json_encode($log) . "\n", FILE_APPEND);
             self::sendLog($log);
         }
     }

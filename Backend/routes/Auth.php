@@ -168,11 +168,16 @@ class Auth
             try{
                 $pdo->beginTransaction();
                 $newTokenStmt = $pdo->prepare("INSERT INTO userTokens (tokenID, userID) VALUES (:tokenID, :userID)");
+                if($newTokenStmt === false){
+                    $response->getBody()->write(print_r($pdo->errorInfo(), true));
+                    return $response->withStatus(500);
+                }
                 $newTokenStmt->bindParam(":tokenID", $tokenID);
                 $newTokenStmt->bindParam(":userID", $user["userID"]);
                 $newTokenStmt->execute();
             }catch(Exception $e){
-
+                $response->getBody()->write($e->getMessage());
+                return $response->withStatus(500);
                 $pdo->rollBack();
                 Logger::error($e, $request->getRequestTarget());
             }

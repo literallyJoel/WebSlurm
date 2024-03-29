@@ -1,0 +1,107 @@
+{"date":"2024-03-28T13:47:30+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"Provided Values: {\"id\":1,\"name\":\"Array Test\",\"script\":\"#!\\\/bin\\\/bash\\n#SBATCH --job-name=*{name}*\\n#SBATCH --output=*{out}*\\n\\nwc -c $arrayfile\",\"parameters\":[],\"description\":\"ArrayTest\",\"token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbklEIjoiNjYwNTZjZDcwMmFkNTIuNzIzOTMyNjYiLCJleHAiOjE3MTE3MTc5NzUsInVzZXJJRCI6IjY2MDQxZTNhNTc5NDE0LjQwNjM1NTY5IiwiZW1haWwiOiJqb2VsQGpkdml2aWFuLmNvLnVrIiwibmFtZSI6IkpvZWwgVml2aWFuIiwicm9sZSI6IjEiLCJyZXF1aXJlc1Bhc3N3b3JkUmVzZXQiOiIiLCJsb2NhbCI6dHJ1ZX0.1FPR0YxpV5fdjXPxsWHo9OeyJaBiU9K8Q9HbN7zMz7M\",\"hasOutputFile\":false,\"outputCount\":0,\"hasFileUpload\":true,\"arrayJobSupport\":true}"}
+{"date":"2024-03-28T13:52:20+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"Provided Values: {\"id\":1,\"name\":\"Array Test\",\"script\":\"#!\\\/bin\\\/bash\\n#SBATCH --job-name=*{name}*\\n#SBATCH --output=*{out}*\\n\\nwc -c $arrayfile\",\"parameters\":[],\"description\":\"ArrayTest\",\"token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbklEIjoiNjYwNTZjZDcwMmFkNTIuNzIzOTMyNjYiLCJleHAiOjE3MTE3MTc5NzUsInVzZXJJRCI6IjY2MDQxZTNhNTc5NDE0LjQwNjM1NTY5IiwiZW1haWwiOiJqb2VsQGpkdml2aWFuLmNvLnVrIiwibmFtZSI6IkpvZWwgVml2aWFuIiwicm9sZSI6IjEiLCJyZXF1aXJlc1Bhc3N3b3JkUmVzZXQiOiIiLCJsb2NhbCI6dHJ1ZX0.1FPR0YxpV5fdjXPxsWHo9OeyJaBiU9K8Q9HbN7zMz7M\",\"hasOutputFile\":false,\"outputCount\":0,\"hasFileUpload\":true,\"arrayJobSupport\":true}"}
+{"date":"2024-03-28T13:55:44+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"Provided Values: {\"id\":1,\"name\":\"Array Test\",\"script\":\"#!\\\/bin\\\/bash\\n#SBATCH --job-name=*{name}*\\n#SBATCH --output=*{out}*\\n\\nwc -c $arrayfile\",\"parameters\":[],\"description\":\"ArrayTest\",\"token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbklEIjoiNjYwNTZjZDcwMmFkNTIuNzIzOTMyNjYiLCJleHAiOjE3MTE3MTc5NzUsInVzZXJJRCI6IjY2MDQxZTNhNTc5NDE0LjQwNjM1NTY5IiwiZW1haWwiOiJqb2VsQGpkdml2aWFuLmNvLnVrIiwibmFtZSI6IkpvZWwgVml2aWFuIiwicm9sZSI6IjEiLCJyZXF1aXJlc1Bhc3N3b3JkUmVzZXQiOiIiLCJsb2NhbCI6dHJ1ZX0.1FPR0YxpV5fdjXPxsWHo9OeyJaBiU9K8Q9HbN7zMz7M\",\"hasOutputFile\":false,\"outputCount\":0,\"hasFileUpload\":true,\"arrayJobSupport\":true}"}
+{"date":"2024-03-28T13:55:44+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"hasOutputfile:  type :boolean|| hasFileUpload: 1 type:boolean"}
+{"date":"2024-03-28T13:58:51+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"Provided Values: {\"id\":1,\"name\":\"Array Test\",\"script\":\"#!\\\/bin\\\/bash\\n#SBATCH --job-name=*{name}*\\n#SBATCH --output=*{out}*\\n\\nwc -c $arrayfile\",\"parameters\":[],\"description\":\"ArrayTest\",\"token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbklEIjoiNjYwNTZjZDcwMmFkNTIuNzIzOTMyNjYiLCJleHAiOjE3MTE3MTc5NzUsInVzZXJJRCI6IjY2MDQxZTNhNTc5NDE0LjQwNjM1NTY5IiwiZW1haWwiOiJqb2VsQGpkdml2aWFuLmNvLnVrIiwibmFtZSI6IkpvZWwgVml2aWFuIiwicm9sZSI6IjEiLCJyZXF1aXJlc1Bhc3N3b3JkUmVzZXQiOiIiLCJsb2NhbCI6dHJ1ZX0.1FPR0YxpV5fdjXPxsWHo9OeyJaBiU9K8Q9HbN7zMz7M\",\"hasOutputFile\":false,\"outputCount\":0,\"hasFileUpload\":true,\"arrayJobSupport\":true}"}
+{"date":"2024-03-28T13:58:51+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"hasOutputfile:  type :boolean|| hasFileUpload: 1 type:boolean"}
+{"date":"2024-03-28T13:59:51+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"Provided Values: {\"id\":1,\"name\":\"Array Test!\",\"script\":\"#!\\\/bin\\\/bash\\n#SBATCH --job-name=*{name}*\\n#SBATCH --output=*{out}*\\n\\nwc -c $arrayfile\\n\\nf\",\"parameters\":[],\"description\":\"ArrayTest\",\"token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbklEIjoiNjYwNTZjZDcwMmFkNTIuNzIzOTMyNjYiLCJleHAiOjE3MTE3MTc5NzUsInVzZXJJRCI6IjY2MDQxZTNhNTc5NDE0LjQwNjM1NTY5IiwiZW1haWwiOiJqb2VsQGpkdml2aWFuLmNvLnVrIiwibmFtZSI6IkpvZWwgVml2aWFuIiwicm9sZSI6IjEiLCJyZXF1aXJlc1Bhc3N3b3JkUmVzZXQiOiIiLCJsb2NhbCI6dHJ1ZX0.1FPR0YxpV5fdjXPxsWHo9OeyJaBiU9K8Q9HbN7zMz7M\",\"hasOutputFile\":false,\"outputCount\":0,\"hasFileUpload\":false,\"arrayJobSupport\":false}"}
+{"date":"2024-03-28T13:59:52+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"hasOutputfile:  type :boolean|| hasFileUpload:  type:boolean"}
+{"date":"2024-03-28T14:02:55+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"Provided Values: {\"id\":1,\"name\":\"Array Test\",\"script\":\"#!\\\/bin\\\/bash\\n#SBATCH --job-name=*{name}*\\n#SBATCH --output=*{out}*\\n\\nwc -c $arrayfile\",\"parameters\":[],\"description\":\"ArrayTest\",\"token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbklEIjoiNjYwNTZjZDcwMmFkNTIuNzIzOTMyNjYiLCJleHAiOjE3MTE3MTc5NzUsInVzZXJJRCI6IjY2MDQxZTNhNTc5NDE0LjQwNjM1NTY5IiwiZW1haWwiOiJqb2VsQGpkdml2aWFuLmNvLnVrIiwibmFtZSI6IkpvZWwgVml2aWFuIiwicm9sZSI6IjEiLCJyZXF1aXJlc1Bhc3N3b3JkUmVzZXQiOiIiLCJsb2NhbCI6dHJ1ZX0.1FPR0YxpV5fdjXPxsWHo9OeyJaBiU9K8Q9HbN7zMz7M\",\"hasOutputFile\":false,\"outputCount\":0,\"hasFileUpload\":true,\"arrayJobSupport\":true}"}
+{"date":"2024-03-28T14:02:56+00:00","type":"debug","route":"\/api\/jobtypes\/1","message":"hasOutputfile:  type :boolean|| hasFileUpload: 1 type:boolean"}
+{"date":"2024-03-28T15:53:51+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 1"}
+{"date":"2024-03-28T16:01:36+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 2"}
+{"date":"2024-03-28T16:01:36+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:04:41+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 3"}
+{"date":"2024-03-28T16:04:41+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:05:50+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 4"}
+{"date":"2024-03-28T16:05:50+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:05:51+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file ."}
+{"date":"2024-03-28T16:05:51+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file .."}
+{"date":"2024-03-28T16:05:51+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 66058d9651045"}
+{"date":"2024-03-28T16:05:51+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 66058d9651045-1"}
+{"date":"2024-03-28T16:05:51+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660593cad0225"}
+{"date":"2024-03-28T16:05:51+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660593cad0225-1"}
+{"date":"2024-03-28T16:05:52+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 6605950eb2a4b"}
+{"date":"2024-03-28T16:05:52+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 6605950eb2a4b-1"}
+{"date":"2024-03-28T16:05:52+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 66059550c3855"}
+{"date":"2024-03-28T16:05:52+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 66059550c3855-1"}
+{"date":"2024-03-28T16:07:26+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 5"}
+{"date":"2024-03-28T16:07:26+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:07:26+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file . for match with 660595b15f65d"}
+{"date":"2024-03-28T16:07:26+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file .. for match with 660595b15f65d"}
+{"date":"2024-03-28T16:07:27+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660595b15f65d for match with 660595b15f65d"}
+{"date":"2024-03-28T16:07:27+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660595b15f65d-1 for match with 660595b15f65d"}
+{"date":"2024-03-28T16:10:37+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 6"}
+{"date":"2024-03-28T16:10:37+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:10:37+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file . for match with 6605966b47f32"}
+{"date":"2024-03-28T16:10:38+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file .. for match with 6605966b47f32"}
+{"date":"2024-03-28T16:10:38+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660595b15f65d for match with 6605966b47f32"}
+{"date":"2024-03-28T16:10:38+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660595b15f65d-1 for match with 6605966b47f32"}
+{"date":"2024-03-28T16:10:38+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 6605966b47f32 for match with 6605966b47f32"}
+{"date":"2024-03-28T16:10:38+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 6605966b47f32"}
+{"date":"2024-03-28T16:10:38+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 6605966b47f32"}
+{"date":"2024-03-28T16:10:38+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 6605966b47f32-1 for match with 6605966b47f32"}
+{"date":"2024-03-28T16:10:39+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 6605966b47f32-1"}
+{"date":"2024-03-28T16:10:39+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 6605966b47f32-1"}
+{"date":"2024-03-28T16:16:52+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 7"}
+{"date":"2024-03-28T16:16:52+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:16:52+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file . for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:16:52+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file .. for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:16:53+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:16:53+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 660597e47ac9c"}
+{"date":"2024-03-28T16:16:53+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 660597e47ac9c"}
+{"date":"2024-03-28T16:16:53+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-1 for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:16:53+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 660597e47ac9c-1"}
+{"date":"2024-03-28T16:16:53+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 660597e47ac9c-1"}
+{"date":"2024-03-28T16:17:22+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 8"}
+{"date":"2024-03-28T16:17:22+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:17:22+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file . for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:17:22+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file .. for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:17:22+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:17:22+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 660597e47ac9c"}
+{"date":"2024-03-28T16:17:23+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 660597e47ac9c"}
+{"date":"2024-03-28T16:17:23+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-1 for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:17:23+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 660597e47ac9c-1"}
+{"date":"2024-03-28T16:17:23+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 660597e47ac9c-1"}
+{"date":"2024-03-28T16:17:23+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-1-extracted for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:17:23+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-extracted for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:19:07+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 9"}
+{"date":"2024-03-28T16:19:07+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:19:08+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file . for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:19:08+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file .. for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:19:08+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:19:08+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 660597e47ac9c"}
+{"date":"2024-03-28T16:19:08+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 660597e47ac9c"}
+{"date":"2024-03-28T16:19:08+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-1 for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:19:08+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 660597e47ac9c-1"}
+{"date":"2024-03-28T16:19:09+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 660597e47ac9c-1"}
+{"date":"2024-03-28T16:19:09+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-1-extracted for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:19:09+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-extracted for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:21:12+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 10"}
+{"date":"2024-03-28T16:21:12+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:21:12+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file . for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:21:12+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file .. for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:21:13+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:21:13+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 660597e47ac9c"}
+{"date":"2024-03-28T16:21:13+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 660597e47ac9c"}
+{"date":"2024-03-28T16:21:13+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-1 for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:21:13+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Found file 660597e47ac9c-1"}
+{"date":"2024-03-28T16:21:13+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Opened ZIP archive for file 660597e47ac9c-1"}
+{"date":"2024-03-28T16:21:13+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-1-extracted for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:21:14+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Checking file 660597e47ac9c-extracted for match with 660597e47ac9c"}
+{"date":"2024-03-28T16:21:14+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Preupdate script: #!\/bin\/bash\n#SBATCH --job-name='AMT8'\n#SBATCH --output=\/root\/coding-projects\/WebSlurm\/Backend\/routes\/..\/usr\/out\/66041e3a579414.40635569\/10\/\/slurmout\n\ndiff $arrayfile1 $arrayfile2\ncurl -X POST https:\/\/pgb.liv.ac.uk\/~sgjvivia\/api\/jobs\/10\/markcomplete > \/dev\/null 2>&1"}
+{"date":"2024-03-28T16:21:14+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Postupdate script: "}
+{"date":"2024-03-28T16:23:07+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 11"}
+{"date":"2024-03-28T16:23:07+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:23:07+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"scriptArr1: Array"}
+{"date":"2024-03-28T16:23:07+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"scriptArr2: Array"}
+{"date":"2024-03-28T16:23:07+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"scriptArr2: Array"}
+{"date":"2024-03-28T16:23:07+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Preupdate script: #!\/bin\/bash\n#SBATCH --job-name='AMT9'\n#SBATCH --output=\/root\/coding-projects\/WebSlurm\/Backend\/routes\/..\/usr\/out\/66041e3a579414.40635569\/11\/\/slurmout\n\ndiff $arrayfile1 $arrayfile2\ncurl -X POST https:\/\/pgb.liv.ac.uk\/~sgjvivia\/api\/jobs\/11\/markcomplete > \/dev\/null 2>&1"}
+{"date":"2024-03-28T16:23:08+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Postupdate script: "}
+{"date":"2024-03-28T16:24:26+00:00","type":"debug","route":"\/api\/jobs\/create","message":"New jobID: 12"}
+{"date":"2024-03-28T16:24:26+00:00","type":"debug","route":"\/api\/jobs\/create","message":"Job type supports array jobs"}
+{"date":"2024-03-28T16:24:26+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"scriptArr1: Array\n(\n    [0] => #!\/bin\/bash\n    [1] => #SBATCH --job-name='AMT10'\n    [2] => #SBATCH --output=\/root\/coding-projects\/WebSlurm\/Backend\/routes\/..\/usr\/out\/66041e3a579414.40635569\/12\/\/slurmout\n    [3] => \n    [4] => diff $arrayfile1 $arrayfile2\n    [5] => curl -X POST https:\/\/pgb.liv.ac.uk\/~sgjvivia\/api\/jobs\/12\/markcomplete > \/dev\/null 2>&1\n)\n"}
+{"date":"2024-03-28T16:24:26+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"scriptArr2: Array\n(\n)\n"}
+{"date":"2024-03-28T16:24:26+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"scriptArr2: Array\n(\n)\n"}
+{"date":"2024-03-28T16:24:26+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Preupdate script: #!\/bin\/bash\n#SBATCH --job-name='AMT10'\n#SBATCH --output=\/root\/coding-projects\/WebSlurm\/Backend\/routes\/..\/usr\/out\/66041e3a579414.40635569\/12\/\/slurmout\n\ndiff $arrayfile1 $arrayfile2\ncurl -X POST https:\/\/pgb.liv.ac.uk\/~sgjvivia\/api\/jobs\/12\/markcomplete > \/dev\/null 2>&1"}
+{"date":"2024-03-28T16:24:26+00:00","type":"debug","route":"Jobs\/setupArrayFiles","message":"Postupdate script: "}

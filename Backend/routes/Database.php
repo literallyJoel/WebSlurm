@@ -59,10 +59,12 @@
         script          TEXT               not null,
         userID          TEXT
             references users,
-        fileUploadCount integer default 0,
         jobDescription  text    default "" not null,
         hasOutputFile   boolean default false,
-        outputCount     integer default 0
+        outputCount     integer default 0,
+        hasFileUpload   boolean,
+        arrayJobSupport boolean,
+        arrayJobCount   number
     );
 
     create table Jobs
