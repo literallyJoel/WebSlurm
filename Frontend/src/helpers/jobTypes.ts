@@ -16,10 +16,12 @@ export type JobTypeCreation = {
   script: string;
   name: string;
   description: string;
-  fileUploadCount: number;
   hasOutputFile: boolean;
   outputCount: number;
+  hasFileUpload: boolean;
   token: string;
+  arrayJobSupport: boolean;
+  arrayJobCount: number;
 };
 
 export type JobType = {
@@ -30,9 +32,11 @@ export type JobType = {
   name: string;
   createdBy: string;
   createdByName: string;
-  fileUploadCount: number;
+  hasFileUpload: boolean;
   hasOutputFile: boolean;
   outputCount: number;
+  arrayJobSupport: boolean;
+  arrayJobCount: number;
 };
 
 export type JobTypeUpdate = JobTypeCreation & { id: number };

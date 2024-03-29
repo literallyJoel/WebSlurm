@@ -10,8 +10,8 @@ export default function CreationSuccess({ serverResponse }: props) {
   return (
     <div className="flex flex-col w-full h-screen ">
       <Nav />
-      <div className="flex flex-col w-full h-4/6 justify-center items-center pt-8">
-        <Card className="w-10/12 h-3/4 flex flex-col justify-center">
+      <div className="flex flex-col w-full justify-center items-center pt-8">
+        <Card className="w-10/12 flex flex-col justify-center">
           <CardHeader className="flex flex-row justify-center bg-white">
             <div className="flex justify-center items-center h-24 w-24 rounded-full bg-emerald-600">
               <CheckIcon className="h-16 w-16 text-white mx-auto" />

@@ -41,7 +41,9 @@ interface props {
   resetUppy: () => void;
   setAllowedTypes: React.Dispatch<React.SetStateAction<string[] | undefined>>;
   allowedTypes: string[] | undefined;
+  setArrayJobCount: React.Dispatch<React.SetStateAction<number>>;
 }
+
 const CreateJob = ({
   uppy,
   setFileID,
@@ -50,6 +52,7 @@ const CreateJob = ({
   resetUppy,
   setAllowedTypes,
   allowedTypes,
+  setArrayJobCount,
 }: props): JSX.Element => {
   const authContext = useAuthContext();
   const token = authContext.getToken();
@@ -67,12 +70,21 @@ const CreateJob = ({
 
   useEffect(() => {
     async function updateUppyInfo() {
-      if (selectedJobType && selectedJobType.fileUploadCount > 1) {
-        await getFID();
-        setAllowedTypes([".zip"]);
+      if (selectedJobType && selectedJobType.arrayJobCount !== 0) {
+        setArrayJobCount(selectedJobType.arrayJobCount);
+      } else {
+        setArrayJobCount(1);
       }
 
-      if (selectedJobType && Number(selectedJobType.fileUploadCount) === 1) {
+      if (
+        selectedJobType &&
+        selectedJobType.hasFileUpload &&
+        (selectedJobType.script.includes("$file1=") ||
+          selectedJobType.script.includes("$arrayfile"))
+      ) {
+        await getFID();
+        setAllowedTypes([".zip"]);
+      } else if (selectedJobType && selectedJobType.hasFileUpload) {
         await getFID();
         setAllowedTypes(undefined);
       }
@@ -318,8 +330,8 @@ const CreateJob = ({
                   </div>
                 )}
 
-                {Number(selectedJobType?.fileUploadCount) !== 0 &&
-                  selectedJobType?.fileUploadCount !== undefined && (
+                {selectedJobType?.hasFileUpload &&
+                  selectedJobType?.hasFileUpload !== undefined && (
                     <div className="p-2">
                       <Label
                         className="flex flex-col pb-2"
@@ -327,12 +339,12 @@ const CreateJob = ({
                       >
                         File Upload
                       </Label>
-                      {Number(selectedJobType?.fileUploadCount) > 1 && (
-                        <Label className="text-sm">
-                          Upload a zip file with your files. Each file should be
-                          named file0, file1 etc.
-                        </Label>
-                      )}
+
+                      <Label className="text-sm">
+                        Upload a zip file with your files. Each file should be
+                        named file0, file1 etc.
+                      </Label>
+
                       <Dashboard
                         id="dashboard"
                         uppy={uppy}
@@ -348,8 +360,7 @@ const CreateJob = ({
               <Button
                 disabled={
                   selectedJobType === undefined ||
-                  (Number(selectedJobType.fileUploadCount) !== 0 &&
-                    !isUploadComplete)
+                  (selectedJobType.hasFileUpload && !isUploadComplete)
                 }
                 onClick={() => submitJob()}
               >

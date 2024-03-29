@@ -9,7 +9,7 @@ import ResetPassword from "./pages/accounts/resetPassword/ResetPassword.tsx";
 import Login from "./pages/auth/login/Login.tsx";
 
 import AdminSettings from "./pages/admin/settings/Settings.tsx";
-import NewJobType from "./pages/admin/settings/JobTypes/NewJobType/NewJobType.tsx";
+import CreateJobType from "./pages/admin/settings/JobTypes/Create/CreateJobType.tsx";
 import JobTypes from "./pages/admin/settings/JobTypes/JobTypes.tsx";
 import { UpdateJobType } from "./pages/admin/settings/JobTypes/UpdateJobTypes/UpdateJobTypes.tsx";
 import CreateJob from "./pages/jobs/CreateJob/CreateJob.tsx";
@@ -36,14 +36,32 @@ const Router = () => {
     return new Uppy({
       autoProceed: false,
       allowMultipleUploads: false,
-      restrictions: { maxNumberOfFiles: 1, allowedFileTypes: allowedTypes },
-      onBeforeFileAdded(currentFile) {
-        const modifiedFile = {
-          ...currentFile,
-          name: fileID ?? "noid",
-          meta: { ...currentFile.meta, name: fileID ?? "noid" },
-        };
-        return modifiedFile;
+      restrictions: {
+        maxNumberOfFiles: arrayJobCount,
+        minNumberOfFiles: arrayJobCount,
+        allowedFileTypes: allowedTypes,
+      },
+      onBeforeFileAdded(currentFile, files) {
+        console.log(Object.keys(files));
+        console.log(Object.keys(files).length);
+        if (Object.keys(files).length === 0) {
+          const modifiedFile = {
+            ...currentFile,
+            name: fileID ?? "noid",
+            meta: { ...currentFile.meta, name: fileID ?? "noid" },
+          };
+          return modifiedFile;
+        } else {
+          const modifiedFile = {
+            ...currentFile,
+            name: fileID ? fileID + "-" + Object.keys(files).length : "noid",
+            meta: {
+              ...currentFile.meta,
+              name: fileID ? fileID + "-" + Object.keys(files).length : "noid",
+            },
+          };
+          return modifiedFile;
+        }
       },
     })
       .use(Tus, {
@@ -69,6 +87,7 @@ const Router = () => {
   const [fileID, setFileID] = useState<string | undefined>();
   const [isUploadComplete, setIsUploadComplete] = useState(false);
   const [allowedTypes, setAllowedTypes] = useState<string[] | undefined>();
+  const [arrayJobCount, setArrayJobCount] = useState(1);
   const [uppy, setUppy] = useState(() => getNewUppy());
 
   const resetUppy = () => {
@@ -106,7 +125,7 @@ const Router = () => {
         path: "/admin",
         element: withAuth(AdminSettings)({}),
         children: [
-          { path: "/admin/jobtypes/new", element: <NewJobType /> },
+          { path: "/admin/jobtypes/new", element: <CreateJobType /> },
           { path: "/admin/jobtypes", element: <JobTypes /> },
           {
             path: "/admin/jobtypes/:id",
@@ -130,6 +149,7 @@ const Router = () => {
           resetUppy: resetUppy,
           setAllowedTypes: setAllowedTypes,
           allowedTypes: allowedTypes,
+          setArrayJobCount: setArrayJobCount,
         }),
       },
       {

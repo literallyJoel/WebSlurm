@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   type JobTypeParameter,
   extractParams,
@@ -25,7 +25,7 @@ import { useMutation } from "react-query";
 import { Link } from "react-router-dom";
 import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
 
-const NewJobType = (): JSX.Element => {
+const CreateJobType = (): JSX.Element => {
   const scriptStart =
     "#!/bin/bash\n#SBATCH --job-name=*{name}*\n#SBATCH --output=*{out}*";
   const [script, setScript] = useState(scriptStart);
@@ -37,8 +37,9 @@ const NewJobType = (): JSX.Element => {
   const [hasOutputFiles, setHasOutputFiles] = useState(false);
   const [outputCount, setOutputCount] = useState(0);
   const [isDescriptionValid, setIsDescriptionValid] = useState(true);
-  const [fileCount, setFileCount] = useState(0);
   const [isNameValid, setIsNameValid] = useState(true);
+  const [arrayJobSupport, setArrayJobSupport] = useState(false);
+  const [arrayJobCount, setArrayJobCount] = useState(0);
   const authContext = useAuthContext();
   const hiddenRef = useRef<HTMLAnchorElement>(null);
   const token = authContext.getToken();
@@ -70,7 +71,9 @@ const NewJobType = (): JSX.Element => {
         token: token,
         hasOutputFile: hasOutputFiles,
         outputCount: outputCount,
-        fileUploadCount: fileCount,
+        arrayJobSupport: arrayJobSupport,
+        hasFileUpload: hasFileUpload,
+        arrayJobCount: arrayJobCount,
       });
     }
   };
@@ -82,6 +85,15 @@ const NewJobType = (): JSX.Element => {
     setScript(updatedScript);
   };
 
+  useEffect(() => {
+    if (!arrayJobSupport || !hasFileUpload) {
+      setArrayJobCount(0);
+    } else if (arrayJobSupport && hasFileUpload) {
+      if (arrayJobCount === 0) {
+        setArrayJobCount(1);
+      }
+    }
+  }, [arrayJobSupport, hasFileUpload]);
   return (
     <div className="flex flex-col w-full items-center">
       <Card className="w-full max-w-2xl">
@@ -107,12 +119,12 @@ const NewJobType = (): JSX.Element => {
           </div>
           <div className="space-y-2 flex flex-col">
             <Label htmlFor="jobDescription">Job Description</Label>
-            {fileCount !== 0 && (
-              <Label className="text-sm text-rose-500">
-                Your description should indicate which files are which, i.e what
-                file0 should be, and what file1 should be.
-              </Label>
-            )}
+
+            <Label className="text-sm text-rose-500">
+              Your description should indicate which files are which, i.e what
+              file0 should be, and what file1 should be.
+            </Label>
+
             <Textarea
               id="jobDescription"
               placeholder="Enter Job Type Description"
@@ -145,58 +157,74 @@ const NewJobType = (): JSX.Element => {
           </div>
 
           <div>
-            <div className="flex flex-row w-full justify-evenly">
-              <div>
+            <div className="flex flex-row justify-evenly">
+              <div className="flex flex-col items-center">
                 <Label htmlFor="fileUpload">Accepts File Uploads</Label>
                 <Input
-                  className="cursor-pointer bg-uol"
+                  className="cursor-pointer bg-uol w-5"
                   id="fileUpload"
                   type="checkbox"
                   checked={hasFileUpload}
                   onChange={(e) => {
                     setHasFileUpload(e.target.checked);
-                    if (!e.target.checked) setFileCount(0);
                   }}
                 />
               </div>
 
-              <div>
+              <div className="flex flex-col items-center">
                 <Label htmlFor="fileUpload">Outputs Files?</Label>
                 <Input
-                  className="cursor-pointer bg-uol"
+                  className="cursor-pointer bg-uol w-5"
                   id="fileUpload"
                   type="checkbox"
                   checked={hasOutputFiles}
                   onChange={(e) => {
                     setHasOutputFiles(e.target.checked);
                     if (!e.target.checked) setOutputCount(0);
+                    else setOutputCount(1);
+                  }}
+                />
+              </div>
+              <div className="flex flex-col items-center justify-center">
+                <Label htmlFor="arrayJobSupport">Array Job?</Label>
+                <Input
+                  className="cursor-pointer bg-uol w-5"
+                  id="arrayJobSupport"
+                  type="checkbox"
+                  checked={arrayJobSupport}
+                  onChange={(e) => {
+                    setArrayJobSupport(e.target.checked);
                   }}
                 />
               </div>
             </div>
 
-            <div className="flex flex-row w-full justify-evenly gap-2 p-2">
+            {hasFileUpload && arrayJobSupport && (
+              <div className="flex flex-col items-center justify-center">
+                <Label htmlFor="arrayJobCount">How many files per job?</Label>
+                <Input
+                  id="arrayJobCount"
+                  type="number"
+                  onChange={(e) => {
+                    setArrayJobCount(Number(e.target.value));
+                  }}
+                  value={arrayJobCount}
+                />
+              </div>
+            )}
+
+            <div className="flex flex-col w-full justify-evenly gap-2 p-2">
               {hasFileUpload && (
-                <div className="flex flex-col w-1/2">
-                  <Label htmlFor="fileCount">
-                    How many files will be uploaded?
-                  </Label>
+                <div className="flex flex-col">
                   <Label className="text-red-500 text-sm">
                     When referring to files in your script, please use bash
-                    variables file0, file1, etc.
+                    variables $file0, $file1, etc, unless being used in an array
+                    job, in which case use "$arrayfile"
                   </Label>
-                  <Input
-                    className="fileCount"
-                    type="number"
-                    value={fileCount}
-                    onChange={(e) => {
-                      setFileCount(Number(e.target.value));
-                    }}
-                  />
                 </div>
               )}
               {hasOutputFiles && (
-                <div className="flex flex-col w-1/2">
+                <div className="flex flex-col">
                   <Label htmlFor="fileCount">
                     How many files will be output?
                   </Label>
@@ -214,31 +242,44 @@ const NewJobType = (): JSX.Element => {
                   />
                 </div>
               )}
+              {arrayJobSupport && (
+                <Label className="text-red-500 text-sm">
+                  This job is marked as an array job. Uploaded files will be
+                  treated as the input for each job in the array. The script
+                  should refer to the file as $arrayfile. If multiple files are
+                  required for each job, $arrayfile0, $arrayfile1 etc, should be
+                  used. A single config file can also be uploaded.
+                </Label>
+              )}
             </div>
 
-            <Label htmlFor="parameters">Parameters</Label>
-            <div className="flex flex-row w-full justify-evenly mb-2 border-b-2">
-              <div className="w-1/4">
-                <label className="text-sm font-medium w-1/3">Name</label>
-              </div>
-              <div className="w-1/4">
-                <label className="text-sm font-medium w-1/3">Type</label>
-              </div>
-              <div className="w-1/4">
-                <label className="text-sm font-medium w-1/3">Default</label>
-              </div>
-            </div>
-            {parameters.map((param, index) => (
-              <div className="p-1">
-                <ParameterEntry
-                  key={`${param.name}-${param.type}`}
-                  parameters={parameters}
-                  index={index}
-                  setParameters={setParameters}
-                  invalidParams={invalidParams}
-                />
-              </div>
-            ))}
+            {parameters && parameters.length !== 0 && (
+              <>
+                <Label htmlFor="parameters">Parameters</Label>
+                <div className="flex flex-row w-full justify-evenly mb-2 border-b-2">
+                  <div className="w-1/4">
+                    <label className="text-sm font-medium w-1/3">Name</label>
+                  </div>
+                  <div className="w-1/4">
+                    <label className="text-sm font-medium w-1/3">Type</label>
+                  </div>
+                  <div className="w-1/4">
+                    <label className="text-sm font-medium w-1/3">Default</label>
+                  </div>
+                </div>
+                {parameters.map((param, index) => (
+                  <div className="p-1">
+                    <ParameterEntry
+                      key={`${param.name}-${param.type}`}
+                      parameters={parameters}
+                      index={index}
+                      setParameters={setParameters}
+                      invalidParams={invalidParams}
+                    />
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         </CardContent>
         <CardFooter className="justify-center p-4">
@@ -254,4 +295,4 @@ const NewJobType = (): JSX.Element => {
   );
 };
 
-export default NewJobType;
+export default CreateJobType;

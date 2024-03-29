@@ -24,6 +24,7 @@ const JobInfo = (): JSX.Element => {
   const [hasFileUpload, setHasFileUpload] = useState(false);
   const [inputFile, setInputFile] = useState<File>();
   const [outputFile, setOutputFile] = useState<OutputFile>();
+  const [arrayJobCount, setArrayJobCount] = useState(0);
   const { data: jobInfo } = useQuery(`job${jobID}Info`, () => {
     return jobID ? getJob(jobID, token) : false;
   });
@@ -34,7 +35,7 @@ const JobInfo = (): JSX.Element => {
       return downloadOutputFile(token, `${jobID}`);
     },
     {
-      enabled: !!jobID,
+      enabled: !!jobID && arrayJobCount < 2,
       onSuccess: (data) => {
         setOutputFile(data);
       },
@@ -47,7 +48,7 @@ const JobInfo = (): JSX.Element => {
       return downloadInputFile(token, `${jobID}`);
     },
     {
-      enabled: jobInfo !== false && jobInfo !== undefined && hasFileUpload,
+      enabled: jobInfo !== false && jobInfo !== undefined && !!hasFileUpload,
       onSuccess: (data) => {
         setInputFile(data);
       },
@@ -62,7 +63,8 @@ const JobInfo = (): JSX.Element => {
     {
       enabled: jobInfo !== false && jobInfo !== undefined,
       onSuccess: (data) => {
-        setHasFileUpload(data.fileUploadCount > 0);
+        setHasFileUpload(data.hasFileUpload);
+        setArrayJobCount(data.arrayJobCount);
       },
     }
   );
@@ -109,7 +111,9 @@ const JobInfo = (): JSX.Element => {
               <div className="p-2 text-sm">
                 🟢 Completed{" "}
                 {new Date(
-                  jobInfo.jobCompleteTime ? Number(jobInfo.jobCompleteTime) * 1000 : 0
+                  jobInfo.jobCompleteTime
+                    ? Number(jobInfo.jobCompleteTime) * 1000
+                    : 0
                 ).toLocaleString("en-GB")}
               </div>
             ) : (
@@ -158,11 +162,15 @@ const JobInfo = (): JSX.Element => {
               )}
             </div>
             <div className="max-h-80 overflow-auto p-2">
-              <ExtendedViewer
-                file={{ type: "file", content: inputFile }}
-                key={`in${jobID}`}
-                jobID={jobID ?? ""}
-              />
+              {arrayJobCount > 1 ? (
+                <></>
+              ) : (
+                <ExtendedViewer
+                  file={{ type: "file", content: inputFile }}
+                  key={`in${jobID}`}
+                  jobID={jobID ?? ""}
+                />
+              )}
             </div>
             <div className="flex flex-row justify-center w-full">
               {inputFile.fileExt === "zip" ? (
