@@ -26,21 +26,21 @@ const AdminSettings = (): JSX.Element => {
               </Link>
             </li>
             {/* <li>
-              <a
-                className="flex justify-center py-2 text-lg font-semibold text-gray-700 dark:text-gray-300"
-                href="#"
-              >
-                Application Management
-              </a>
-            </li> */}
+                <a
+                  className="flex justify-center py-2 text-lg font-semibold text-gray-700 dark:text-gray-300"
+                  href="#"
+                >
+                  Application Management
+                </a>
+              </li> */}
             {/* <li>
-              <a
-                className="flex justify-center py-2 text-lg font-semibold text-gray-700 dark:text-gray-300"
-                href="/admin/organisations"
-              >
-                Organisation Management
-              </a>
-            </li> */}
+                <a
+                  className="flex justify-center py-2 text-lg font-semibold text-gray-700 dark:text-gray-300"
+                  href="/admin/organisations"
+                >
+                  Organisation Management
+                </a>
+              </li> */}
           </ul>
         </nav>
         <main className="flex-grow p-8">

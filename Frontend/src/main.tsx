@@ -1,13 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
-import Router from "./Router";
-import { ChonkyIconFA } from "chonky-icon-fontawesome";
 import { setChonkyDefaults } from "chonky";
-import { QueryClientProvider, QueryClient } from "react-query";
-
-//This comes from a library, and is setup as per their own setup guide
-//But typescript gets a bit upset at it.
+import { ChonkyIconFA } from "chonky-icon-fontawesome";
+import { QueryClient, QueryClientProvider } from "react-query";
+import Router from "./Router.tsx";
+import "@/../node_modules/noty/lib/noty.css";
+import "@/../node_modules/noty/lib/themes/mint.css";
 //@ts-ignore
 setChonkyDefaults({ iconComponent: ChonkyIconFA, disableDragAndDrop: true });
 const queryClient = new QueryClient();
@@ -15,7 +14,7 @@ const queryClient = new QueryClient();
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-        <Router />
+      <Router />
     </QueryClientProvider>
   </React.StrictMode>
 );

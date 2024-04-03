@@ -2,7 +2,7 @@ import { RiAccountCircleFill } from "react-icons/ri";
 import { useState } from "react";
 
 import { Link } from "react-router-dom";
-import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
+import { useAuthContext } from "@/providers/AuthProvider";
 
 const Nav = (): JSX.Element => {
   const authContext = useAuthContext();

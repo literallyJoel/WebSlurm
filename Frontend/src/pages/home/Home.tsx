@@ -1,6 +1,6 @@
 import Nav from "@/components/Nav";
-import TaskView from "./components/TaskView";
-import { Button } from "@/shadui/ui/button";
+import TaskView from "@/components/home/TaskView";
+import { Button } from "@/components/shadui/ui/button";
 import { Link } from "react-router-dom";
 import { useQuery } from "react-query";
 import {
@@ -8,25 +8,23 @@ import {
   getFailedJobs,
   getRunningJobs,
 } from "@/helpers/jobs";
-import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
-
-
+import { useAuthContext } from "@/providers/AuthProvider";
 
 const Home = (): JSX.Element => {
-  const authContext = useAuthContext();
-  const { getUser, getToken } = authContext;
+  const { getUser, getToken } = useAuthContext();
   const user = getUser();
   const token = getToken();
-  const completedJobs = useQuery("getCompletedJobs", () => {
-    return getCompletedJobs(token, 3, user.id);
+
+  const { data: completedJobs } = useQuery("homeCompletedJobs", () => {
+    return getCompletedJobs(token, 3);
   });
 
-  const runningJobs = useQuery("getRunningJobs", () => {
-    return getRunningJobs(token, 3, user.id);
+  const { data: runningJobs } = useQuery("homeRunningJobs", () => {
+    return getRunningJobs(token, 3);
   });
 
-  const failedJobs = useQuery("getFailedJobs", () => {
-    return getFailedJobs(token, 3, user.id);
+  const { data: failedJobs } = useQuery("homeFailedJobs", () => {
+    return getFailedJobs(token, 3);
   });
 
   return (
@@ -41,9 +39,9 @@ const Home = (): JSX.Element => {
         </div>
         <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3 p-8">
           <TaskView
-            runningJobs={runningJobs.data ?? []}
-            completedJobs={completedJobs.data ?? []}
-            failedJobs={failedJobs.data ?? []}
+            runningJobs={runningJobs ?? []}
+            completedJobs={completedJobs ?? []}
+            failedJobs={failedJobs ?? []}
           />
         </div>
         <div className="flex flex-col items-center">

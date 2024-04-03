@@ -1,16 +1,16 @@
 import { useQuery } from "react-query";
-import { Button } from "@/shadui/ui/button";
+import { Button } from "@/components/shadui/ui/button";
 import { FaPlus } from "react-icons/fa";
-import UserCard from "./components/UserCard";
+import UserCard from "@/components/users/UserCard";
 import { Link } from "react-router-dom";
-import { getAllAccounts, getUserCount } from "@/helpers/accounts";
-import { useAuthContext } from "@/providers/AuthProvider/AuthProvider";
+import { getAllUsers, getUserCount } from "@/helpers/users";
+import { useAuthContext } from "@/providers/AuthProvider";
 
 const Users = (): JSX.Element => {
   const authContext = useAuthContext();
   const token = authContext.getToken();
   const allUsers = useQuery("getAllUsers", () => {
-    return getAllAccounts(token);
+    return getAllUsers(token);
   });
   const userCount = useQuery("getUserCount", () => {
     return getUserCount(token);
@@ -30,8 +30,8 @@ const Users = (): JSX.Element => {
         {allUsers.data?.map((user) => {
           return (
             <UserCard
-              key={user.userID}
-              id={`${user.userID}`}
+              key={user.userId}
+              id={`${user.userId}`}
               name={user.userName}
               role={user.role}
               userCount={userCount.data?.count}

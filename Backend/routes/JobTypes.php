@@ -1,354 +1,348 @@
 <?php
 
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 
 include_once __DIR__ . "/../config/Config.php";
 require_once __DIR__ . "/../helpers/Logger.php";
+
 class JobTypes
 {
     public function __construct()
     {
-
     }
 
-    //Creates a new job type
-    public function create(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
+    //===========================================================================//
+    //=============================Helper Functions=============================//
+    //=========================================================================//
+
+    //Gets job types, with option for ID filter
+    private function getJobTypes($id = null)
     {
-        //Grab the users information from their decoded token
-        $decodedToken = $request->getAttribute("decoded");
-        //Grab the user ID to store with the job type
-        $userID = $decodedToken->userID;
-        //Grab the body of the request
+        $pdo = new PDO(DB_CONN);
+
+        try {
+            $query = "SELECT jt.jobTypeId, jt.jobTypeName, jt.jobTypeDescription, jt.script, jt.userId AS createdBy, 
+            jt.hasFileUpload, jt.arrayJobSupport, jt.hasOutputFile, jt.arrayJobCount, u.userName as createdByName, jtp.paramName, 
+            jtp.paramType, jtp.defaultValue FROM jobTypes jt LEFT JOIN Users u ON jt.userId = u.userId LEFT JOIN 
+            jobTypeParams jtp ON jt.jobTypeId = jtp.jobTypeID";
+            $query .= $id ? " WHERE jt.jobTypeId = :jobTypeId" : "";
+            $getJobTypesStmt = $pdo->prepare($query);
+            if ($id) {
+                $getJobTypesStmt->bindParam(":jobTypeId", $id);
+            }
+            $ok = $getJobTypesStmt->execute();
+            if (!$ok) {
+
+                throw new Error("PDO ERROR: " . print_r($getJobTypesStmt->errorInfo(), true));
+            }
+        } catch (Exception $e) {
+            Logger::error($e, "JobTypes/getJobTypes");
+            return null;
+        }
+        $result = [];
+        //Split the data into a format the front-end can use
+        while ($row = $getJobTypesStmt->fetch(PDO::FETCH_ASSOC)) {
+            $jobTypeId = $row['jobTypeId'];
+
+            $paramData = [
+                'name' => $row['paramName'],
+                'type' => $row['paramType'],
+                'defaultValue' => $row['defaultValue'],
+            ];
+
+            if($paramData['name'] === null){
+                $paramData = null;
+            }
+
+            // Check if the job type already exists in the result array
+            if (!isset($result[$jobTypeId])) {
+                $result[$jobTypeId] = [
+                    'jobTypeId' => $jobTypeId,
+                    'parameters' => [],
+                    'script' => $row['script'],
+                    'jobTypeName' => $row['jobTypeName'],
+                    'jobTypeDescription' => $row['jobTypeDescription'],
+                    'createdBy' => $row['createdBy'],
+                    'createdByName' => $row['createdByName'],
+                    'hasFileUpload' => $row['hasFileUpload'],
+                    'hasOutputFile' => $row['hasOutputFile'],
+                    'arrayJobSupport' => $row['arrayJobSupport'],
+                    'arrayJobCount' => $row['arrayJobCount']
+                ];
+            }
+
+            // Add parameters to the existing job type entry
+            if($paramData){
+                $result[$jobTypeId]['parameters'][] = $paramData;
+            }
+
+        }
+
+        if($id){
+            return $result[$id];
+        }
+        return array_values($result);
+    }
+
+    //Validates the input to the job type creation endpoint
+    private function validateJobType(...$params): bool
+    {
+        //Loops through the parameters and does some checks based on type
+        return (array_reduce($params, function ($carry, $param) {
+
+            $isValid = $param !== null;
+            $type = gettype($param);
+            switch ($type) {
+                case "string":
+                {
+                    $isValid = $isValid && strlen($param) !== 0;
+                    break;
+                }
+
+                case "array":
+                {
+                    $isValid = $isValid && count($param) !== 0;
+                }
+            }
+            if (gettype($param) === "string") {
+                $isValid = $isValid && strlen($param) !== 0;
+            }
+            return $carry || $isValid;
+        }, false));
+    }
+    //===========================================================================//
+    //=================================Routes===================================//
+    //=========================================================================//
+
+    //===========================Create JobType===========================//
+    //============================Method: POST===========================//
+    //========================Route: /api/jobtypes/=====================//
+    public function createJobType(Request $request, Response $response): Response
+    {
+        $tokenData = $request->getAttribute("tokenData");
+        $userId = $tokenData->userId;
         $body = json_decode($request->getBody());
-        $name = $body->name ?? null;
-        $description = $body->description ?? null;
-        $script = $body->script ?? null;
-        $parameters = $body->parameters ?? null;
-        $arrayJobSupport = $body->arrayJobSupport ?? false;
-        $hasFileUpload = $body->hasFileUpload ?? false;
-        $hasOutputFile = $body->hasOutputFile ?? false;
+
+        $jobTypeName = $body->jobTypeName;
+        $jobTypeDescription = $body->jobTypeDescription;
+        $script = $body->script;
+        $parameters = $body->parameters;
+        $arrayJobSupport = $body->arrayJobSupport;
+        $hasFileUpload = $body->hasFileUpload;
+        $hasOutputFile = $body->hasOutputFile;
         $outputCount = $body->outputCount ?? 0;
         $arrayJobCount = $body->arrayJobCount ?? 0;
-        $validator = new Validator();
-        //Validate the inputs
-        if (!$validator->validateJobTypeCreation($body, $name, $parameters)) {
+
+        if (!$this->validateJobType($jobTypeName, $script, $parameters, $arrayJobSupport, $hasFileUpload, $hasOutputFile, $outputCount, $arrayJobCount, $jobTypeDescription)) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
         }
 
-        //Open the database file
-        
         $pdo = new PDO(DB_CONN);
-
+        $pdo->beginTransaction();
         try {
-            //Multiple tables - use a transaction
-            $pdo->beginTransaction();
-            //Add the job type to the database
-            $stmt = $pdo->prepare("INSERT INTO jobTypes (jobName, jobDescription, script, userID, hasOutputFile, outputCount, hasFileUpload, arrayJobSupport, arrayJobCount) VALUES (:jobName, :jobDescription, :script, :userID, :hasOutputFile, :outputCount, :hasFileUpload, :arrayJobSupport, :arrayJobCount)");
-            $stmt->bindParam(":jobName", $name);
-            $stmt->bindParam(":jobDescription", $description);
-            $stmt->bindParam(":script", $script);
-            $stmt->bindParam(":userID", $userID);
-            $stmt->bindParam(":hasOutputFile", $hasOutputFile, PDO::PARAM_BOOL);
-            $stmt->bindParam(":outputCount", $outputCount);
-            $stmt->bindParam(":hasFileUpload", $hasFileUpload, PDO::PARAM_BOOL);
-            $stmt->bindParam(":arrayJobSupport", $arrayJobSupport, PDO::PARAM_BOOL);
-            $stmt->bindParam(":arrayJobCount", $arrayJobCount);
-            $stmt->execute();
 
-            //Grab the autogenerated ID of the newly inserted job type
-            $jobTypeID = $pdo->lastInsertId();
-            //Add all the parameters to the parameter table
-            foreach ($parameters as $param) {
-                $stmt = $pdo->prepare("INSERT INTO jobTypeParams (paramName, paramType, defaultValue, jobTypeID) VALUES (:paramName, :paramType, :defaultValue, :jobTypeID)");
-                $stmt->bindParam(":paramName", $param->name);
-                $stmt->bindParam(":paramType", $param->type);
-                $stmt->bindParam(":jobTypeID", $jobTypeID);
-                $defaultVal = strval($param->defaultValue);
-                $stmt->bindParam(":defaultValue", $defaultVal);
-                $stmt->execute();
+            $createJobTypeStmt = $pdo->prepare("INSERT INTO jobTypes 
+    (jobTypeName, jobTypeDescription, script, userId, hasOutputFile, outputCount, hasFileUpload, arrayJobSupport, arrayJobCount)
+VALUES (:jobTypeName, :jobTypeDescription, :script, :userId, :hasOutputFile, :outputCount, :hasFileUpload, :arrayJobSupport, :arrayJobCount)");
+
+            if(!$createJobTypeStmt){
+                error_log(print_r($pdo->errorInfo(), true));
+                throw new Error("PDO Error: " . print_r($pdo->errorInfo(), true));
             }
-
+            $createJobTypeStmt->bindParam(":jobTypeName", $jobTypeName);
+            $createJobTypeStmt->bindParam(":jobTypeDescription", $jobTypeDescription);
+            $createJobTypeStmt->bindParam(":script", $script);
+            $createJobTypeStmt->bindParam(":userId", $userId);
+            $createJobTypeStmt->bindParam(":hasOutputFile", $hasOutputFile, PDO::PARAM_BOOL);
+            $createJobTypeStmt->bindParam(":outputCount", $outputCount);
+            $createJobTypeStmt->bindParam(":hasFileUpload", $hasFileUpload, PDO::PARAM_BOOL);
+            $createJobTypeStmt->bindParam(":arrayJobSupport", $arrayJobSupport, PDO::PARAM_BOOL);
+            $createJobTypeStmt->bindParam(":arrayJobCount", $arrayJobCount);
+            $ok = $createJobTypeStmt->execute();
+            if (!$ok) {
+                throw new Error("PDO Error: " . print_r($createJobTypeStmt->errorInfo(), true));
+            }
         } catch (Exception $e) {
-            //If anything goes wrong, rollback the transaction and error out
+            error_log($e->getMessage());
+            Logger::error($e, $request->getRequestTarget());
             $pdo->rollBack();
-            Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
-        //Else, commit the transaction and send an appropriate response to the client
-        $ok = $pdo->commit();
-        if ($ok) {
-            Logger::info("JobType with ID $jobTypeID created for user with ID $userID", $request->getRequestTarget());
-            $response->getBody()->write(json_encode(["jobTypeID" => $jobTypeID]));
-            return $response->withStatus(200);
-        } else {
-            Logger::error("Failed to create job for user with ID: $userID. Reason: {$pdo->errorInfo()}", $request->getRequestTarget());
-            $response->getBody()->write("Internal Server Error");
-            return $response->withStatus(500);
-        }
-
-    }
-
-    //Retrieves all the job types
-    public function getAll(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
-    {
-        // Open the database file
-        
-        $pdo = new PDO(DB_CONN);
 
         try {
-            //Fetch the job types, their parameters, and their users
-            $stmt = $pdo->prepare("
-            SELECT 
-                jt.jobTypeID AS id,
-                jt.jobName AS name,
-                jt.jobDescription AS description,
-                jt.script AS script,
-                jt.userID AS createdBy,
-                jt.hasFileUpload as hasFileUpload,
-                jt.arrayJobSupport as arrayJobSupport,
-                jt.arrayJobCount as arrayJobCount,
-                u.userName AS createdByName,
-                jtp.paramName AS paramName,
-                jtp.paramType AS paramType,
-                jtp.defaultValue AS defaultValue
-            FROM jobTypes jt
-            LEFT JOIN Users u ON jt.userID = u.userID
-            LEFT JOIN jobTypeParams jtp ON jt.jobTypeID = jtp.jobTypeID
-        ");
-            $stmt->execute();
+            $jobTypeId = $pdo->lastInsertId();
 
-            $result = [];
-            //Split the data into a format the front-end can use
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $jobTypeID = $row['id'];
-
-                $paramData = [
-                    'name' => $row['paramName'],
-                    'type' => $row['paramType'],
-                    'defaultValue' => $row['defaultValue'],
-                ];
-
-                // Check if the job type already exists in the result array
-                if (!isset($result[$jobTypeID])) {
-                    $result[$jobTypeID] = [
-                        'id' => $jobTypeID,
-                        'parameters' => [],
-                        'script' => $row['script'],
-                        'name' => $row['name'],
-                        'description' => $row['description'],
-                        'createdBy' => $row['createdBy'],
-                        'createdByName' => $row['createdByName'],
-                        'hasFileUpload' => $row['hasFileUpload'],
-                        'arrayJobSupport' => $row['arrayJobSupport'],
-                        'arrayJobCount' => $row['arrayJobCount']
-                    ];
+            foreach ($parameters as $param) {
+                $paramStmt = $pdo->prepare("INSERT INTO jobTypeParams (paramName, paramType, defaultValue, jobTypeId) VALUE (:paramName, :paramType, :defaultValue, :jobTypeId)");
+                $paramStmt->bindParam(":paramName", $param->name);
+                $paramStmt->bindParam("paramType", $param->type);
+                $paramStmt->bindParam(":jobTypeId", $jobTypeId);
+                $defaultVal = strval($param->defaultVal);
+                $paramStmt->bindParam(":defaultValue", $defaultVal);
+                $ok = $paramStmt->execute();
+                if (!$ok) {
+                    throw new Error("PDO Error: " . print_r($paramStmt->errorInfo(), true), $request->getRequestTarget());
                 }
-
-                // Add parameters to the existing job type entry
-                $result[$jobTypeID]['parameters'][] = $paramData;
             }
-
-            //Send the data to the client
-            $response->getBody()->write(json_encode(array_values($result)));
-            Logger::info("JobTypes retrieved", $request->getRequestTarget());
-            return $response->withStatus(200);
         } catch (Exception $e) {
             Logger::error($e, $request->getRequestTarget());
+            $pdo->rollBack();
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
-    }
 
-    public function getById(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
-    {
-        //Grab the job type ID from the request
-        $jobTypeId = $args['jobTypeID'];
-        //Open the database file
-        
-        $pdo = new PDO(DB_CONN);
-
-        try {
-            //Grab the job type with the specified ID
-            $stmt = $pdo->prepare("SELECT * FROM jobTypes WHERE jobTypeID = :jobTypeID");
-            $stmt->bindParam(":jobTypeID", $jobTypeId);
-            $stmt->execute();
-
-            $jobType = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            //If the job type doesn't exist, send a 404 to the client
-            if (!$jobType) {
-                $response->getBody()->write("JobType not found");
-                return $response->withStatus(404);
-            }
-
-            //Grab the parameters for the job type
-            $jobTypeID = $jobType['jobTypeID'];
-            $parametersStmt = $pdo->prepare("SELECT * FROM jobTypeParams WHERE jobTypeID = :jobTypeID");
-            $parametersStmt->bindParam(":jobTypeID", $jobTypeID);
-            $parametersStmt->execute();
-
-            $parameters = [];
-            //Add the parameters to the job type
-            while ($param = $parametersStmt->fetch(PDO::FETCH_ASSOC)) {
-                $paramData = [
-                    'name' => $param['paramName'],
-                    'type' => $param['paramType'],
-                    'defaultValue' => $param['defaultValue'],
-                ];
-                $parameters[] = $paramData;
-            }
-
-            // Fetch user's name from Users table based on userID
-            $userStmt = $pdo->prepare("SELECT userName FROM Users WHERE userID = :userID");
-            $userStmt->bindParam(":userID", $jobType['userID']);
-            $userStmt->execute();
-            $user = $userStmt->fetch(PDO::FETCH_ASSOC);
-            //Grab the name of the user who created the job type
-            $createdByName = $user['userName'] ?? '';
-
-            //Send the data to the client
-            $jobTypeData = [
-                'id' => $jobTypeID,
-                'parameters' => $parameters,
-                'script' => $jobType['script'],
-                'name' => $jobType['jobName'],
-                'description' => $jobType['jobDescription'],
-                'hasFileUpload' => $jobType['hasFileUpload'],
-                'arrayJobSupport' => $jobType['arrayJobSupport'],
-                'arrayJobCount' => $jobType['arrayJobCount'],
-                'createdBy' => $jobType['userID'],
-                'createdByName' => $createdByName,
-            ];
-
-
-            $response->getBody()->write(json_encode($jobTypeData));
-            return $response->withStatus(200);
-        } catch (Exception $e) {
-            Logger::error($e, $request->getRequestTarget());
+        $ok = $pdo->commit();
+        if (!$ok) {
+            Logger::error("PDO Error: " . print_r($pdo->errorInfo(), true), $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
+
+        Logger::debug("JobType with ID $jobTypeId created by user with ID $userId", $request->getRequestTarget());
+        $response->getBody()->write(json_encode(["jobTypeId" => $jobTypeId]));
+        return $response->withStatus(201);
     }
 
-    public function updateById(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
-    {
-        $jobTypeId = $args['jobTypeID'];
-        $decoded = $request->getAttribute("decoded");
-        $userID = $decoded->userID;
+    //==========================Get All JobTypes==========================//
+    //=============================Method: GET===========================//
+    //================Route: /api/jobtypes[/{$jobTypeId}]===============//
 
+    public function getJobType(Request $request, Response $response, array $args): Response
+    {
+        $jobTypeId = $args["jobTypeId"] ?? null;
+        $jobTypes = $this->getJobTypes($jobTypeId);
+
+        if ($jobTypes === null) {
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $response->getBody()->write(json_encode($jobTypes));
+        return $response->withStatus(200);
+    }
+
+
+
+    //===========================Update JobType===========================//
+    //============================Method: PUT===========================//
+    //=================Route: /api/jobtypes/{jobTypeId}================//
+    public function update(Request $request, Response $response, array $args): Response
+    {
+        $jobTypeId = $args['jobTypeId'] ?? null;
+        $tokenData = $request->getAttribute("tokenData");
+        $userId = $tokenData->userId;
         $body = json_decode($request->getBody());
-        $name = $body->name ?? null;
-        $description = $body->description ?? null;
-        $script = $body->script ?? null;
-        $hasOutputFile = $body->hasOutputFile ?? null;
-        $hasFileUpload = $body->hasFileUpload ?? null;
-        $arrayJobSupport = $body->arrayJobSupport ?? null;
+        $name = $body->jobTypeName;
+        $description = $body->jobTypeDescription;
+        $script = $body->script;
+        $hasOutputFile = $body->hasOutputFile;
+        $hasFileUpload = $body->hasFileUpload;
+        $arrayJobSupport = $body->arrayJobSupport;
         $arrayJobCount = $body->arrayJobCount ?? 0;
         $parameters = $body->parameters ?? [];
 
-        $validator = new Validator();
-
-        if (!$validator->validateJobTypeCreation((array)$body, $name, $parameters)) {
+        if (!$this->validateJobType($jobTypeId, $name, $description, $script, $hasOutputFile, $hasFileUpload, $arrayJobSupport, $arrayJobCount, $parameters)) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
         }
 
-        
         $pdo = new PDO(DB_CONN);
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $pdo->beginTransaction();
         try {
-            $pdo->beginTransaction();
+            $deleteParamsStmt = $pdo->prepare("DELETE from jobTypeParams WHERE jobTypeId = :jobTypeId");
+            $deleteParamsStmt->bindParam(":jobTypeId", $jobTypeId);
+            $ok = $deleteParamsStmt->execute();
 
-            // Delete existing parameters for the job type
-            $deleteParamsStmt = $pdo->prepare("DELETE FROM jobTypeParams WHERE jobTypeID = :jobTypeID");
-            $deleteParamsStmt->bindParam(":jobTypeID", $jobTypeId);
-            $deleteParamsStmt->execute();
+            if (!$ok) {
+                throw new Error("PDO Exception: " . print_r($deleteParamsStmt->errorInfo(), true));
+            }
+        } catch (Exception $e) {
+            Logger::error($e, $request->getRequestTarget());
+            $pdo->rollBack();
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
 
-            // Update the job type
-            $updateJobTypeStmt = $pdo->prepare("UPDATE jobTypes SET jobName = :jobName, script = :script, jobDescription = :jobDescription, hasOutputFile = :hasOutputFile, outputCount = :outputCount, hasFileUpload = :hasFileUpload, arrayJobSupport = :arrayJobSupport, arrayJobCount = :arrayJobCount WHERE jobTypeID = :jobTypeID");
-    
-            $updateJobTypeStmt->bindParam(":jobName", $name);
-            $updateJobTypeStmt->bindParam(":jobDescription", $description);
+        try {
+            $updateJobTypeStmt = $pdo->prepare("UPDATE jobTypes SET jobTypeName = :jobTypeName, script = :script, jobTypeDescription = :jobTypeDescription, hasOutputFile = :hasOutputFile, outputCount = :outputCount, hasFileUpload = :hasFileUpload, arrayJobSupport = :arrayJobSupport, arrayJobCount = :arrayJobCount WHERE jobTypeId= :jobTypeId");
+            $updateJobTypeStmt->bindParam(":jobTypeName", $name);
+            $updateJobTypeStmt->bindParam("jobTypeDescription", $description);
             $updateJobTypeStmt->bindParam(":hasOutputFile", $hasOutputFile, PDO::PARAM_BOOL);
             $updateJobTypeStmt->bindParam(":hasFileUpload", $hasFileUpload, PDO::PARAM_BOOL);
             $updateJobTypeStmt->bindParam(":arrayJobSupport", $arrayJobSupport, PDO::PARAM_BOOL);
             $updateJobTypeStmt->bindParam(":outputCount", $outputCount);
             $updateJobTypeStmt->bindParam(":script", $script);
-            $updateJobTypeStmt->bindParam(":jobTypeID", $jobTypeId);
+            $updateJobTypeStmt->bindParam(":jobTypeId", $jobTypeId);
             $updateJobTypeStmt->bindParam(":arrayJobCount", $arrayJobCount);
-            if($updateJobTypeStmt->execute() === false){
-                $pdo->rollBack();
-                Logger::error("Failed to update job type with ID $jobTypeId for user with ID $userID. Error: " . print_r($pdo->errorInfo(), true), $request->getRequestTarget());
-                $response->getBody()->write("Internal Server Error");
-                return $response->withStatus(500);
+            $ok = $updateJobTypeStmt->execute();
+            if (!$ok) {
+                throw new Error("PDO Error: " . print_r($updateJobTypeStmt->errorInfo(), true), $request->getRequestTarget());
             }
-
-            // Insert new parameters
-            foreach ($parameters as $param) {
-                $insertParamsStmt = $pdo->prepare("INSERT INTO jobTypeParams (paramName, paramType, defaultValue, jobTypeID) VALUES (:paramName, :paramType, :defaultValue, :jobTypeID)");
-                $insertParamsStmt->bindParam(":paramName", $param->name);
-                $insertParamsStmt->bindParam(":paramType", $param->type);
-                $insertParamsStmt->bindParam(":jobTypeID", $jobTypeId);
-                $defaultVal = strval($param->default);
-                $insertParamsStmt->bindParam(":defaultValue", $defaultVal);
-                $insertParamsStmt->execute();
-            }
-
-            if($pdo->commit()){
-                Logger::info("JobType with ID $jobTypeId updated for user with ID $userID", $request->getRequestTarget());
-                $response->getBody()->write("JobType updated successfully");
-                return $response->withStatus(200);
-            }else{
-                Logger::error("Failed to update job type with ID $jobTypeId for user with ID $userID. Error: " . print_r($pdo->errorInfo(), true), $request->getRequestTarget());
-                $response->getBody()->write("Internal Server Error");
-                return $response->withStatus(500);
-            }
-            
-          
         } catch (Exception $e) {
-            $pdo->rollBack();
             Logger::error($e, $request->getRequestTarget());
+            $pdo->rollBack();
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
+
+        if (!$pdo->commit()) {
+            Logger::error("Failed to update job type with ID $jobTypeId for user with ID $userId. PDO Error: " . print_r($pdo->errorInfo(), true), $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        Logger::debug("JoType with ID $jobTypeId, for user with ID $userId", $request->getRequestTarget());
+        $response->getBody()->write("Record Updated");
+        return $response->withStatus(200);
+
     }
 
-    public function deleteById(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
+    //===========================DeleteJobType===========================//
+    //==========================Method: DELETE==========================//
+    //=================Route: /api/jobtypes/{jobTypeId}================//
+    public function deleteById(Request $request, Response $response, array $args): Response
     {
-        $decoded = $request->getAttribute("decoded");
-        $userID = $decoded->userID;
-        $jobTypeId = $args['jobTypeID'];
+        $tokenData = $request->getAttribute("tokenData");
+        $userId = $tokenData->userId;
+        $jobTypeId = $args["jobTypeId"] ?? null;
 
-        
+        if (!$jobTypeId) {
+            $response->getBody()->write("Bad Request");
+            return $response->withStatus(400);
+        }
+
         $pdo = new PDO(DB_CONN);
-
         try {
             $pdo->beginTransaction();
 
-            // Delete job type parameters
-            $deleteParamsStmt = $pdo->prepare("DELETE FROM jobTypeParams WHERE jobTypeID = :jobTypeID");
-            $deleteParamsStmt->bindParam(":jobTypeID", $jobTypeId);
-            $deleteParamsStmt->execute();
+            $deleteParamsStmt = $pdo->prepare("DELETE FROM jobTypeParams WHERE jobTypeId = :jobTypeId");
+            $deleteParamsStmt->bindParam(":jobTypeId", $jobTypeId);
+            if (!$deleteParamsStmt->execute()) {
+                throw new Error("PDO Error: " . print_r($deleteParamsStmt->errorInfo(), true), $request->getRequestTarget());
+            }
 
-            // Delete the job type
-            $deleteJobTypeStmt = $pdo->prepare("DELETE FROM jobTypes WHERE jobTypeID = :jobTypeID");
-            $deleteJobTypeStmt->bindParam(":jobTypeID", $jobTypeId);
-            $deleteJobTypeStmt->execute();
-
-            $pdo->commit();
-            Logger::info("JobType with ID $jobTypeId deleted for user with ID $userID", $request->getRequestTarget());
-            $response->getBody()->write("JobType and parameters removed successfully");
-            return $response->withStatus(200);
+            $deleteJobTypeStmt = $pdo->prepare("DELETE FROM jobTypes WHERE jobTypeId = :jobTypeId");
+            $deleteJobTypeStmt->bindParam(":jobTypeId", $jobTypeId);
+            if (!$deleteJobTypeStmt->execute()) {
+                throw new Error("PDO Error " . print_r($deleteJobTypeStmt->errorInfo(), true), $request->getRequestTarget());
+            }
         } catch (Exception $e) {
+            Logger::error($e, $request->getRequestTarget());
             $pdo->rollBack();
-            Logger::info($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
         }
+
+        if (!$pdo->commit()) {
+            Logger::error("Failed to delete jobType with ID $jobTypeId foruser with ID $userId. PDO Error: " . print_r($pdo->errorInfo(), true), $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        Logger::debug("Deleted Job Type with ID $jobTypeId for user with ID $userId", $request->getRequestTarget());
+        return $response->withStatus(200);
     }
-
-
 }

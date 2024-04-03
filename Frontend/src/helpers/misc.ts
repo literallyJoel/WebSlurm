@@ -22,5 +22,3 @@ export const msToTimeString = (epochTime: number): String => {
 
   return result || "0 Minutes"; // Default to 0 minutes if the input is 0
 };
-
-

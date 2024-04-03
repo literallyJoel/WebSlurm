@@ -1,6 +1,0 @@
-{"date":"2024-03-29T10:45:48+00:00","type":"info","route":"\/api\/jobs","message":"Retrieved all jobs for user with ID 66041e3a579414.40635569"}
-{"date":"2024-03-29T10:45:59+00:00","type":"info","route":"\/api\/jobs\/31","message":"Retrieved job with ID 31 for user with ID 66041e3a579414.40635569"}
-{"date":"2024-03-29T10:46:09+00:00","type":"info","route":"Jobs\/generateFileID","message":"Generated new file ID 66069bf126b2d for user with ID 66041e3a579414.40635569"}
-{"date":"2024-03-29T10:46:19+00:00","type":"info","route":"Jobs\/generateFileID","message":"Generated new file ID 66069bfb3c8a9 for user with ID 66041e3a579414.40635569"}
-{"date":"2024-03-29T10:46:29+00:00","type":"info","route":"\/api\/jobs","message":"Retrieved all jobs for user with ID 66041e3a579414.40635569"}
-{"date":"2024-03-29T10:46:38+00:00","type":"info","route":"\/api\/jobs\/31","message":"Retrieved job with ID 31 for user with ID 66041e3a579414.40635569"}

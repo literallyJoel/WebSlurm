@@ -13,20 +13,18 @@ class RequiresAuthentication
     {
         try{
             $token = $request->getHeaderLine("Authorization");
-            $decoded = decodeJWT($token);
-            $isAllowed = isTokenValid($decoded);
+            $tokenData = decodeJWT($token);
+            $isAllowed = isTokenValid($tokenData);
 
             if ($isAllowed) {
-                $request = $request->withAttribute("decoded", $decoded);
+                $request = $request->withAttribute("tokenData", $tokenData);
                 return $next($request, $response);
             }
 
           
             $response->getBody()->write("Unauthorized");
             return $response->withStatus(401);
-        }catch(ExpiredException $e){
-            error_log($e);
-          
+        }catch(ExpiredException $e){   
             $response->getBody()->write("Token Expired");
             return $response->withStatus(401);
         }

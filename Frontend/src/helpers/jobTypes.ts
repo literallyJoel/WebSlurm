@@ -1,47 +1,41 @@
 import { apiEndpoint } from "@/config/config";
+
+export type ParameterType = "String" | "Number" | "Boolean" | "Undefined";
 export type JobTypeParameter = {
   name: string;
-  type: JobTypeParameterType;
+  type: ParameterType;
   defaultValue: string | number | boolean | undefined;
 };
-
-export type JobTypeParameterType =
-  | "String"
-  | "Number"
-  | "Boolean"
-  | "Undefined";
-export type CreateJobResponse = { jobTypeID: string };
-export type JobTypeCreation = {
+export type CreateJobTypeRequest = {
   parameters: JobTypeParameter[];
   script: string;
-  name: string;
-  description: string;
+  jobTypeName: string;
+  jobTypeDescription: string;
   hasOutputFile: boolean;
   outputCount: number;
   hasFileUpload: boolean;
-  token: string;
   arrayJobSupport: boolean;
   arrayJobCount: number;
 };
 
+export type CreateJobTypeResponse = {
+  jobTypeId: string;
+};
+
 export type JobType = {
-  id: number;
+  jobTypeId: string;
   parameters: JobTypeParameter[];
   script: string;
-  description: string;
-  name: string;
+  jobTypeName: string;
+  jobTypeDescription: string;
   createdBy: string;
   createdByName: string;
   hasFileUpload: boolean;
   hasOutputFile: boolean;
-  outputCount: number;
   arrayJobSupport: boolean;
   arrayJobCount: number;
 };
-
-export type JobTypeUpdate = JobTypeCreation & { id: number };
-
-export const isParameterType = (str: string): str is JobTypeParameterType => {
+export const isParameterType = (str: string): str is ParameterType => {
   return ["String", "Number", "Boolean", "Undefined"].includes(str);
 };
 
@@ -53,7 +47,7 @@ export const extractParams = (script: string): string[] => {
     : [];
 };
 
-export const updateParamaterList = (
+export const updateParameterList = (
   _parameterList: JobTypeParameter[],
   extractedParameters: string[]
 ): JobTypeParameter[] => {
@@ -83,64 +77,67 @@ export const updateParamaterList = (
 };
 
 export const createJobType = async (
-  jobType: JobTypeCreation
-): Promise<CreateJobResponse> => {
-  console.log(jobType.token);
+  jobType: CreateJobTypeRequest,
+  token: string
+): Promise<CreateJobTypeResponse> => {
   return (
-    await fetch(apiEndpoint + "/jobtypes/create", {
+    await fetch(`${apiEndpoint}/jobtypes/`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${jobType.token}`,
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify(jobType),
+      headers: { Authorization: `Bearer ${token}` },
     })
   ).json();
 };
 
 export const getJobTypes = async (token: string): Promise<JobType[]> => {
   return (
-    await fetch(apiEndpoint + "/jobtypes", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    await fetch(`${apiEndpoint}/jobtypes`, {
+      headers: { Authorization: `Bearer ${token}` },
     })
   ).json();
 };
 
 export const getJobType = async (
-  token: string,
-  id: string
+  jobTypeId: string,
+  token: string
 ): Promise<JobType> => {
   return (
-    await fetch(`${apiEndpoint}/jobtypes/${id}`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    await fetch(`${apiEndpoint}/jobtypes/${jobTypeId}`, {
+      headers: { Authorization: `Bearer ${token}` },
     })
   ).json();
 };
 
 export const updateJobType = async (
-  jobType: JobTypeUpdate
-): Promise<{ ok: boolean }> => {
-  return await fetch(`${apiEndpoint}/jobtypes/${jobType.id}`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${jobType.token}`,
-      "Content-Type": "application/json",
-    },
+  jobTypeId: string,
+  jobType: CreateJobTypeRequest,
+  token: string
+): Promise<Response> => {
+  return await fetch(`${apiEndpoint}/jobtypes/${jobTypeId}`, {
+    headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(jobType),
+    method: "PUT",
   });
 };
 
-export const deleteJobType = async (jobTypeID: string, token: string) => {
-  return await fetch(`${apiEndpoint}/jobtypes/${jobTypeID}`, {
+export const deleteJobType = async (
+  jobTypeId: string,
+  token: string
+): Promise<Response> => {
+  return await fetch(`${apiEndpoint}/jobtypes/${jobTypeId}`, {
+    headers: { Authorization: `Bearer ${token}` },
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
   });
+};
+
+export const validateParameters = (
+  parameters: JobTypeParameter[]
+): number[] => {
+  const invalidIndices: number[] = [];
+  parameters.forEach((parameter, index) => {
+    if (parameter.type === "Undefined") {
+      invalidIndices.push(index);
+    }
+  });
+  return invalidIndices;
 };

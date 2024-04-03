@@ -1,10 +1,11 @@
 <?php
 use Firebase\JWT\JWT;
 use Slim\Http\Response;
-function isTokenValid($decoded): bool
+include_once __DIR__ . "/../../config/Config.php";
+function isTokenValid($tokenData): bool
 {
     $valid = true;
-    $valid = $valid && isset($decoded->exp);
+    $valid = $valid && isset($tokenData->exp);
 
     
     if(!$valid){
@@ -12,12 +13,12 @@ function isTokenValid($decoded): bool
         return false;
     }
 
-    $valid = $valid && time() < $decoded->exp;
+    $valid = $valid && time() < $tokenData->exp;
     if(!$valid){
         error_log("Failed on exp");
         return false;
     }
-    $valid = $valid && !(isTokenCancelled($decoded));
+    $valid = $valid && !(isTokenCancelled($tokenData));
     if(!$valid){
         error_log("Failed on cancelled");
         return false;
@@ -25,12 +26,12 @@ function isTokenValid($decoded): bool
     return $valid;
 }
 
-function isTokenCancelled($decoded): bool
+function isTokenCancelled($tokenData): bool
 {
     $dbFile = __DIR__ . "/../../data/db.db";
     $pdo = new PDO("sqlite:$dbFile");
-    $userID = $decoded->userID;
-    $tokenID = $decoded->tokenID ?? null;
+    $userID = $tokenData->userId;
+    $tokenID = $tokenData->tokenId ?? null;
 
     if ($tokenID) {
         $pdo->beginTransaction();
@@ -65,6 +66,6 @@ function decodeJWT($token)
     $token = substr($token, 7);
     
 
-    $key = new \Firebase\JWT\Key("thisShouldBeAnEnvironmentVariable", "HS256");
+    $key = new \Firebase\JWT\Key(SECRET_KEY, "HS256");
     return JWT::decode($token, $key);
 }
