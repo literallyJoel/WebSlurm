@@ -21,11 +21,17 @@ import { Input } from "@/components/shadui/ui/input";
 import { Editor } from "@monaco-editor/react";
 import ParameterEntry from "@/components/jobTypes/ParameterEntry";
 import { Button } from "@/components/shadui/ui/button";
-import { useMutation } from "react-query";
+import { useMutation, useQuery } from "react-query";
 import { Link } from "react-router-dom";
 import { useAuthContext } from "@/providers/AuthProvider";
-
-const CreateJobType = (): JSX.Element => {
+import Nav from "@/components/Nav";
+import { getUserOrganisations } from "@/helpers/organisations";
+import Noty from "noty";
+import { Combobox } from "@/components/shadui/ui/combobox";
+interface props {
+  standalone?: boolean;
+}
+const CreateJobType = ({ standalone }: props): JSX.Element => {
   const scriptStart =
     "#!/bin/bash\n#SBATCH --job-name=*{name}*\n#SBATCH --output=*{out}*";
   const [script, setScript] = useState(scriptStart);
@@ -40,6 +46,10 @@ const CreateJobType = (): JSX.Element => {
   const [isNameValid, setIsNameValid] = useState(true);
   const [arrayJobSupport, setArrayJobSupport] = useState(false);
   const [arrayJobCount, setArrayJobCount] = useState(0);
+  const [selectedOrganisation, setSelectedOrganisation] = useState("");
+  const [formattedOrganisations, setFormattedOrganisations] = useState<
+    { label: string; value: string }[]
+  >([]);
   const authContext = useAuthContext();
   const hiddenRef = useRef<HTMLAnchorElement>(null);
   const token = authContext.getToken();
@@ -52,6 +62,38 @@ const CreateJobType = (): JSX.Element => {
     {
       onSuccess: () => {
         hiddenRef.current?.click();
+      },
+    }
+  );
+
+  const { data: organisations } = useQuery(
+    "getOrganisations",
+    () => {
+      const moderatorOrgs = getUserOrganisations(token, null, 1);
+      const adminOrg = getUserOrganisations(token, null, 2);
+      return Promise.all([moderatorOrgs, adminOrg]).then((values) => {
+        return values.flat();
+      });
+    },
+    {
+      enabled: !!standalone,
+      onError: () => {
+        new Noty({
+          text: "Failed to get your organisations. Please try again later",
+          type: "error",
+          timeout: 5000,
+        }).show();
+      },
+      onSuccess: (data) => {
+        if (data.length === 1) {
+          setSelectedOrganisation(data[0].organisationId);
+        } else {
+          const formattedData = data.map((org) => ({
+            label: org.organisationName,
+            value: org.organisationId,
+          }));
+          setFormattedOrganisations(formattedData);
+        }
       },
     }
   );
@@ -77,6 +119,7 @@ const CreateJobType = (): JSX.Element => {
         arrayJobSupport: arrayJobSupport,
         hasFileUpload: hasFileUpload,
         arrayJobCount: arrayJobCount,
+        organisationId: standalone ? selectedOrganisation : undefined,
       });
     }
   };
@@ -97,7 +140,8 @@ const CreateJobType = (): JSX.Element => {
       }
     }
   }, [arrayJobSupport, hasFileUpload]);
-  return (
+
+  const CreateJobInterface = (): JSX.Element => (
     <div className="flex flex-col w-full items-center">
       <Card className="w-full max-w-2xl">
         <Link to="/admin/jobtypes" className="hidden" ref={hiddenRef} />
@@ -106,7 +150,10 @@ const CreateJobType = (): JSX.Element => {
           <CardDescription>
             Define a new Job Type by providing a name and bash script.
             Parameters that users will enter through the site should be written
-            using {"{{parameterName}}"} format.
+            using {"{{parameterName}}"} format.{" "}
+            {standalone
+              ? "This JobType will be available to everyone in your organisation."
+              : "This job type will be available to all users."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -283,10 +330,27 @@ const CreateJobType = (): JSX.Element => {
                 ))}
               </>
             )}
+
+            {standalone && formattedOrganisations.length !== 0 && (
+              <div className="w-full flex flex-col justify-center items-center gap-2">
+                <Label>Select an Organisation for this JobType</Label>
+                <Combobox
+                  items={formattedOrganisations}
+                  value={selectedOrganisation}
+                  setValue={setSelectedOrganisation}
+                  itemTypeName="Organisation"
+                />
+              </div>
+            )}
           </div>
         </CardContent>
         <CardFooter className="justify-center p-4">
           <Button
+            disabled={
+              jobTypeName === "" ||
+              jobTypeDescription === "" ||
+              (standalone && selectedOrganisation === "")
+            }
             className="bg-transparent border border-uol text-uol hover:bg-uol hover:text-white"
             onClick={() => createJob()}
           >
@@ -295,6 +359,16 @@ const CreateJobType = (): JSX.Element => {
         </CardFooter>
       </Card>
     </div>
+  );
+  return standalone ? (
+    <div className="flex flex-col w-full min-h-screen">
+      <Nav />
+      <div className="p-2">
+        <CreateJobInterface />
+      </div>
+    </div>
+  ) : (
+    <CreateJobInterface />
   );
 };
 

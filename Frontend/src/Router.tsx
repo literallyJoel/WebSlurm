@@ -26,6 +26,7 @@ import Organisations from "./pages/admin/settings/Organisations/Organisations";
 import CreateOrganisation from "./pages/organisations/CreateOrganisation";
 import { default as AdminOrgs } from "@/pages/organisations/Organisations";
 import OrganisationInfo from "./pages/organisations/OrganisationInfo";
+
 const Router = () => {
   const [fileId, setFileId] = useState<string | undefined>();
   const [isUploadComplete, setIsUploadComplete] = useState(false);
@@ -170,6 +171,10 @@ const Router = () => {
             element: <OrganisationInfo />,
           },
         ],
+      },
+      {
+        path: "/jobtypes/create",
+        element: withAuth(CreateJobType)({ standalone: true }),
       },
     ],
     {

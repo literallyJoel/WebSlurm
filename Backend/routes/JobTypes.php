@@ -159,7 +159,7 @@ class JobTypes
         $hasOutputFile = $body->hasOutputFile;
         $outputCount = $body->outputCount ?? 0;
         $arrayJobCount = $body->arrayJobCount ?? 0;
-        $organisationIds = $body->organisationIds;
+        $organisationId = $body->organisationId;
 
         if (!$this->validateJobType($jobTypeName, $script, $parameters, $arrayJobSupport, $hasFileUpload, $hasOutputFile, $outputCount, $arrayJobCount, $jobTypeDescription)) {
             $response->getBody()->write("Bad Request");
@@ -192,7 +192,6 @@ VALUES (:jobTypeName, :jobTypeDescription, :script, :userId, :hasOutputFile, :ou
                 throw new Error("PDO Error: " . print_r($createJobTypeStmt->errorInfo(), true));
             }
         } catch (Exception $e) {
-            error_log($e->getMessage());
             Logger::error($e, $request->getRequestTarget());
             $pdo->rollBack();
             $response->getBody()->write("Internal Server Error");

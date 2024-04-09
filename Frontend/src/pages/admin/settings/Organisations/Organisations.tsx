@@ -4,10 +4,7 @@ import { FaPlus } from "react-icons/fa";
 import Noty from "noty";
 import { Link } from "react-router-dom";
 import { useAuthContext } from "@/providers/AuthProvider";
-import {
-  getAllOrganisations,
-  getUserMemberships,
-} from "@/helpers/organisations";
+import { getOrganisation, getUserOrganisations } from "@/helpers/organisations";
 import { useState } from "react";
 import OrganisationCard from "@/components/organisations/OrganisationCard";
 
@@ -18,7 +15,7 @@ const Organisations = (): JSX.Element => {
   const { data: allOrganisations } = useQuery(
     "getAllOrganisations",
     () => {
-      return getAllOrganisations(token);
+      return getOrganisation(token);
     },
     {
       onSuccess: (data) => setOrganisationCount(data.length),
@@ -28,7 +25,7 @@ const Organisations = (): JSX.Element => {
   const { data: userOrganisations } = useQuery(
     "getUserOrganisations",
     () => {
-      return getUserMemberships(token);
+      return getUserOrganisations(token);
     },
     {
       onError: () => {

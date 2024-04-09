@@ -1,9 +1,7 @@
 import {
   OrganisationUser,
-  makeUserAdmin,
-  makeUserModerator,
-  makeUserUser,
-  removeUserFromOrg,
+  removeUserFromOrganisation,
+  setUserRole,
 } from "@/helpers/organisations";
 import { useAuthContext } from "@/providers/AuthProvider";
 import { ColumnDef } from "@tanstack/react-table";
@@ -101,7 +99,7 @@ export const columns = (refetch: Function) => {
         const _makeUserAdmin = useMutation(
           "makeUserAdmin",
           () => {
-            return makeUserAdmin(token, user.userId, organisationId!);
+            return setUserRole(token, organisationId!, user.userId, 2);
           },
           {
             onError: () => {
@@ -124,7 +122,7 @@ export const columns = (refetch: Function) => {
         const _makeUserModerator = useMutation(
           "makeUserModerator",
           () => {
-            return makeUserModerator(token, user.userId, organisationId!);
+            return setUserRole(token, organisationId!, user.userId, 1);
           },
           {
             onError: () => {
@@ -147,7 +145,7 @@ export const columns = (refetch: Function) => {
         const _makeUserUser = useMutation(
           "makeUserUser",
           () => {
-            return makeUserUser(token, user.userId, organisationId!);
+            return setUserRole(token, organisationId!, user.userId, 0);
           },
           {
             onError: () => {
@@ -170,7 +168,11 @@ export const columns = (refetch: Function) => {
         const _removeFromOrg = useMutation(
           "removeUser",
           () => {
-            return removeUserFromOrg(token, organisationId!, user.userId);
+            return removeUserFromOrganisation(
+              token,
+              user.userId,
+              organisationId!
+            );
           },
           {
             onError: () => {

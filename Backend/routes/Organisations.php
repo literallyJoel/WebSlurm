@@ -76,8 +76,10 @@ class Organisations
 
     private function _getUserOrganisations($userId, $role = null)
     {
+
+        error_log("GETTING USER ORGS FOR USER WITH ID $userId WHERE ROLE IS $role");
         $pdo = new PDO(DB_CONN);
-        $query = "SELECT organisations.organisationName, organisations.organisationId FROM organisations JOIN organisationUsers ON organisations.organisationId = organisationUsers.userId = :userId";
+        $query = "SELECT organisations.organisationName, organisations.organisationId FROM organisations JOIN organisationUsers ON organisations.organisationId = organisationUsers.organisationId WHERE organisationUsers.userId = :userId";
         if ($role) {
             $query .= " AND organisationUsers.role = :role";
         }
@@ -383,13 +385,9 @@ class Organisations
         $roleToCheck = $args["role"] ?? null;
 
         try {
-            if ($userToCheck) {
-                if ($userToCheck !== $userId) {
-                    if ($role !== 1) {
-                        $response->getBody()->write("Unauthorized");
-                        return $response->withStatus(500);
-                    }
-                }
+            if ($userToCheck && $userToCheck !== $userId && $role !== 1) {
+                $response->getBody()->write("Unauthorized");
+                return $response->withStatus(500);
             } else {
                 $userToCheck = $userId;
             }
@@ -405,11 +403,12 @@ class Organisations
         return $response->withStatus(200);
     }
 
-    //--This is a post request because PHP gets upset about . characters in the URL, so I need to put the userId in the body.
-    //=====================Remove User From Organisation==================//
-    //============================Method: POST===========================//
-    //======Route: /api/organisations/{organisationId}/users/remove=====//
-    public function removeUserFromOrganisation(Request $request, Response $response, array $args): Response
+//--This is a post request because PHP gets upset about . characters in the URL, so I need to put the userId in the body.
+//=====================Remove User From Organisation==================//
+//============================Method: POST===========================//
+//======Route: /api/organisations/{organisationId}/users/remove=====//
+    public
+    function removeUserFromOrganisation(Request $request, Response $response, array $args): Response
     {
         $tokenData = $request->getAttribute("tokenData");
         $userId = $tokenData->userId;
@@ -447,10 +446,11 @@ class Organisations
         return $response->withStatus(200);
     }
 
-    //=======================Add User to Organisation=====================//
-    //============================Method: POST===========================//
-    //=========Route: /api/organisations/{organisationId}/users/=========//
-    public function addUserToOrganisation(Request $request, Response $response, array $args): Response
+//=======================Add User to Organisation=====================//
+//============================Method: POST===========================//
+//=========Route: /api/organisations/{organisationId}/users/=========//
+    public
+    function addUserToOrganisation(Request $request, Response $response, array $args): Response
     {
         $tokenData = $request->getAttribute("tokenData");
         $userId = $tokenData->userId;

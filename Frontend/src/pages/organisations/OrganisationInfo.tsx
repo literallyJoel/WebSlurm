@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "react-query";
 import { useParams } from "react-router-dom";
 import { GrStatusUnknown } from "react-icons/gr";
 import {
-  addUserToOrg,
+    addUserToOrganisation,
   getOrganisation,
   getOrganisationUsers,
 } from "@/helpers/organisations";
@@ -44,7 +44,7 @@ const OrganisationInfo = (): JSX.Element => {
   const _addUserToOrg = useMutation(
     "addUserToOrg",
     () => {
-      return addUserToOrg(token, organisationId!, newUserEmail, newUserRole);
+      return addUserToOrganisation(token, newUserEmail, organisationId!, newUserRole);
     },
     {
       onError: () => {
@@ -78,7 +78,7 @@ const OrganisationInfo = (): JSX.Element => {
 
   return (
     <div className="h-full flex flex-col gap-2">
-      <div className="text-4xl font-bold">{organisation.organisationName}</div>
+      <div className="text-4xl font-bold">{organisation[0].organisationName}</div>
       {users && (
         <div className="w-full flex flex-col justify-center overflow-y-auto border">
           <div className="text-xl font-bold p-2">Users</div>

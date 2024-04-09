@@ -4,7 +4,7 @@ import { useQuery } from "react-query";
 import { Link, Outlet, useParams } from "react-router-dom";
 
 import { useAuthContext } from "@/providers/AuthProvider";
-import { getAdminsOrgs } from "@/helpers/organisations";
+import { getUserOrganisations } from "@/helpers/organisations";
 
 import ListViewOrganisationCard from "@/components/organisations/ListViewOrganisationCard";
 
@@ -12,9 +12,9 @@ const Organisations = (): JSX.Element => {
   const { organisationId } = useParams();
   const authContext = useAuthContext();
   const token = authContext.getToken();
-
+  const user = authContext.getUser();
   const { data: allOrganisations } = useQuery("allJobs", () => {
-    return getAdminsOrgs(token);
+    return getUserOrganisations(token, user.id, 2);
   });
 
   return (

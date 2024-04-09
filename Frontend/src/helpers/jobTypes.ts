@@ -16,6 +16,7 @@ export type CreateJobTypeRequest = {
   hasFileUpload: boolean;
   arrayJobSupport: boolean;
   arrayJobCount: number;
+  organisationId?: string;
 };
 
 export type CreateJobTypeResponse = {
