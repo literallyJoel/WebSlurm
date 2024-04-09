@@ -10,271 +10,145 @@ export type OrganisationUser = {
   role: number;
   userId: string;
 };
-export const createOrganisation = async (
-  token: string,
-  name: string,
-  userId: string
-) => {
+
+export const xgetOrganisation = async (token: string, organisationId?: string): Promise<Organisation[]> =>{
+  const endpoint = organisationId ? `${apiEndpoint}/organisations/${organisationId}` : `${apiEndpoint}/organisations`;
+  const response = await fetch(endpoint, {
+    headers: {Authorization: `Bearer ${token}`}
+  });
+
+  if(!response.ok){
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  const organisations = await response.json();
+
+  return Array.isArray(organisations) ? organisations : [organisations];
+}
+
+export const xcreateOrganisation = async(token: string, organisationName: string, adminId: string): Promise<Response> =>{
   const response = await fetch(`${apiEndpoint}/organisations`, {
     method: "POST",
-    body: JSON.stringify({ organisationName: name, adminId: userId }),
-    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({organisationName, adminId}),
+    headers: {Authorization: `Bearer ${token}`}
   });
 
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
-  return response;
-};
+return response.ok ? response : Promise.reject(new Error(response.statusText));
+}
 
-export const deleteOrganisation = async (
-  token: string,
-  organisationId: string
-) => {
-  const response = await fetch(
-    `${apiEndpoint}/organisations/${organisationId}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
-
-  return await response;
-};
-
-export const updateOrganisation = async (
-  token: string,
-  organisationId: string,
-  organisationName: string
-) => {
-  const response = await fetch(`${apiEndpoint}/organisations/`, {
-    method: "PUT",
-    body: JSON.stringify({ organisationName, organisationId }),
-    headers: { Authorization: `Bearer ${token}` },
+export const xdeleteOrganisation = async (token: string, organisationId: string): Promise<Response> =>{
+  const response = await fetch(`${apiEndpoint}/organisations/${organisationId}`, {
+    method: "DELETE",
+    headers: {Authorization: `Bearer ${token}`}
   });
 
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
+return response.ok ? response : Promise.reject(new Error(response.statusText));
+}
 
-  return await response;
-};
+export const xupdateOrganisation = async (token: string, organisationId: string, organisationName: string):Promise<Response> =>{
+  const response = await fetch(`${apiEndpoint}/organisations/${organisationId}`, {
+    method: "PATCH",
+    body: JSON.stringify({organisationName}),
+    headers: {Authorization: `Bearer ${token}`}
+  });
+  
+return response.ok ? response : Promise.reject(new Error(response.statusText));
+}
 
-export const addUserToOrg = async (
-  token: string,
-  organisationId: string,
-  userEmail: string,
-  role: 0 | 1 | 2
-) => {
-  const response = await fetch(`${apiEndpoint}/organisations/user`, {
-    method: "POST",
-    body: JSON.stringify({ organisationId, userEmail, role }),
-    headers: { Authorization: `Bearer ${token}` },
+export const xsetUserRole = async (token: string, organisationId: string, userId: string, role: number): Promise<Response> =>{
+  const response = await fetch(`${apiEndpoint}/organisations/${organisationId}/users/${userId}/${role}`, {
+    method: "PATCH",
+    headers: {Authorization: `Bearer ${token}`}
   });
 
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
-  return await response;
-};
+  return response.ok ? response : Promise.reject(new Error(response.statusText));
+}
 
-export const removeUserFromOrg = async (
-  token: string,
-  organisationId: string,
-  userId: string
-) => {
-  const response = await fetch(
-    `${apiEndpoint}/organisations/${organisationId}/${userId}`,
-    {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+export const xgetOrganisationUsers = async (token: string, organisationId: string, userId?: string): Promise<OrganisationUser[]> =>{
+  let endpoint = `${apiEndpoint}/organisations/${organisationId}/users`;
+  endpoint = userId ? `${endpoint}/${userId}` : endpoint;
 
-  if (!response.ok) {
+  const response = await fetch(endpoint, {
+    headers: {Authorization: `Bearer ${token}`}
+  });
+
+  if(!response.ok){
     return Promise.reject(new Error(response.statusText));
   }
 
-  return await response;
-};
+  const users = await response.json();
 
-export const getOrganisationUsers = async (
-  token: string,
-  organisationId: string
-): Promise<OrganisationUser[]> => {
-  const response = await fetch(
-    `${apiEndpoint}/organisations/${organisationId}/users`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
+  return Array.isArray(users) ? users : [users];
+}
 
-  if (!response.ok) {
+export const xgetOrganisationAdmins = async (token: string, organisationId: string, userId?: string): Promise<OrganisationUser[]> =>{
+  let endpoint = `${apiEndpoint}/organisations/${organisationId}/admins`;
+  endpoint = userId ? `${endpoint}/${userId}` : endpoint;
+
+  const response = await fetch(endpoint, {
+    headers: {Authorization: `Bearer ${token}`}
+  });
+
+  if(!response.ok){
     return Promise.reject(new Error(response.statusText));
   }
 
   const users = await response.json();
   return Array.isArray(users) ? users : [users];
-};
+}
 
-export const getOrganisationUser = async (
-  token: string,
-  organisationId: string,
-  userId: string
-) => {
-  const response = await fetch(
-    `${apiEndpoint}/organisations/users/${organisationId}/${userId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
-  return await response.json();
-};
+const getOrganisationModerators = async (token: string, organisationId: string, userId?: string): Promise<OrganisationUser[]> =>{
+  let endpoint = `${apiEndpoint}/organisations/${organisationId}/moderators`;
+  endpoint = userId ? `${endpoint}/${userId}` : endpoint;
 
-export const getOrganisationAdmins = async (
-  token: string,
-  organisationId: string
-) => {
-  const response = await fetch(
-    `${apiEndpoint}/organisations/${organisationId}/admins`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
-
-  return await response.json();
-};
-
-export const getAllOrganisations = async (
-  token: string
-): Promise<Organisation[]> => {
-  const response = await fetch(`${apiEndpoint}/organisations`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
-
-  return await response.json();
-};
-
-export const getOrganisation = async (
-  token: string,
-  organisationId: string
-): Promise<Organisation> => {
-  const response = await fetch(
-    `${apiEndpoint}/organisations/${organisationId}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-    }
-  );
-
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
-  const org = await response.json();
-  return Array.isArray(org) ? org[0] : org;
-};
-
-export const getUserMemberships = async (
-  token: string,
-  userId?: string
-): Promise<Organisation[]> => {
-  const endpoint = userId
-    ? `${apiEndpoint}/organisations/user/${userId}`
-    : `${apiEndpoint}/organisations/user`;
   const response = await fetch(endpoint, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {Authorization: `Bearer ${token}`}
   });
 
-  if (!response.ok) {
+  if(!response.ok){
     return Promise.reject(new Error(response.statusText));
   }
 
-  return await response.json();
-};
+  const users = await response.json();
 
-export const getAdminsOrgs = async (token: string): Promise<Organisation[]> => {
-  const response = await fetch(`${apiEndpoint}/organisations/admin`, {
-    headers: { Authorization: `Bearer ${token}` },
+  return Array.isArray(users) ? users : [users];
+}
+
+const getUserOrganisations = async (token: string, userId?: string, role?: number): Promise<Organisation[]> =>{
+  let endpoint = `${apiEndpoint}/organisations/users/getorganisations`;
+  endpoint = userId ? `${endpoint}/${userId}` : endpoint;
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    body: JSON.stringify({userId}),
+    headers: {Authorization: `Bearer ${token}`}
   });
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
-  const orgs = await response.json();
 
-  return Array.isArray(orgs) ? orgs : [orgs];
-};
-
-export const makeUserAdmin = async (
-  token: string,
-  userId: string,
-  organisationId: string
-): Promise<Response> => {
-  const response = await fetch(
-    `${apiEndpoint}/organisations/${organisationId}/users/admin`,
-    {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ userId }),
-    }
-  );
-
-  if (!response.ok) {
+  if(!response.ok){
     return Promise.reject(new Error(response.statusText));
   }
 
-  return response;
-};
+  const organisations = await response.json();
 
-export const makeUserModerator = async (
-  token: string,
-  userId: string,
-  organisationId: string
-) => {
-  const response = await fetch(
-    `${apiEndpoint}/organisations/${organisationId}/users/moderator`,
-    {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ userId }),
-    }
-  );
+  return Array.isArray(organisations) ? organisations : [organisations];
+}
 
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
+const removeUserFromOrganisation = async (token: string, userId: string, organisationId: string): Promise<Response> =>{
+  const response = await fetch(`${apiEndpoint}/organisations/${organisationId}/users/remove`, {
+    body: JSON.stringify({userId}),
+    method: "POST",
+    headers: {Authorization: `Bearer ${token}`}
+  });
 
-  return response;
-};
+  return response.ok ? response : Promise.reject(new Error(response.statusText));
+}
 
-export const makeUserUser = async (
-  token: string,
-  userId: string,
-  organisationId: string
-) => {
-  const response = await fetch(
-    `${apiEndpoint}/organisations/${organisationId}/users/user`,
-    {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ userId }),
-    }
-  );
+const addUserToOrganisation = async (token: string, userEmail: string, organisationId: string, role: number): Promise<Response> =>{
+  const response = await fetch(`${apiEndpoint}/organisations/${organisationId}/users`, {
+    method: "POST",
+    body: JSON.stringify({userEmail, role}),
+    headers: {Authorization: `Bearer ${token}`}
+  });
 
-  if (!response.ok) {
-    return Promise.reject(new Error(response.statusText));
-  }
-
-  return response;
-};
+  return response.ok ? response : Promise.reject(new Error(response.statusText));
+}

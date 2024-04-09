@@ -119,23 +119,20 @@ $app->group("/api", function (App $app) {
     });
 
     $app->group("/organisations", function (App $app) {
-        $app->patch("/{organisationId}/users/moderator", "Organisations:makeUserModerator")->add(new RequiresAuthentication());
-        $app->patch("/{organisationId}/users/admin", "Organisations:makeUserAdmin")->add(new RequiresAuthentication());
-        $app->patch("/{organisationId}/users/user", "Organisations:makeUserUser")->add(new RequiresAuthentication());
-        $app->get("/admin", "Organisations:getAdminOrgs")->add(new RequiresAuthentication());
-        $app->get("/users[/{userId}]", "Organisations:getUserMemberships")->add(new RequiresAuthentication());
-        $app->get("[/{organisationId}]", "Organisations:getOrganisation")->add(new RequiresAuthentication());
-        $app->get("/{organisationId}/admins", "Organisations:getAdmins")->add(new RequiresAuthentication());
-        $app->get("/{organisationId}/users[/{userId}]", "Organisations:getUser")->add(new RequiresAuthentication());
+        $app->get("/{organisationId}", "Organisations:getOrganisation")->add(new RequiresAuthentication());
+        $app->get("/{organisationId}/users[/{userId}]", "Organisations:getOrganisationUsers")->add(new RequiresAuthentication());
+        $app->get("/{organisationId}/admins[/{userId}]", "Organisations:getOrganisationAdmins")->add(new RequiresAuthentication());
+        $app->get("/{organisationId}/moderators[/{userId}]", "Organisations:getOrganisationModerators")->add(new RequiresAuthentication());
 
+        $app->post("[/]", "Organisations:createOrganisation")->add(new RequiresAuthentication());
+        $app->post("/users/getorganisations[/{role}]", "Organisations:getUserOrganisations")->add(new RequiresAuthentication());
+        $app->post("/{organisationId}/users/remove", "Organisations:removeUserFromOrganisation")->add(new RequiresAuthentication());
+        $app->post("/{organisationId}/users", "Organisations:addUserToOrganisation")->add(new RequiresAuthentication());
 
-        $app->delete("/{organisationId}", "Organisations:delete")->add(new RequiresAuthentication());
-        $app->delete("/{organisationId}/{userId}", "Organisations:deleteUser")->add(new RequiresAuthentication());
+        $app->delete("/{organisationId}", "Organisations:deleteOrganisation")->add(new RequiresAdmin());
 
-        $app->post("[/]", "Organisations:create")->add(new RequiresAdmin());
-        $app->post("/user", "Organisations:addUser")->add(new RequiresAuthentication());
-
-        $app->put("[/]", "Organisations:updateOrganisation")->add(new RequiresAuthentication());
+        $app->patch("/{organisationId}", "Organisations:updateOrganisation")->add(new RequiresAdmin());
+        $app->patch("/{organisationId}/users/{userId}/{role}", "Organisations:setUserRole")->add(new RequiresAuthentication());
     });
 
 
