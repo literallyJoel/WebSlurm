@@ -48,6 +48,15 @@ const Nav = (): JSX.Element => {
                   </Link>
                 </div>
               )}
+              {user.isOrgAdmin && (
+                <Link
+                  to="/organisations"
+                  className="text-uol hover:underline cursor-pointer"
+                >
+                  Your Organisations
+                </Link>
+              )}
+
               <div className="text-center">
                 <div
                   onClick={() => logout()}

@@ -19,7 +19,7 @@ class Auth
     //=============================Helper Functions=============================//
     //=========================================================================//
     //Takes a users info and generates a JWT
-    private function generateJWT($tokenId, $email, $name, $userId, $role, $requiresPasswordReset): string
+    private function generateJWT($tokenId, $email, $name, $userId, $role, $requiresPasswordReset, $isOrgAdmin): string
     {
         try {
             $expirationTime = time() + 86400; //24 Hours
@@ -31,7 +31,8 @@ class Auth
                 'name' => $name,
                 'role' => $role,
                 'requiresPasswordReset' => $requiresPasswordReset,
-                'local' => true
+                'local' => true,
+                'isOrgAdmin' => $isOrgAdmin
             ],
                 SECRET_KEY,
                 "HS256");
@@ -73,7 +74,7 @@ class Auth
             if ($tokenData->role !== 1) {
                 Logger::warning("Unauthorized attempt to disable user tokens for user with ID $providedId by user with ID $userId", $request->getRequestTarget());
                 $response->getBody()->write("Unauthorized");
-                return $response->withStatus(200);
+                return $response->withStatus(401);
             }
         }
         $pdo = new PDO(DB_CONN);
@@ -166,30 +167,33 @@ class Auth
         $pdo = new PDO(DB_CONN);
         //Grab the user with the specified email
         try {
-            $getUserStmt = $pdo->prepare("SELECT * FROM Users WHERE userEmail = :email");
+            $getUserStmt = $pdo->prepare("SELECT Users.* FROM Users WHERE userEmail = :email");
             $getUserStmt->bindParam(":email", $email);
             $ok = $getUserStmt->execute();
             if (!$ok) {
                 throw new Error("PDO Error: " . print_r($getUserStmt->errorInfo(), true));
             }
-        } catch (Exception $e) {
-            Logger::error($e, $request->getRequestTarget());
-            $response->getBody()->write("Internal Server Error");
-            return $response->withStatus(500);
-        }
+
+            $user = $getUserStmt->fetch(PDO::FETCH_ASSOC);
 
 
-        $user = $getUserStmt->fetch(PDO::FETCH_ASSOC);
+            //If the user exists, check if the password matches the provided one
+            if ($user) {
+                $getIsOrgAdminStmt = $pdo->prepare("SELECT COUNT(*) FROM organisationUsers WHERE userId = :userId AND role = 2");
+                $getIsOrgAdminStmt->bindParam(":userId", $user["userId"]);
+                if (!$getIsOrgAdminStmt->execute()) {
+                    throw new Error("Failed to fetch is user is org admin: " . print_r($getIsOrgAdminStmt->errorInfo(), true));
+                }
 
-        //If the user exists, check if the password matches the provided one
-        if ($user) {
-            $userPWHash = $user["userPWHash"];
-            if (password_verify($password, $userPWHash)) {
-                //If it does generate a new token and sent it to the client
-                $tokenId = uniqid("", true);
-                $token = $this->generateJWT($tokenId, $email, $user["userName"], $user["userId"], $user["role"], $user["requiresPasswordReset"]);
+                $orgAdmin = $getIsOrgAdminStmt->fetchAll(PDO::FETCH_ASSOC);
+                $isOrgAdmin = !!$orgAdmin;
+                $userPWHash = $user["userPWHash"];
+                if (password_verify($password, $userPWHash)) {
+                    //If it does generate a new token and sent it to the client
+                    $tokenId = uniqid("", true);
+                    $token = $this->generateJWT($tokenId, $email, $user["userName"], $user["userId"], $user["role"], $user["requiresPasswordReset"], $isOrgAdmin);
 
-                try {
+
                     $newTokenStmt = $pdo->prepare("INSERT INTO userTokens (tokenId, userId) VALUES (:tokenId, :userId)");
                     $newTokenStmt->bindParam(":tokenId", $tokenId);
                     $newTokenStmt->bindParam(":userId", $user["userId"]);
@@ -197,21 +201,23 @@ class Auth
                     if (!$ok) {
                         throw new Error("PDO Error: " . print_r($newTokenStmt->errorInfo(), true));
                     }
-                } catch (Exception $e) {
-                    Logger::error($e, $request->getRequestTarget());
-                    $response->getBody()->write("Internal Server Error");
-                    return $response->withStatus(500);
-                }
 
-                Logger::debug("User with ID {$user["userId"]} logged in.", $request->getRequestTarget());
-                $response->getBody()->write(json_encode(["token" => $token]));
-                return $response->withStatus(200);
+                    Logger::debug("User with ID {$user["userId"]} logged in.", $request->getRequestTarget());
+                    $response->getBody()->write(json_encode(["token" => $token]));
+                    return $response->withStatus(200);
+                }
             }
+
+            //Otherwise 401
+            $response->getBody()->write("Unauthorized");
+            return $response->withStatus(401);
+        } catch (Exception $e) {
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
         }
 
-        //Otherwise 401
-        $response->getBody()->write("Unauthorized");
-        return $response->withStatus(401);
+
     }
 
 

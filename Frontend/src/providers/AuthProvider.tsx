@@ -15,7 +15,7 @@ interface props {
 
 export const AuthContext = createContext({
   getUser: (): User => {
-    return { email: "", id: "", name: "", role: -1 };
+    return { email: "", id: "", name: "", role: -1, isOrgAdmin: false };
   },
   getToken: (): string => {
     return "";
@@ -47,11 +47,12 @@ const AuthProvider = ({ children }: props): JSX.Element => {
         name: decoded.name,
         email: decoded.email,
         role: decoded.role,
+        isOrgAdmin: decoded.isOrgAdmin,
       };
       return user;
     }
 
-    return { id: "", name: "", email: "", role: -1 };
+    return { id: "", name: "", email: "", role: -1, isOrgAdmin: false };
   };
 
   const getToken = (): string => {

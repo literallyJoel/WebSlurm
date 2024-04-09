@@ -27,11 +27,15 @@ const downloadTree = async (
   token: string,
   jobId: string
 ): Promise<FileTree[]> => {
-  return (
-    await fetch(`${apiEndpoint}/files/${type}/tree/${jobId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/files/${type}/tree/${jobId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  return await response.json();
 };
 
 export const downloadInputTree = async (
@@ -77,7 +81,7 @@ const downloadFile = async (
   );
 
   if (res.status !== 200) {
-    return undefined;
+    return Promise.reject(new Error(res.statusText));
   }
 
   const file: File = { name: "", ext: "", URL: "" };
@@ -125,9 +129,12 @@ export const downloadOutputFile = async (
 export const generateFileId = async (
   token: string
 ): Promise<{ fileId: string }> => {
-  return (
-    await fetch(`${apiEndpoint}/files/new`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/files/new`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response.json();
 };

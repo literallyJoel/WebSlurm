@@ -22,7 +22,10 @@ import AuthProvider from "./providers/AuthProvider";
 import ViewJobs from "./pages/jobs/viewJob/ViewJobs";
 import JobInfo from "./pages/jobs/viewJob/JobInfo";
 import Users from "./pages/admin/settings/Users/Users";
-
+import Organisations from "./pages/admin/settings/Organisations/Organisations";
+import CreateOrganisation from "./pages/organisations/CreateOrganisation";
+import { default as AdminOrgs } from "@/pages/organisations/Organisations";
+import OrganisationInfo from "./pages/organisations/OrganisationInfo";
 const Router = () => {
   const [fileId, setFileId] = useState<string | undefined>();
   const [isUploadComplete, setIsUploadComplete] = useState(false);
@@ -121,6 +124,10 @@ const Router = () => {
         element: withAuth(Login)({}),
       },
       {
+        path: "/organisations/create",
+        element: <CreateOrganisation />,
+      },
+      {
         path: "/admin",
         element: withAuth(AdminSettings)({}),
         children: [
@@ -128,6 +135,7 @@ const Router = () => {
           { path: "/admin/jobtypes", element: <JobTypes /> },
           { path: "/admin/jobtypes/:id", element: <UpdateJobType /> },
           { path: "/admin/users", element: <Users /> },
+          { path: "/admin/organisations", element: <Organisations /> },
         ],
       },
       {
@@ -150,6 +158,16 @@ const Router = () => {
           {
             path: "/jobs/:jobId",
             element: withAuth(JobInfo)({}),
+          },
+        ],
+      },
+      {
+        path: "/organisations",
+        element: withAuth(AdminOrgs)({}),
+        children: [
+          {
+            path: "/organisations/:organisationId",
+            element: <OrganisationInfo />,
           },
         ],
       },

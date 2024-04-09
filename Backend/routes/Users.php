@@ -60,7 +60,7 @@ class Users
         }
 
         //Password check - its hashed on the client, so we just need to make sure it's present
-        if (!$generatedPass &&!$isUpdate && strlen($password) === 0) {
+        if (!$generatedPass && !$isUpdate && strlen($password) === 0) {
             Logger::debug("Failed on password check", "Users/ValidateUser");
             return false;
         }
@@ -137,24 +137,12 @@ class Users
 
         return $getUsersStmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+
+
     //===========================================================================//
     //=================================Routes===================================//
     //=========================================================================//
-
-    //============================Should Setup============================//
-    //============================Method: GET============================//
-    //===================Route: /api/users/shouldsetup==================//
-    public function getShouldSetup(Request $request, Response $response): Response
-    {
-        $userCount = $this->getUserCount();
-        if (!$userCount) {
-            $response->getBody()->write("Internal Server Error");
-            return $response->withStatus(500);
-        }
-
-        $response->getBody()->write(json_encode(["shouldSetup" => $userCount === 1]));
-        return $response->withStatus(200);
-    }
 
     //===============================Count================================//
     //============================Method: GET============================//
@@ -175,7 +163,7 @@ class Users
     //====================Route: /api/users[/{userId}]==================//
     public function getUser(Request $request, Response $response, array $args): Response
     {
-        $userId = $args["userId"] ??null;
+        $userId = $args["userId"] ?? null;
 
         $users = $this->getUsers($userId);
 
@@ -186,20 +174,6 @@ class Users
 
         $response->getBody()->write(json_encode($users));
         return $response->withStatus(200);
-    }
-
-    //==========================Create First============================//
-    //==========================Method: POST============================//
-    //=================Route: /api/users/createfirst====================//
-
-    //Can't be authenticated if you're creating the first user!
-    public function createFirst(Request $request, Response $response):Response{
-        //We take into account the default user
-        if($this->getUserCount() === 1){
-            return $this->create($request, $response);
-        }else{
-            return $response->withStatus(404);
-        }
     }
 
     //=============================Create===============================//
@@ -337,10 +311,11 @@ class Users
         return $response->withStatus(200);
     }
 
+
     //===============================Delete===============================//
     //============================Method: DELETE=========================//
     //====================Route: /api/users[/{userId}]==================//
-    public function delete(Request $request, Response $response, array $args):Response
+    public function delete(Request $request, Response $response, array $args): Response
     {
         $userId = $args["userId"] ?? null;
         $tokenData = $request->getAttribute("tokenData");

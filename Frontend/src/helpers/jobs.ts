@@ -44,12 +44,15 @@ export const createJob = async (
 };
 
 export const getJobs = async (token: string): Promise<Job[]> => {
-  const jobs = await (
-    await fetch(`${apiEndpoint}/jobs`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/jobs`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  const jobs = await response.json();
   return Array.isArray(jobs) ? jobs : [jobs];
 };
 
@@ -57,12 +60,17 @@ export const getCompletedJobs = async (
   token: string,
   limit?: number
 ): Promise<Job[]> => {
-  const jobs = await (
-    await fetch(`${apiEndpoint}/jobs/complete${limit && `?limit=${limit}`}`, {
+  const response = await fetch(
+    `${apiEndpoint}/jobs/complete${limit && `?limit=${limit}`}`,
+    {
       headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+    }
+  );
 
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  const jobs = await response.json();
   return Array.isArray(jobs) ? jobs : [jobs];
 };
 
@@ -70,48 +78,64 @@ export const getFailedJobs = async (
   token: string,
   limit?: number
 ): Promise<Job[]> => {
-  const jobs = await (
-    await fetch(`${apiEndpoint}/jobs/failed${limit && `?limit=${limit}`}`, {
+  const response = await fetch(
+    `${apiEndpoint}/jobs/failed${limit && `?limit=${limit}`}`,
+    {
       headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+    }
+  );
 
-   return Array.isArray(jobs) ? jobs : [jobs];
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  const jobs = await response.json();
+  return Array.isArray(jobs) ? jobs : [jobs];
 };
 
 export const getRunningJobs = async (
   token: string,
   limit?: number
 ): Promise<Job[]> => {
-  const jobs = await (
-    await fetch(`${apiEndpoint}/jobs/running${limit && `?limit=${limit}`}`, {
+  const response = await fetch(
+    `${apiEndpoint}/jobs/running${limit && `?limit=${limit}`}`,
+    {
       headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+    }
+  );
 
-    return Array.isArray(jobs) ? jobs : [jobs];
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  const jobs = await response.json();
+  return Array.isArray(jobs) ? jobs : [jobs];
 };
 
 export const getJob = async (
   jobId: string,
   token: string
 ): Promise<Job | Job[]> => {
-  return (
-    await fetch(`${apiEndpoint}/jobs/${jobId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/jobs/${jobId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  return await response.json();
 };
 
 export const getParameters = async (
   jobId: string,
   token: string
 ): Promise<JobParameter[]> => {
-  return (
-    await fetch(`${apiEndpoint}/jobs/${jobId}/parameters`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/jobs/${jobId}/parameters`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response.json();
 };

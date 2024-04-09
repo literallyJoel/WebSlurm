@@ -15,6 +15,7 @@ export type User = {
   name: string;
   email: string;
   role: number;
+  isOrgAdmin: boolean;
 };
 
 export type TokenData = {
@@ -25,6 +26,7 @@ export type TokenData = {
   role: number;
   requiresPasswordReset: "0" | "1";
   local?: boolean;
+  isOrgAdmin: boolean;
 };
 
 type VerifyTokenResponse = { ok: boolean; err?: number };
@@ -38,19 +40,28 @@ export const login = async (
   const hashedPassword = crypto.SHA512(password).toString();
 
   loginRequest.password = hashedPassword;
-  return (
-    await fetch(`${apiEndpoint}/auth/login`, {
-      method: "POST",
-      body: JSON.stringify(loginRequest),
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/auth/login`, {
+    method: "POST",
+    body: JSON.stringify(loginRequest),
+  });
+
+  if (response.ok) {
+    return await response.json();
+  } else {
+    return Promise.reject(new Error(response.statusText));
+  }
 };
 
 export const logout = async (token: string) => {
-  return await fetch(`${apiEndpoint}/auth/logout`, {
+  const response = await fetch(`${apiEndpoint}/auth/logout`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}` },
   });
+
+  if (response.ok) {
+    return await response;
+  }
+  return Promise.reject(new Error(response.statusText));
 };
 
 export const verifyToken = async (
@@ -73,12 +84,16 @@ export const verifyToken = async (
 };
 
 export const refreshToken = async (token: string): Promise<LoginResponse> => {
-  return (
-    await fetch(`${apiEndpoint}/auth/refresh`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/auth/refresh`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  return await response.json();
 };
 
 export const verifyPass = async (
@@ -87,20 +102,28 @@ export const verifyPass = async (
 ): Promise<VerifyPasswordResponse> => {
   const hashedPassword = crypto.SHA512(password).toString();
 
-  return (
-    await fetch(`${apiEndpoint}/auth/verifypass`, {
-      method: "POST",
-      body: JSON.stringify({ password: hashedPassword }),
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/auth/verifypass`, {
+    method: "POST",
+    body: JSON.stringify({ password: hashedPassword }),
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response.json();
 };
 
-export const disableUserTokens = (token: string): Promise<Response> => {
-  return fetch(`${apiEndpoint}/auth/disabletokens`, {
+export const disableUserTokens = async (token: string): Promise<Response> => {
+  const response = await fetch(`${apiEndpoint}/auth/disabletokens`, {
     method: "POST",
     headers: {
       Authorization: `bearer ${token}`,
     },
   });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response;
 };

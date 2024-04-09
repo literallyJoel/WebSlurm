@@ -6,9 +6,8 @@ import {
   validateEmail,
   validateName,
   validatePassword,
-  createInitialUser,
 } from "@/helpers/users";
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 
 import {
   Card,
@@ -32,8 +31,23 @@ import { Link } from "react-router-dom";
 
 interface props {
   isSetup?: boolean;
+  setView?: React.Dispatch<React.SetStateAction<"User" | "Org">>;
+  setUserInfo?: React.Dispatch<
+    React.SetStateAction<
+      | {
+          name: string;
+          email: string;
+          password: string;
+        }
+      | undefined
+    >
+  >;
 }
-const CreateAccount = ({ isSetup }: props): JSX.Element => {
+const CreateAccount = ({
+  isSetup,
+  setView,
+  setUserInfo,
+}: props): JSX.Element => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [generatePass, setGeneratePass] = useState(false);
@@ -58,6 +72,14 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
       isNameValid &&
       password === confirmPassword
     ) {
+      if (isSetup) {
+        setUserInfo!({
+          name: name,
+          email: email,
+          password: password,
+        });
+        setView!("Org");
+      }
       callCreateAccount.mutate(
         {
           name: name,
@@ -68,9 +90,7 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
         },
         {
           onSuccess: (data) => {
-            if (isSetup) {
-              window.location.reload();
-            } else if (data.generatedPass) {
+            if (data.generatedPass) {
               localStorage.setItem("gpass", data.generatedPass);
               creationSuccessRef.current?.click();
             } else {
@@ -89,14 +109,6 @@ const CreateAccount = ({ isSetup }: props): JSX.Element => {
   const callCreateAccount = useMutation(
     "createAccount",
     (newAccount: CreateAccountRequest) => {
-      if (isSetup) {
-        return createInitialUser(
-          newAccount.name,
-          newAccount.email,
-          newAccount.role,
-          newAccount.password!
-        );
-      }
       if (newAccount.generatedPass) {
         return createAccount(
           newAccount.name,

@@ -111,6 +111,32 @@ class JobTypes
             return $carry || $isValid;
         }, false));
     }
+    private function addJobToOrgs($jobTypeId, $orgIds):bool{
+        $pdo = new PDO(DB_CONN);
+        $pdo->beginTransaction();
+        try {
+            $addJobTypeStmt = $pdo->prepare("INSERT INTO organisationJobTypes (jobTypeId, organisationId) VALUES (:jobTypeId, :organisationId)");
+
+            foreach ($orgIds as $organisationId) {
+                $addJobTypeStmt->bindParam(":jobTypeId", $jobTypeId);
+                $addJobTypeStmt->bindParam(":organisationId", $organisationId);
+
+                if (!$addJobTypeStmt->execute()) {
+                    throw new Error("Failed to add job with ID $jobTypeId, to organisation with ID $organisationId: " . print_r($addJobTypeStmt->errorInfo(), true));
+                }
+            }
+
+            if(!$pdo->commit()){
+                throw new Error("Failed to add $jobTypeId to organisations");
+            }
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            Logger::error($e, "Jobs/addToOrganisation");
+            return false;
+        }
+
+        return true;
+    }
     //===========================================================================//
     //=================================Routes===================================//
     //=========================================================================//
@@ -133,6 +159,7 @@ class JobTypes
         $hasOutputFile = $body->hasOutputFile;
         $outputCount = $body->outputCount ?? 0;
         $arrayJobCount = $body->arrayJobCount ?? 0;
+        $organisationIds = $body->organisationIds;
 
         if (!$this->validateJobType($jobTypeName, $script, $parameters, $arrayJobSupport, $hasFileUpload, $hasOutputFile, $outputCount, $arrayJobCount, $jobTypeDescription)) {
             $response->getBody()->write("Bad Request");

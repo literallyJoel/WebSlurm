@@ -80,32 +80,38 @@ export const createJobType = async (
   jobType: CreateJobTypeRequest,
   token: string
 ): Promise<CreateJobTypeResponse> => {
-  return (
-    await fetch(`${apiEndpoint}/jobtypes/`, {
-      method: "POST",
-      body: JSON.stringify(jobType),
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/jobtypes/`, {
+    method: "POST",
+    body: JSON.stringify(jobType),
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response.json();
 };
 
 export const getJobTypes = async (token: string): Promise<JobType[]> => {
-  return (
-    await fetch(`${apiEndpoint}/jobtypes`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/jobtypes`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response.json();
 };
 
 export const getJobType = async (
   jobTypeId: string,
   token: string
 ): Promise<JobType> => {
-  return (
-    await fetch(`${apiEndpoint}/jobtypes/${jobTypeId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/jobtypes/${jobTypeId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response.json();
 };
 
 export const updateJobType = async (
@@ -113,21 +119,31 @@ export const updateJobType = async (
   jobType: CreateJobTypeRequest,
   token: string
 ): Promise<Response> => {
-  return await fetch(`${apiEndpoint}/jobtypes/${jobTypeId}`, {
+  const response = await fetch(`${apiEndpoint}/jobtypes/${jobTypeId}`, {
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(jobType),
     method: "PUT",
   });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response;
 };
 
 export const deleteJobType = async (
   jobTypeId: string,
   token: string
 ): Promise<Response> => {
-  return await fetch(`${apiEndpoint}/jobtypes/${jobTypeId}`, {
+  const response = await fetch(`${apiEndpoint}/jobtypes/${jobTypeId}`, {
     headers: { Authorization: `Bearer ${token}` },
     method: "DELETE",
   });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response;
 };
 
 export const validateParameters = (

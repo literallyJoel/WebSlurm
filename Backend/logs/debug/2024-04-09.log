@@ -1,0 +1,3 @@
+{"date":"2024-04-09T15:05:45+01:00","type":"debug","route":"\/api\/auth\/login","message":"User with ID 66101b0c7a96f0.04207530 logged in."}
+{"date":"2024-04-09T15:06:12+01:00","type":"debug","route":"\/api\/organisations\/user","message":"User with ID 66101b0c7a96f0.04207530 added User with ID 66141beec0b035.97827071 to organisation with ID 8"}
+{"date":"2024-04-09T15:20:48+01:00","type":"debug","route":"\/api\/auth\/login","message":"User with ID 66141beec0b035.97827071 logged in."}

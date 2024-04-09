@@ -9,6 +9,7 @@ import {
   getRunningJobs,
 } from "@/helpers/jobs";
 import { useAuthContext } from "@/providers/AuthProvider";
+import { getOrganisationUser } from "@/helpers/organisations";
 
 const Home = (): JSX.Element => {
   const { getUser, getToken } = useAuthContext();
@@ -25,6 +26,10 @@ const Home = (): JSX.Element => {
 
   const { data: failedJobs } = useQuery("homeFailedJobs", () => {
     return getFailedJobs(token, 3);
+  });
+
+  const {data: isOrgAdmin} = useQuery("isOrgAdmin", () => {
+    return getOrganisationUser
   });
 
   return (
@@ -48,6 +53,7 @@ const Home = (): JSX.Element => {
           <Link to="/jobs/create">
             <Button className="bg-uol">Create new Job</Button>
           </Link>
+          
         </div>
       </div>
     </div>

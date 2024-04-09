@@ -12,9 +12,10 @@ import {
   CardFooter,
 } from "@/components/shadui/ui/card";
 import { useMutation, useQuery } from "react-query";
-import { validateEmail, getShouldSetup } from "@/helpers/users";
-import CreateAccount from "@/pages/users/create/CreateAccount";
+import { validateEmail } from "@/helpers/users";
+import { getShouldSetup } from "@/helpers/setup";
 import { Link } from "react-router-dom";
+import SetupFlow from "@/pages/SetupFlow";
 
 interface props {
   isExpired?: boolean;
@@ -97,7 +98,8 @@ const Login = ({ isExpired }: props): JSX.Element => {
       </div>
     );
   } else if (shouldSetup) {
-    return <CreateAccount isSetup={true} />;
+    // return <CreateAccount isSetup={true} />;
+    return <SetupFlow />;
   } else {
     return (
       <div className="flex flex-col h-screen">

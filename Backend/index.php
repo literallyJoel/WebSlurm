@@ -5,12 +5,8 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\App;
 
 require_once __DIR__ . '/vendor/autoload.php';
-require_once __DIR__ . "/routes/Auth.php";
-require_once __DIR__ . "/routes/Database.php";
-require_once __DIR__ . "/routes/Users.php";
 require_once __DIR__ . "/middleware/RequiresAuthentication.php";
 require_once __DIR__ . "/middleware/RequiresAdmin.php";
-require_once __DIR__ . "/routes/Files.php";
 
 $config = ['settings' => ['addContentLengthHeader' => false, 'displayErrorDetails' => true]];
 $app = new App($config);
@@ -49,11 +45,23 @@ $container['Files'] = function ($container) {
     return new Files();
 };
 
+$container["Organisations"] = function ($container) {
+    return new Organisations();
+};
+
+$container["Setup"] = function ($container) {
+    return new Setup();
+};
 
 $app->group("/api", function (App $app) {
 
     $app->get("/db/setup", "DB:setup");
 
+    $app->group("/setup", function (App $app) {
+        $app->get("/shouldsetup", "Setup:getShouldSetup");
+        //Creates the initial user and org. Returns 404 if the setup is already completed.
+        $app->post("/createinitial", "Setup:createInitial");
+    });
 
     $app->group("/auth", function (App $app) {
         $app->post("/verify", "Auth:verify")->add(new RequiresAuthentication());
@@ -99,21 +107,38 @@ $app->group("/api", function (App $app) {
     });
 
     $app->group("/users", function (App $app) {
-        $app->get("/shouldsetup", "Users:getShouldSetup");
         $app->get("/count", "Users:getCount")->add(new RequiresAdmin());
         $app->get("[/{userId}]", "Users:getUser")->add(new RequiresAuthentication());
-        
+
         $app->post("[/]", "Users:create")->add(new RequiresAdmin());
-        
-        $app->post("/createfirst", "Users:createFirst");
- 
-   
 
 
         $app->put("[/{userId}]", "Users:update")->add(new RequiresAuthentication());
 
         $app->delete("[/{userId}]", "Users:delete")->add(new RequiresAuthentication());
     });
+
+    $app->group("/organisations", function (App $app) {
+        $app->patch("/{organisationId}/users/moderator", "Organisations:makeUserModerator")->add(new RequiresAuthentication());
+        $app->patch("/{organisationId}/users/admin", "Organisations:makeUserAdmin")->add(new RequiresAuthentication());
+        $app->patch("/{organisationId}/users/user", "Organisations:makeUserUser")->add(new RequiresAuthentication());
+        $app->get("/admin", "Organisations:getAdminOrgs")->add(new RequiresAuthentication());
+        $app->get("/users[/{userId}]", "Organisations:getUserMemberships")->add(new RequiresAuthentication());
+        $app->get("[/{organisationId}]", "Organisations:getOrganisation")->add(new RequiresAuthentication());
+        $app->get("/{organisationId}/admins", "Organisations:getAdmins")->add(new RequiresAuthentication());
+        $app->get("/{organisationId}/users[/{userId}]", "Organisations:getUser")->add(new RequiresAuthentication());
+
+
+        $app->delete("/{organisationId}", "Organisations:delete")->add(new RequiresAuthentication());
+        $app->delete("/{organisationId}/{userId}", "Organisations:deleteUser")->add(new RequiresAuthentication());
+
+        $app->post("[/]", "Organisations:create")->add(new RequiresAdmin());
+        $app->post("/user", "Organisations:addUser")->add(new RequiresAuthentication());
+
+        $app->put("[/]", "Organisations:updateOrganisation")->add(new RequiresAuthentication());
+    });
+
+
 });
 
 $app->get("/favicon", function (Request $request, Response $response): Response {

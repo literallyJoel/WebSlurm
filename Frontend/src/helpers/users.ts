@@ -58,20 +58,22 @@ export async function createAccount(
   password?: string
 ): Promise<CreateAccountResponse> {
   if (generatePass === true) {
-    return (
-      await fetch(apiEndpoint + "/users/", {
-        method: "POST",
-        body: JSON.stringify({
-          name: name,
-          email: email,
-          role: role,
-          generatePass: true,
-        }),
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-    ).json();
+    const response = await fetch(apiEndpoint + "/users/", {
+      method: "POST",
+      body: JSON.stringify({
+        name: name,
+        email: email,
+        role: role,
+        generatePass: true,
+      }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      return Promise.reject(new Error(response.statusText));
+    }
+    return await response.json();
   } else {
     /*
           We non-null coerce pasword here because the type
@@ -81,34 +83,7 @@ export async function createAccount(
           the server never sees the users actual password.
     */
     const hashedPass = crypto.SHA512(password!).toString();
-    return (
-      await fetch(apiEndpoint + "/users/", {
-        method: "POST",
-        body: JSON.stringify({
-          name: name,
-          email: email,
-          role: role,
-          password: hashedPass,
-          generatePass: false,
-        }),
-        headers:{
-          Authorization: `Bearer ${token}`  
-        }
-      })
-    ).json();
-  }
-}
-
-//For the initial account creation, because we can't auth on it
-export const createInitialUser = async (
-  name: string,
-  email: string,
-  role: number,
-  password: string
-): Promise<CreateAccountResponse> => {
-  const hashedPass = crypto.SHA512(password).toString();
-  return (
-    await fetch(`${apiEndpoint}/users/createfirst`, {
+    const response = await fetch(apiEndpoint + "/users/", {
       method: "POST",
       body: JSON.stringify({
         name: name,
@@ -117,9 +92,16 @@ export const createInitialUser = async (
         password: hashedPass,
         generatePass: false,
       }),
-    })
-  ).json();
-};
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      return Promise.reject(new Error(response.statusText));
+    }
+    return await response.json();
+  }
+}
 
 export const updateAccount = async (
   account: UpdateAccountRequest,
@@ -132,11 +114,16 @@ export const updateAccount = async (
   const endpoint = userId
     ? `${apiEndpoint}/users/${userId}`
     : `${apiEndpoint}/users`;
-  return await fetch(endpoint, {
+  const response = await fetch(endpoint, {
     method: "PUT",
     headers: { Authorization: `Bearer ${token}` },
     body: JSON.stringify(account),
   });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+  return await response;
 };
 
 export const deleteAccount = async (
@@ -147,32 +134,41 @@ export const deleteAccount = async (
     ? `${apiEndpoint}/users/${userId}`
     : `${apiEndpoint}/users`;
 
-  return await fetch(endpoint, {
+  const response = await fetch(endpoint, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` },
   });
-};
 
-export const getShouldSetup = async (): Promise<{ shouldSetup: boolean }> => {
-  return (await fetch(`${apiEndpoint}/users/shouldsetup`)).json();
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  return await response;
 };
 
 export const getAllUsers = async (token: string): Promise<User[]> => {
-  return (
-    await fetch(`${apiEndpoint}/users`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/users`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  const users = await response.json();
+  return Array.isArray(users) ? users : [users];
 };
 
 export const getUserCount = async (
   token: string
 ): Promise<{ count: number }> => {
-  return (
-    await fetch(`${apiEndpoint}/users/count`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-  ).json();
+  const response = await fetch(`${apiEndpoint}/users/count`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  return await response.json();
 };
 
 export const decodeToken = (token: string): TokenData => {

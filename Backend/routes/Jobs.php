@@ -58,11 +58,10 @@ class Jobs
         return $getJobTypeStmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    private function createInitialJobRecord($userId, $jobTypeId, $jobName, $fileId)
+    private function createInitialJobRecord($userId, $jobTypeId, $jobName, $fileId, $organisationId = null)
     {
+        $pdo = new PDO(DB_CONN);
         try {
-            $pdo = new PDO(DB_CONN);
-
             $query = "INSERT INTO jobs (slurmId, userId, jobStartTime, jobComplete, jobTypeId, jobName, jobComplete";
             $query .= $fileId ? ", fileId)" : ")";
             $query .= "VALUES (-1, :userId, :jobStartTime, 0, :jobTypeId, :jobName, 0";
@@ -170,14 +169,14 @@ class Jobs
 
             if ($count > 0) {
 
-                if(intval($arrayJobCount) < 2){
+                if (intval($arrayJobCount) < 2) {
                     for ($i = 0; $i < $count; $i++) {
                         $toAppend = ('arrayfile' . ($i === 0 ? "" : $i) . "=\"" . $dirs["in"] . "$jobId/" . $fileId . ($i === 0 ? "" : "-$i") . "-extracted" . '/file${SLURM_ARRAY_TASK_ID}' . "\"\n");
                         array_splice($scriptArr, 4, 0, $toAppend);
                     }
-                }else{
+                } else {
                     for ($i = 0; $i < $count; $i++) {
-                        $toAppend = ('arrayfile' . $i. "=\"" . $dirs["in"] . "$jobId/" . $fileId  .  ($i === 0 ? "" : "-$i") . "-extracted" . '/file${SLURM_ARRAY_TASK_ID}' . "\"\n");
+                        $toAppend = ('arrayfile' . $i . "=\"" . $dirs["in"] . "$jobId/" . $fileId . ($i === 0 ? "" : "-$i") . "-extracted" . '/file${SLURM_ARRAY_TASK_ID}' . "\"\n");
                         array_splice($scriptArr, 4, 0, $toAppend);
                     }
                 }
@@ -263,6 +262,7 @@ class Jobs
         Logger::debug("Scheduled Slurm Job: $output", "Jobs/scheduleSlurmJob");
         $resp = ["output" => $output];
         $pdo = new PDO(DB_CONN);
+
         try {
 
             //Grab the Task ID from Slurm
@@ -290,15 +290,22 @@ class Jobs
         return json_encode($resp);
     }
 
-    //Gets the jobs associated with a user, with an optional running filter
-    private function getUserJobs($userId, $filter = "", $jobId = null, $limit = null)
+    private function getUserJobs($userId, $filter = "", $jobId = null, $limit = null, $organisationIds = null)
     {
         $pdo = new PDO(DB_CONN);
         try {
-            $query = "SELECT jobs.*, jobTypes.jobTypeName FROM jobs JOIN jobTypes on jobs.jobTypeId = jobTypes.jobTypeId WHERE jobs.userId = :userId";
+            $query = "SELECT jobs.*, jobTypes.jobTypeName FROM jobs 
+                  JOIN jobTypes ON jobs.jobTypeId = jobTypes.jobTypeId 
+                  LEFT JOIN organisationJobs ON jobs.jobId = organisationJobs.jobId 
+                  WHERE jobs.userId = :userId";
+
+            if (!empty($organisationIds)) {
+                $orgPlaceholders = implode(',', array_fill(0, count($organisationIds), '?'));
+                $query .= " OR (organisationJobs.organisationId IN ($orgPlaceholders))";
+            }
 
             if ($jobId) {
-                $query .= " AND jobId = :jobId";
+                $query .= " AND jobs.jobId = :jobId";
             } else {
                 switch ($filter) {
                     case "complete":
@@ -308,43 +315,40 @@ class Jobs
                         $query .= " AND jobComplete = 0";
                         break;
                     case "failed":
-                    {
                         $query .= " AND jobComplete = 2";
-
-                    }
-
+                        break;
                 }
 
                 if ($limit) {
                     $query .= " LIMIT :limit";
                 }
-
             }
 
             $getJobsStmt = $pdo->prepare($query);
             if (!$getJobsStmt) {
-
                 throw new Error("PDO Error: " . print_r($pdo->errorInfo(), true));
             }
             $getJobsStmt->bindParam(":userId", $userId);
+            if (!empty($organisationIds)) {
+                foreach ($organisationIds as $index => $orgId) {
+                    $getJobsStmt->bindValue(($index + 1), $orgId);
+                }
+            }
             if ($jobId) {
                 $getJobsStmt->bindParam(":jobId", $jobId);
-            } else {
-                if ($limit) {
-                    $getJobsStmt->bindParam(":limit", $limit);
-                }
+            }
+            if ($limit) {
+                $getJobsStmt->bindParam(":limit", $limit, PDO::PARAM_INT);
             }
             $ok = $getJobsStmt->execute();
 
             if (!$ok) {
-
                 throw new Error("PDO ERROR: " . print_r($getJobsStmt->errorInfo(), true));
             }
         } catch (Exception $e) {
             Logger::error($e, "jobs/getUserJobs");
             return null;
         }
-
 
         return $getJobsStmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -395,6 +399,62 @@ class Jobs
 
         return $ok;
     }
+
+    private function addToOrganisation($organisationIds, $jobId): bool
+    {
+        $pdo = new PDO(DB_CONN);
+        $pdo->beginTransaction();
+        try {
+            $addJobStmt = $pdo->prepare("INSERT INTO organisationJobs (jobId, organisationId) VALUES (:jobId, :organisationId)");
+
+            foreach ($organisationIds as $organisationId) {
+                $addJobStmt->bindParam(":jobId", $jobId);
+                $addJobStmt->bindParam(":organisationId", $organisationId);
+
+                if (!$addJobStmt->execute()) {
+                    throw new Error("Failed to add job with ID $jobId, to organisation with ID $organisationId: " . print_r($addJobStmt->errorInfo(), true));
+                }
+            }
+
+            if (!$pdo->commit()) {
+                throw new Error("Failed to add job with ID $jobId to organisations");
+            }
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            Logger::error($e, "Jobs/addToOrganisation");
+            return false;
+        }
+
+        return true;
+    }
+
+    private function validateOrgIds($organisationIds, $userId, $minRole)
+    {
+        try {
+            $pdo = new PDO(DB_CONN);
+            $query = "SELECT role FROM organisationUsers WHERE userId = :userId AND organisationId IN (" . implode(',', array_fill(0, count($organisationIds), '?')) . ")";
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(":userId", $userId);
+            foreach ($organisationIds as $index => $orgId) {
+                $stmt->bindValue(($index + 1), $orgId);
+            }
+            if (!$stmt->execute()) {
+                throw new Error("Failed to validate organisation IDs: " . print_r($stmt->errorInfo(), true));
+            }
+            $roles = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            foreach ($roles as $role) {
+                if (intval($role) < $minRole) {
+                    return false;
+                }
+            }
+        } catch (Exception $e) {
+            Logger::error($e, "validateOrgIds");
+            return false;
+        }
+
+        return true;
+    }
+
     //===========================================================================//
     //=================================Routes===================================//
     //=========================================================================//
@@ -412,91 +472,108 @@ class Jobs
         $jobName = $body->jobName;
         $parameters = $body->parameters;
         $fileId = $body->fileId;
+        $organisationIds = $body->organisationIds ?? null;
 
-        //If there is a fileId included, we check if it is a valid fileId associated with the User
-        if (!!$fileId) {
-            $validationResult = $this->validateFileId($fileId, $userId);
-            //If null then there's been an error
-            if (is_null($validationResult)) {
-                $response->getBody()->write("Internal Server Error");
-                return $response->withStatus(500);
+        try {
+            //If there is a fileId included, we check if it is a valid fileId associated with the User
+            if (!!$fileId) {
+                $validationResult = $this->validateFileId($fileId, $userId);
+                //If null then there's been an error
+                if (is_null($validationResult)) {
+                    //The error gets logged in the function, so we use this to prevent double logging.
+                    //It would make more sense to just throw the error in the function but this was a quicker change
+                    throw new Error("~reported~");
+                }
+
+                //If false then invalid
+                if (!$validationResult) {
+                    $response->getBody()->write("Bad Request");
+                    return $response->withStatus(400);
+                }
+
             }
 
-            //If false then invalid
-            if (!$validationResult) {
+            if (!empty($organisationIds)) {
+                if (!$this->validateOrgIds($organisationIds, $userId, 1)) {
+                    $response->getBody()->write("Unauthorized");
+                    return $response->withStatus(401);
+                }
+            }
+            //Grab the jobType info
+            $jobType = $this->getJobType($jobTypeId);
+            if (!$jobType) {
                 $response->getBody()->write("Bad Request");
                 return $response->withStatus(400);
             }
 
-        }
+            //We need the database ID, so we create an initial record and grab the ID.
+            $jobId = $this->createInitialJobRecord($userId, $jobTypeId, $jobName, $fileId);
 
-        //Grab the jobType info
-        $jobType = $this->getJobType($jobTypeId);
-        if (!$jobType) {
-            $response->getBody()->write("Bad Request");
-            return $response->withStatus(400);
-        }
-
-        //We need the database ID, so we create an initial record and grab the ID.
-        $jobId = $this->createInitialJobRecord($userId, $jobTypeId, $jobName, $fileId);
-
-        if (!$jobId) {
-            $response->getBody()->write("Internal Server Error");
-            return $response->withStatus(500);
-        }
-
-        //Move the files into a folder associated with the job.
-        if (!!$fileId) {
-            $userDir = __DIR__ . "/../usr/in/$userId";
-            if (!is_dir("$userDir/$jobId")) {
-                mkdir("$userDir/$jobId");
+            if (!$jobId) {
+                throw new Error("~reported~");
             }
-            $files = glob("$userDir/*");
-            foreach ($files as $file) {
-                error_log("FileId: $fileId\nFile: " . basename($file));
-                if (strpos(basename($file), $fileId) !== false) {
-                    error_log("Match");
-                    $newDir = "$userDir/$jobId/" . basename($file);
-                    rename($file, $newDir);
-                } else {
-                    error_log(strpos(basename($file), $fileId));
+
+            //Move the files into a folder associated with the job.
+            if (!!$fileId) {
+                $userDir = __DIR__ . "/../usr/in/$userId";
+                if (!is_dir("$userDir/$jobId")) {
+                    mkdir("$userDir/$jobId");
+                }
+                $files = glob("$userDir/*");
+                foreach ($files as $file) {
+                    error_log("FileId: $fileId\nFile: " . basename($file));
+                    if (strpos(basename($file), $fileId) !== false) {
+                        error_log("Match");
+                        $newDir = "$userDir/$jobId/" . basename($file);
+                        rename($file, $newDir);
+                    } else {
+                        error_log(strpos(basename($file), $fileId));
+                    }
                 }
             }
-        }
-        //Setup the user directories for this job
-        $userDirectories = $this->setupUserDir($userId, $jobId);
-        if (!$userDirectories) {
-            Logger::warning("Failed to create directories for job with ID $jobId for user with ID $userId", $request->getRequestTarget());
-            $response->getBody()->write("Internal Server Error");
-            return $response->withStatus(500);
-        }
+            //Setup the user directories for this job
+            $userDirectories = $this->setupUserDir($userId, $jobId);
+            if (!$userDirectories) {
+                throw new Error("Failed to create directories for job with ID $jobId for user with ID $userId");
+            }
 
-        //Perform the templating
-        $script = $this->createFromScriptTemplate($jobType["script"], $jobName, $jobId, $parameters, $userDirectories, $jobType, $fileId);
+            //Perform the templating
+            $script = $this->createFromScriptTemplate($jobType["script"], $jobName, $jobId, $parameters, $userDirectories, $jobType, $fileId);
 
-        if (!$script) {
+            if (!$script) {
+                $pdo = new PDO(DB_CONN);
+                $stmt = $pdo->prepare("DELETE FROM jobs WHERE jobId = :jobId");
+                $stmt->bindParam(":jobId", $jobId);
+                $stmt->execute();
+                Logger::warning("Failed to setup input files for job with ID $jobId", $request->getRequestTarget());
+                $response->getBody()->write("Internal Server Error");
+                return $response->withStatus(500);
+            }
+
+            //Schedule the job with SLURM
+            $resp = $this->scheduleSlurmJob($script, $userDirectories["script"], $jobId);
+            if (!$resp) {
+                throw new Error("~reported~");
+            }
+            if (!empty($organisationIds)) {
+                if (!$this->addToOrganisation($organisationIds, $jobId)) {
+                    throw new Error("~reported~");
+                }
+            }
+
+        } catch (Exception $e) {
             $pdo = new PDO(DB_CONN);
             $stmt = $pdo->prepare("DELETE FROM jobs WHERE jobId = :jobId");
             $stmt->bindParam(":jobId", $jobId);
             $stmt->execute();
-            Logger::warning("Failed to setup input files for job with ID $jobId", $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
+            if ($e->getMessage() !== "~reported~") {
+                Logger::error($e, $request->getRequestTarget());
+            }
             return $response->withStatus(500);
         }
 
-        //Schedule the job with SLURM
-        $resp = $this->scheduleSlurmJob($script, $userDirectories["script"], $jobId);
-
-        if (!$resp) {
-            $pdo = new PDO(DB_CONN);
-            $stmt = $pdo->prepare("DELETE FROM jobs WHERE jobId = :jobId");
-            $stmt->bindParam(":jobId", $jobId);
-            $stmt->execute();
-            $response->getBody()->write("Internal Server Error");
-            return $response->withStatus(500);
-        }
-
-        Logger::debug("Created new Job with ID $jobId for user with ID $userId", $request->getRequestTarget());
+        Logger::debug("Crea ted new Job with ID $jobId for user with ID $userId", $request->getRequestTarget());
         $response->getBody()->write($resp);
         return $response->withStatus(200);
     }
@@ -658,16 +735,30 @@ class Jobs
         $tokenData = $request->getAttribute("tokenData");
         $userId = $tokenData->userId;
         $jobId = $args["jobId"] ?? null;
+        try {
+            $pdo = new PDO(DB_CONN);
+            $getOrgsStmt = $pdo->prepare("SELECT organisationId from organisationUsers WHERE userId = :userId");
+            $getOrgsStmt->bindParam(":userId", $userId);
+            if (!$getOrgsStmt->execute()) {
+                throw new Error("Failed to get organisations belonging to user with ID $userId: " . print_r($getOrgsStmt->errorInfo(), true));
+            }
 
-        $jobs = $this->getUserJobs($userId, "", $jobId);
-        if ($jobs === null) {
+            $organisatonIds = $getOrgsStmt->fetchAll(PDO::FETCH_COLUMN);
+            $jobs = $this->getUserJobs($userId, "", $jobId);
+            if ($jobs === null) {
+                throw new Error("~reported~");
+            }
+
+            if (!$jobs) {
+                $response->getBody()->write(json_encode([]));
+                return $response->withStatus(200);
+            }
+        } catch (Exception $e) {
+            if ($e->getMessage() !== "~reported~") {
+                Logger::error($e, $request->getRequestTarget());
+            }
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
-        }
-
-        if (!$jobs) {
-            $response->getBody()->write(json_encode([]));
-            return $response->withStatus(200);
         }
         $response->getBody()->write(json_encode($jobs));
         return $response->withStatus(200);

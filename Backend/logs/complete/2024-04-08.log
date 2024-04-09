@@ -1,0 +1,11 @@
+{"date":"2024-04-08T10:53:55+01:00","type":"debug","route":"\/api\/auth\/login","message":"User with ID 66101b0c7a96f0.04207530 logged in."}
+{"date":"2024-04-08T11:27:01+01:00","type":"debug","route":"\/api\/organisations","message":"Organisation with ID 2 created by user with ID 66101b0c7a96f0.04207530 and added admin with ID 66101b0c7a96f0.04207530"}
+{"date":"2024-04-08T11:29:28+01:00","type":"debug","route":"\/api\/organisations","message":"Organisation with ID 2 created by user with ID 66101b0c7a96f0.04207530 and added admin with ID 66101b0c7a96f0.04207530"}
+{"date":"2024-04-08T11:30:15+01:00","type":"debug","route":"\/api\/organisations","message":"Organisation with ID 2 created by user with ID 66101b0c7a96f0.04207530 and added admin with ID 66101b0c7a96f0.04207530"}
+{"date":"2024-04-08T11:31:42+01:00","type":"debug","route":"\/api\/organisations","message":"Organisation with ID 2 created by user with ID 66101b0c7a96f0.04207530 and added admin with ID 66101b0c7a96f0.04207530"}
+{"date":"2024-04-08T11:34:39+01:00","type":"debug","route":"\/api\/organisations","message":"Organisation with ID 2 created by user with ID 66101b0c7a96f0.04207530 and added admin with ID 66101b0c7a96f0.04207530"}
+{"date":"2024-04-08T11:46:23+01:00","type":"debug","route":"\/api\/auth\/logout","message":"User with ID 66101b0c7a96f0.04207530 logged out."}
+{"date":"2024-04-08T11:46:34+01:00","type":"debug","route":"\/api\/auth\/login","message":"User with ID 66101b0c7a96f0.04207530 logged in."}
+{"date":"2024-04-08T17:31:42+01:00","type":"debug","route":"\/api\/users\/","message":"User created with ID 3"}
+{"date":"2024-04-08T17:46:30+01:00","type":"debug","route":"\/api\/organisations\/user","message":"User with ID 66101b0c7a96f0.04207530 added User with ID Array to organisation with ID 3"}
+{"date":"2024-04-08T17:48:32+01:00","type":"debug","route":"\/api\/organisations\/user","message":"User with ID 66101b0c7a96f0.04207530 added User with ID 66141beec0b035.97827071 to organisation with ID 3"}
