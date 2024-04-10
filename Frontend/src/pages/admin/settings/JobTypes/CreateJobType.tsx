@@ -66,11 +66,11 @@ const CreateJobType = ({ standalone }: props): JSX.Element => {
     }
   );
 
-  const { data: organisations } = useQuery(
+  useQuery(
     "getOrganisations",
     () => {
-      const moderatorOrgs = getUserOrganisations(token, null, 1);
-      const adminOrg = getUserOrganisations(token, null, 2);
+      const moderatorOrgs = getUserOrganisations(token, undefined, 1);
+      const adminOrg = getUserOrganisations(token, undefined, 2);
       return Promise.all([moderatorOrgs, adminOrg]).then((values) => {
         return values.flat();
       });
@@ -141,7 +141,7 @@ const CreateJobType = ({ standalone }: props): JSX.Element => {
     }
   }, [arrayJobSupport, hasFileUpload]);
 
-  const CreateJobInterface = (): JSX.Element => (
+  const CreateJobTypeInterface = (): JSX.Element => (
     <div className="flex flex-col w-full items-center">
       <Card className="w-full max-w-2xl">
         <Link to="/admin/jobtypes" className="hidden" ref={hiddenRef} />
@@ -364,11 +364,11 @@ const CreateJobType = ({ standalone }: props): JSX.Element => {
     <div className="flex flex-col w-full min-h-screen">
       <Nav />
       <div className="p-2">
-        <CreateJobInterface />
+        <CreateJobTypeInterface />
       </div>
     </div>
   ) : (
-    <CreateJobInterface />
+    <CreateJobTypeInterface />
   );
 };
 
