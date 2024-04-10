@@ -1,4 +1,5 @@
 import { apiEndpoint } from "@/config/config";
+import { JobType } from "./jobTypes";
 export type Organisation = {
   organisationId: string;
   organisationName: string;
@@ -90,9 +91,10 @@ export const setUserRole = async (
   role: number
 ): Promise<Response> => {
   const response = await fetch(
-    `${apiEndpoint}/organisations/${organisationId}/users/${userId}/${role}`,
+    `${apiEndpoint}/organisations/${organisationId}/users`,
     {
       method: "PATCH",
+      body: JSON.stringify({ userId, role }),
       headers: { Authorization: `Bearer ${token}` },
     }
   );
@@ -224,4 +226,24 @@ export const addUserToOrganisation = async (
   return response.ok
     ? response
     : Promise.reject(new Error(response.statusText));
+};
+
+export const getOrganisationJobTypes = async (
+  token: string,
+  organisationId: string
+): Promise<JobType[]> => {
+  const response = await fetch(
+    `${apiEndpoint}/organisations/${organisationId}/jobtypes`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  const jobTypes = await response.json();
+
+  return Array.isArray(jobTypes) ? jobTypes : [jobTypes];
 };

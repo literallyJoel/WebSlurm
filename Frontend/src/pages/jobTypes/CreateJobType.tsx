@@ -22,7 +22,7 @@ import { Editor } from "@monaco-editor/react";
 import ParameterEntry from "@/components/jobTypes/ParameterEntry";
 import { Button } from "@/components/shadui/ui/button";
 import { useMutation, useQuery } from "react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuthContext } from "@/providers/AuthProvider";
 import Nav from "@/components/Nav";
 import { getUserOrganisations } from "@/helpers/organisations";
@@ -65,7 +65,7 @@ const CreateJobTypeInterface = ({ standalone }: props): JSX.Element => {
           text: "Job Type succesfully created. You will be redirected momentaritly.",
           type: "success",
           timeout: 5000,
-        });
+        }).show();
         setTimeout(() => {
           navigate("/admin/jobtypes");
         }, 5000);
@@ -75,7 +75,7 @@ const CreateJobTypeInterface = ({ standalone }: props): JSX.Element => {
           text: "Failed to create Job Type. Please try again later.",
           type: "error",
           timeout: 5000,
-        });
+        }).show();
       },
     }
   );
@@ -370,7 +370,7 @@ const CreateJobType = ({ standalone }: props): JSX.Element => {
     <div className="flex flex-col w-full min-h-screen">
       <Nav />
       <div className="p-2">
-        <CreateJobTypeInterface />
+        <CreateJobTypeInterface standalone />
       </div>
     </div>
   ) : (

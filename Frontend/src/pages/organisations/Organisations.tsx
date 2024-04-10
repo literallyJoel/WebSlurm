@@ -14,7 +14,11 @@ const Organisations = (): JSX.Element => {
   const token = authContext.getToken();
   const user = authContext.getUser();
   const { data: allOrganisations } = useQuery("allJobs", () => {
-    return getUserOrganisations(token, user.id, 2);
+    const orgsOne = getUserOrganisations(token, user.id, 2);
+    const orgsTwo = getUserOrganisations(token, user.id, 1);
+    return Promise.all([orgsOne, orgsTwo]).then((values) => {
+      return values.flat();
+    });
   });
 
   return (

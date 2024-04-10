@@ -17,7 +17,7 @@ interface props {
   createdBy: string;
 }
 
-const JobCard = ({ id, name, createdBy }: props): JSX.Element => {
+const JobTypeCard = ({ id, name, createdBy }: props): JSX.Element => {
   const queryClient = useQueryClient();
   const authContext = useAuthContext();
   const token = authContext.getToken();
@@ -37,7 +37,6 @@ const JobCard = ({ id, name, createdBy }: props): JSX.Element => {
           timeout: 4000,
         });
         noty.show();
-      
       },
       onError: () => {
         const noty = new Noty({
@@ -81,4 +80,4 @@ const JobCard = ({ id, name, createdBy }: props): JSX.Element => {
   );
 };
 
-export default JobCard;
+export default JobTypeCard;

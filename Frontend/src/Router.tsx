@@ -8,7 +8,7 @@ import { CreationFailure } from "./pages/users/create/CreationFailure";
 import ResetPassword from "./pages/auth/ResetPassword";
 import Login from "./pages/auth/Login";
 import AdminSettings from "./pages/admin/settings/Settings";
-import CreateJobType from "./pages/admin/settings/JobTypes/CreateJobType";
+import CreateJobType from "./pages/jobTypes/CreateJobType";
 import JobTypes from "./pages/admin/settings/JobTypes/JobTypes";
 import { UpdateJobType } from "./pages/admin/settings/JobTypes/UpdateJobType";
 import CreateJob from "./pages/jobs/createJob/CreateJob";

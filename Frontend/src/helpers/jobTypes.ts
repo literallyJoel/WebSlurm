@@ -86,7 +86,7 @@ export const createJobType = async (
     body: JSON.stringify(jobType),
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) {
+  if (response.status !== 200) {
     return Promise.reject(new Error(response.statusText));
   }
   return await response.json();

@@ -2,7 +2,7 @@ import { useQuery } from "react-query";
 import { getJobTypes } from "../../../../helpers/jobTypes";
 import { Button } from "@/components/shadui/ui/button";
 import { FaPlus } from "react-icons/fa";
-import JobCard from "@/components/jobTypes/JobCard";
+import JobTypeCard from "@/components/jobTypes/JobCard";
 import { Link } from "react-router-dom";
 import { useAuthContext } from "@/providers/AuthProvider";
 
@@ -27,7 +27,7 @@ const JobTypes = (): JSX.Element => {
       <div className="grid grid-cols-4">
         {getAllJobTypes.data?.map((jobType) => {
           return (
-            <JobCard
+            <JobTypeCard
               key={jobType.jobTypeId}
               id={`${jobType.jobTypeId}`}
               name={jobType.jobTypeName}
