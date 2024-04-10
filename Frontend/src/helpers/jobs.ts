@@ -11,12 +11,14 @@ export type Job = {
   jobName: string;
   fileId: string;
   jobTypeName: string;
+  createdByName: string;
 };
 export type CreateJobRequest = {
   jobTypeId: number;
   jobName: string;
   parameters: JobParameter[];
   fileId?: string;
+  organisationId?: string;
 };
 
 export type CreateJobResponse = {

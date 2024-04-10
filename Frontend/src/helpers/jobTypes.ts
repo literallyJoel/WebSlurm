@@ -80,16 +80,16 @@ export const updateParameterList = (
 export const createJobType = async (
   jobType: CreateJobTypeRequest,
   token: string
-): Promise<CreateJobTypeResponse> => {
+): Promise<Response> => {
   const response = await fetch(`${apiEndpoint}/jobtypes/`, {
     method: "POST",
     body: JSON.stringify(jobType),
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (response.status !== 200) {
+  if (!response.ok) {
     return Promise.reject(new Error(response.statusText));
   }
-  return await response.json();
+  return response;
 };
 
 export const getJobTypes = async (token: string): Promise<JobType[]> => {

@@ -294,10 +294,14 @@ class Jobs
     {
         $pdo = new PDO(DB_CONN);
         try {
-            $query = "SELECT jobs.*, jobTypes.jobTypeName FROM jobs 
-                  JOIN jobTypes ON jobs.jobTypeId = jobTypes.jobTypeId 
-                  LEFT JOIN organisationJobs ON jobs.jobId = organisationJobs.jobId 
-                  WHERE jobs.userId = :userId";
+            $query = "SELECT jobs.*, jobTypes.jobTypeName, users.userName as createdByName
+FROM jobs 
+JOIN jobTypes ON jobs.jobTypeId = jobTypes.jobTypeId 
+LEFT JOIN organisationJobs ON jobs.jobId = organisationJobs.jobId 
+LEFT JOIN organisationUsers ON organisationJobs.organisationId = organisationUsers.organisationId
+LEFT JOIN users ON jobs.userId = users.userId
+WHERE jobs.userId = :userId OR organisationUsers.userId = :userId
+";
 
             if (!empty($organisationIds)) {
                 $orgPlaceholders = implode(',', array_fill(0, count($organisationIds), '?'));
@@ -400,21 +404,21 @@ class Jobs
         return $ok;
     }
 
-    private function addToOrganisation($organisationIds, $jobId): bool
+    private function addToOrganisation($organisationId, $jobId): bool
     {
         $pdo = new PDO(DB_CONN);
         $pdo->beginTransaction();
         try {
             $addJobStmt = $pdo->prepare("INSERT INTO organisationJobs (jobId, organisationId) VALUES (:jobId, :organisationId)");
 
-            foreach ($organisationIds as $organisationId) {
-                $addJobStmt->bindParam(":jobId", $jobId);
-                $addJobStmt->bindParam(":organisationId", $organisationId);
 
-                if (!$addJobStmt->execute()) {
-                    throw new Error("Failed to add job with ID $jobId, to organisation with ID $organisationId: " . print_r($addJobStmt->errorInfo(), true));
-                }
+            $addJobStmt->bindParam(":jobId", $jobId);
+            $addJobStmt->bindParam(":organisationId", $organisationId);
+
+            if (!$addJobStmt->execute()) {
+                throw new Error("Failed to add job with ID $jobId, to organisation with ID $organisationId: " . print_r($addJobStmt->errorInfo(), true));
             }
+
 
             if (!$pdo->commit()) {
                 throw new Error("Failed to add job with ID $jobId to organisations");
@@ -428,32 +432,7 @@ class Jobs
         return true;
     }
 
-    private function validateOrgIds($organisationIds, $userId, $minRole)
-    {
-        try {
-            $pdo = new PDO(DB_CONN);
-            $query = "SELECT role FROM organisationUsers WHERE userId = :userId AND organisationId IN (" . implode(',', array_fill(0, count($organisationIds), '?')) . ")";
-            $stmt = $pdo->prepare($query);
-            $stmt->bindParam(":userId", $userId);
-            foreach ($organisationIds as $index => $orgId) {
-                $stmt->bindValue(($index + 1), $orgId);
-            }
-            if (!$stmt->execute()) {
-                throw new Error("Failed to validate organisation IDs: " . print_r($stmt->errorInfo(), true));
-            }
-            $roles = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            foreach ($roles as $role) {
-                if (intval($role) < $minRole) {
-                    return false;
-                }
-            }
-        } catch (Exception $e) {
-            Logger::error($e, "validateOrgIds");
-            return false;
-        }
 
-        return true;
-    }
 
     //===========================================================================//
     //=================================Routes===================================//
@@ -472,7 +451,7 @@ class Jobs
         $jobName = $body->jobName;
         $parameters = $body->parameters;
         $fileId = $body->fileId;
-        $organisationIds = $body->organisationIds ?? null;
+        $organisationId = $body->organisationId ?? null;
 
         try {
             //If there is a fileId included, we check if it is a valid fileId associated with the User
@@ -493,8 +472,9 @@ class Jobs
 
             }
 
-            if (!empty($organisationIds)) {
-                if (!$this->validateOrgIds($organisationIds, $userId, 1)) {
+            $organisations = new Organisations();
+            if ($organisationId) {
+                if ($organisations->_getUserRole($userId, $organisationId) !== 0) {
                     $response->getBody()->write("Unauthorized");
                     return $response->withStatus(401);
                 }
@@ -555,8 +535,8 @@ class Jobs
             if (!$resp) {
                 throw new Error("~reported~");
             }
-            if (!empty($organisationIds)) {
-                if (!$this->addToOrganisation($organisationIds, $jobId)) {
+            if (!empty($organisationId)) {
+                if (!$this->addToOrganisation($organisationId, $jobId)) {
                     throw new Error("~reported~");
                 }
             }

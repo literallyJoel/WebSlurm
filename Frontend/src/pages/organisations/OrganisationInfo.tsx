@@ -109,12 +109,12 @@ const OrganisationInfo = (): JSX.Element => {
     );
   }
   return (
-    <div className="h-full flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <div className="text-4xl font-bold">
         {organisation[0].organisationName}
       </div>
       {users && (
-        <div className="w-full flex flex-col justify-center overflow-y-auto border">
+        <div className="w-full flex flex-col h-full justify-center overflow-y-auto border">
           <div className="text-xl font-bold pt-8 p-2">Users</div>
           <DataTable columns={userColumns(refetchUsers)} data={users} />
         </div>
@@ -123,7 +123,7 @@ const OrganisationInfo = (): JSX.Element => {
       <div className="w-full border">
         {users && (
           <>
-            <div className="text-xl font-bold p-2">Add User</div>
+            <div className="text-xl font-bold p-2 max-h-50vh ">Add User</div>
             <div className="p-2 flex flex-row gap-2">
               <div className="flex flex-col w-full">
                 <Label htmlFor="email">Email</Label>
@@ -137,7 +137,7 @@ const OrganisationInfo = (): JSX.Element => {
                 />
               </div>
 
-              <div className="flex flex-col w-full">
+              <div className="flex flex-col w-full max-h-[50vh]">
                 <Label>Role</Label>
                 <Select
                   required
@@ -170,7 +170,7 @@ const OrganisationInfo = (): JSX.Element => {
         )}
       </div>
       {jobTypes && (
-        <div className="w-full flex flex-col justify-center overflow-y-auto border">
+        <div className="w-full flex flex-col  max-h-[50vh] justify-center overflow-y-auto border">
           <div className="text-xl font-bold p-5 pt-6">Job Types</div>
           <DataTable columns={jobTypeColumns(refetchUsers)} data={jobTypes} />
         </div>

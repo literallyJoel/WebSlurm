@@ -64,9 +64,12 @@ const Home = (): JSX.Element => {
     }
   );
 
-  const { data: isUserAdmin } = useQuery("isUserAdmin", async () => {
-    const organisations = await getUserOrganisations(token, undefined, 2);
-    return organisations && organisations.length !== 0;
+  const { data: isUserPrivelleged } = useQuery("isUserPrivelleged", () => {
+    const organisationsOne = getUserOrganisations(token, undefined, 2);
+    const organisationsTwo = getUserOrganisations(token, undefined, 1);
+    return Promise.all([organisationsOne, organisationsTwo]).then((values) => {
+      return values.flatMap((org) => org);
+    });
   });
 
   return (
@@ -91,7 +94,7 @@ const Home = (): JSX.Element => {
             <Button className="bg-uol">Create new Job</Button>
           </Link>
 
-          {isUserAdmin && (
+          {isUserPrivelleged && (
             <Link to="/jobtypes/create">
               <Button className="bg-uol">Create new Job Type</Button>
             </Link>

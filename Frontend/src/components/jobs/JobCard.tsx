@@ -1,5 +1,7 @@
 import Spinner from "@/components/Spinner/Spinner";
 import type { Job } from "@/helpers/jobs";
+import { Badge } from "../shadui/ui/badge";
+import Tooltip from "../Tooltip";
 
 interface props {
   job: Job;
@@ -31,10 +33,28 @@ const JobCard = ({ job }: props): JSX.Element => {
   };
 
   return (
-    <div className="w-full flex flex-col justify-center p-1 border border-gray-600 rounded-md shadow-md">
-      <div className="w-full flex flex-row justify-between p-2">
-        <div className="text-sm">ID: {job.jobId}</div>
-        <div className="text-sm">Job Type: {job.jobTypeName ?? ""}</div>
+    <div className="w-full flex flex-col  p-1 border border-gray-600 rounded-md shadow-md">
+      <div className="flex flex-row justify-between">
+        <div>
+          <Tooltip text="ID">
+            <Badge className="justify-center" variant="default">
+              {job.jobId}
+            </Badge>
+          </Tooltip>
+          <Tooltip text="Job Type">
+            {" "}
+            <Badge className="justify-center ml-2" variant="destructive">
+              {job.jobTypeName ?? ""}
+            </Badge>
+          </Tooltip>
+        </div>
+        <div>
+          <Tooltip text="Created By">
+            <Badge className="justify-center" variant="outline">
+              {job.createdByName}
+            </Badge>
+          </Tooltip>
+        </div>
       </div>
       <div>{job.jobName}</div>
       <ProgressDiv />

@@ -18,7 +18,7 @@ class Organisations
     private function _setRole($userId, $organisationId, $role)
     {
         $pdo = new PDO(DB_CONN);
-        $setRoleStmt = $pdo->prepare("UPDATE userOrganisations SET role = :role WHERE userId = :userId and organisationId = :organisationId");
+        $setRoleStmt = $pdo->prepare("UPDATE organisationUsers SET role = :role WHERE userId = :userId and organisationId = :organisationId");
         $setRoleStmt->bindParam(":userId", $userId);
         $setRoleStmt->bindParam(":organisationId", $organisationId);
         $setRoleStmt->bindParam(":role", $role);
@@ -28,10 +28,10 @@ class Organisations
         }
     }
 
-    private function _getUserRole($userId, $organisationId): int
+    public function _getUserRole($userId, $organisationId): int
     {
         $pdo = new PDO(DB_CONN);
-        $getRoleStmt = $pdo->prepare("SELECT role FROM userOrganisations WHERE userId = :userId AND organisationId = :organisationId");
+        $getRoleStmt = $pdo->prepare("SELECT role FROM organisationUsers WHERE userId = :userId AND organisationId = :organisationId");
         $getRoleStmt->bindParam(":userId", $userId);
         $getRoleStmt->bindParam(":organisationId", $organisationId);
 
@@ -46,14 +46,15 @@ class Organisations
 
     private function _getOrganisationUsers($organisationId, $userId = null, $role = null)
     {
-        $query = "users.userName, users.userEmail, users.role as globalRole, users.userId, organisationUsers.role FROM organisationUsers JOIN users ON users.userId = organisationUsers.userId WHERE organisationUsers.organisationId = :organisationId";
+        $query = "SELECT users.userName, users.userEmail, users.role as globalRole, users.userId, organisationUsers.role FROM organisationUsers JOIN users ON users.userId = organisationUsers.userId WHERE organisationUsers.organisationId = :organisationId";
         if ($userId) {
             $query .= " AND users.userId = :userId";
         }
 
         if ($role) {
-            $query .= " AND role = :role";
+            $query .= " AND organisationUsers.role = :role";
         }
+
 
         $pdo = new PDO(DB_CONN);
         $getOrgUsrStmt = $pdo->prepare($query);
@@ -67,17 +68,21 @@ class Organisations
 
         $getOrgUsrStmt->bindParam(":organisationId", $organisationId);
 
+
         if (!$getOrgUsrStmt->execute()) {
             throw new Error("Failed to get users for organisation with ID $organisationId: " . print_r($getOrgUsrStmt->errorInfo(), true));
         }
 
-        return $getOrgUsrStmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
+        $organisations = $getOrgUsrStmt->fetchAll(PDO::FETCH_ASSOC);
+        if($role ===2 ){
+            error_log("ADMINS: " . print_r($organisations, true));
+        }
+        return $organisations;
+}
     private function _getUserOrganisations($userId, $role = null)
     {
 
-        error_log("GETTING USER ORGS FOR USER WITH ID $userId WHERE ROLE IS $role");
+
         $pdo = new PDO(DB_CONN);
         $query = "SELECT organisations.organisationName, organisations.organisationId FROM organisations JOIN organisationUsers ON organisations.organisationId = organisationUsers.organisationId WHERE organisationUsers.userId = :userId";
         if ($role) {
@@ -104,7 +109,9 @@ class Organisations
         $userId = $tokenData->userId;
         $role = intval($tokenData->role);
         $organisationId = $args["organisationId"] ?? null;
-        $userToCheck = $args["userId"] ?? null;
+        $body = json_decode($request->getBody());
+        $userToCheck = $body->userId ?? null;
+
         if (!$organisationId) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
@@ -113,12 +120,16 @@ class Organisations
         try {
             $isOrgAdmin = $this->_getUserRole($userId, $organisationId);
 
-            if (!$isOrgAdmin && $role !== 1 && ($userId !== $userToCheck)) {
+            if ($isOrgAdmin !== 2 && $role !== 1 && ($userId !== $userToCheck)) {
                 $response->getBody()->write("Unauthorised");
-                return $response->withStatus("401");
+                return $response->withStatus(401);
             }
             $organisationUsers = $this->_getOrganisationUsers($organisationId, $userToCheck, $filter);
+            if($filter === 2){
+                error_log("_ADMINS: " . print_r($organisationUsers, true));
+            }
         } catch (Exception $e) {
+            error_log($e);
             $response->getBody()->write("Internal Server Error");
             Logger::error($e, $request->getRequestTarget());
             return $response->withStatus(500);
@@ -322,14 +333,15 @@ class Organisations
     }
     //============================Set user role===============================//
     //============================Method: PATCH==============================//
-    //===Route: /api/organisations/{organisationId}/users/{userId}/{role}===//
+    //===========Route: /api/organisations/{organisationId}/users/==========//
     public function setRole(Request $request, Response $response, array $args): Response
     {
         $tokenData = $request->getAttribute("tokenData");
         $userId = $tokenData->userId;
-        $organisationId = $args["userId"];
-        $userToAdd = $args["userId"];
-        $role = intval($args["role"]);
+        $organisationId = $args["organisationId"];
+        $body = json_decode($request->getBody());
+        $userToAdd = $body->userId;
+        $role = $body->role;
 
         try {
             if ($this->_getUserRole($userId, $organisationId) !== 2) {
@@ -346,26 +358,26 @@ class Organisations
         $response->getBody()->write("Record Updated");
         return $response->withStatus(200);
     }
-
+    //--This is a post request because PHP gets upset about . characters in the URL, so I need to put the userId in the body.
     //========================Get Organisation Users==========================//
     //=============================Method: GET===============================//
-    //======Route: /api/organisations/{organisationId}/users[/{userId}]=====//
+    //=========Route: /api/organisations/{organisationId}/users/get]========//
     public function getOrganisationUsers(Request $request, Response $response, array $args): Response
     {
         return $this->_getFilteredUsers($request, $response, $args);
     }
-
+    //--This is a post request because PHP gets upset about . characters in the URL, so I need to put the userId in the body.
     //========================Get Organisation Admins=========================//
-    //=============================Method: GET===============================//
-    //=====Route: /api/organisations/{organisationId}/admins[/{userId}]=====//
+    //=============================Method: POST===============================//
+    //============Route: /api/organisations/{organisationId}/admins==========//
     public function getOrganisationAdmins(Request $request, Response $response, array $args): Response
     {
         return $this->_getFilteredUsers($request, $response, $args, 2);
     }
-
+    //--This is a post request because PHP gets upset about . characters in the URL, so I need to put the userId in the body.
     //====================Get Organisation Moderators=========================//
-    //=============================Method: GET===============================//
-    //===Route: /api/organisations/{organisationId}/moderators[/{userId}]===//
+    //=============================Method: POST===============================//
+    //==========Route: /api/organisations/{organisationId}/moderators=========//
     public function getOrganisationModerators(Request $request, Response $response, array $args): Response
     {
         return $this->_getFilteredUsers($request, $response, $args, 1);
@@ -374,7 +386,7 @@ class Organisations
     //--This is a post request because PHP gets upset about . characters in the URL, so I need to put the userId in the body.
     //========================Get User Organisations===========================//
     //=============================Method: POST ==============================//
-    //=======Route: /api/organisations/users/getorganisations[/{role}]=======//
+    //===========Route: /api/organisations/users/getorganisations============//
     public function getUserOrganisations(Request $request, Response $response, array $args): Response
     {
         $tokenData = $request->getAttribute("tokenData");
@@ -458,9 +470,9 @@ class Organisations
         $organisationId = $args["organisationId"] ?? null;
         $body = json_decode($request->getBody());
         $newUserEmail = $body->userEmail ?? null;
-        $newUserRole = $body->role ?? null;
+        $newUserRole = intval($body->role) ?? null;
         try {
-            if (!$organisationId || !$newUserEmail || !$newUserRole) {
+            if (!$organisationId || !$newUserEmail || $newUserRole === null) {
                 $response->getBody()->write("Bad Request");
                 return $response->withStatus(400);
             }
@@ -484,7 +496,7 @@ class Organisations
                 return $response->withStatus(200);
             }
 
-            $addUserToOrgStmt = $pdo->prepare("INSERT INTO userOrganisations (userId, organisationId, role) VALUES (:userId, :organisationId, :role)");
+            $addUserToOrgStmt = $pdo->prepare("INSERT INTO organisationUsers (userId, organisationId, role) VALUES (:userId, :organisationId, :role)");
             $addUserToOrgStmt->bindParam(":userId", $newUserId);
             $addUserToOrgStmt->bindParam(":organisationId", $organisationId);
             $addUserToOrgStmt->bindParam(":role", $newUserRole);
@@ -499,6 +511,43 @@ class Organisations
         }
 
         $response->getBody()->write("OK");
+        return $response->withStatus(200);
+    }
+
+    //=======================Get Organisation JobTypes====================//
+    //============================Method: GET============================//
+    //========Route: /api/organisations/{organisationId}/jobtypes=======//
+    public function getOrganisationJobTypes(Request $request, Response $response, array $args): Response
+    {
+        $tokenData = $request->getAttribute("tokenData");
+        $userId = $tokenData->userId;
+        $organisationId = $args["organisationId"];
+        $role = intval($tokenData->role);
+        if (!$this->_getOrganisationUsers($organisationId, $userId) && $role !== 1) {
+            $response->getBody()->write("Unauthorized");
+            return $response->withStatus(401);
+        }
+
+        $pdo = new PDO(DB_CONN);
+        try {
+            $getJobTypesStmt = $pdo->prepare("SELECT jobTypes.*, users.userName AS createdByName, users.userId AS createdBy
+FROM jobTypes 
+JOIN organisationJobTypes ON jobTypes.jobTypeId = organisationJobTypes.jobTypeId 
+LEFT JOIN users ON jobTypes.userId = users.userId
+WHERE organisationJobTypes.organisationId = :organisationId
+");
+            $getJobTypesStmt->bindParam(":organisationId", $organisationId);
+            if (!$getJobTypesStmt->execute()) {
+                throw new Error("Failed to get job types belonging to organisation with ID $organisationId: " . print_r($getJobTypesStmt->errorInfo(), true));
+            }
+        } catch (Exception $e) {
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $jobTypes = $getJobTypesStmt->fetchAll(PDO::FETCH_ASSOC);
+        $response->getBody()->write(json_encode($jobTypes));
         return $response->withStatus(200);
     }
 }

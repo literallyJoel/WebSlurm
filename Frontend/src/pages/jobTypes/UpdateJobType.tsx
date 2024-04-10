@@ -4,7 +4,6 @@ import {
   extractParams,
   updateParameterList,
   type CreateJobTypeRequest,
-  createJobType,
   validateParameters,
   getJobType,
   updateJobType,
@@ -24,17 +23,16 @@ import { Editor } from "@monaco-editor/react";
 import ParameterEntry from "@/components/jobTypes/ParameterEntry";
 import { Button } from "@/components/shadui/ui/button";
 import { useMutation, useQuery } from "react-query";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useAuthContext } from "@/providers/AuthProvider";
 import Nav from "@/components/Nav";
-import { getUserOrganisations } from "@/helpers/organisations";
+
 import Noty from "noty";
-import { Combobox } from "@/components/shadui/ui/combobox";
 
 interface props {
   standalone?: boolean;
 }
-const CreateJobTypeInterface = ({ standalone }: props): JSX.Element => {
+const UpdateJobTypeInterface = ({ standalone }: props): JSX.Element => {
   const { id } = useParams();
   const { data: currentJob } = useQuery(`getJobType${id}`, () => {
     return getJobType(id!, token);
@@ -53,13 +51,8 @@ const CreateJobTypeInterface = ({ standalone }: props): JSX.Element => {
   const [arrayJobSupport, setArrayJobSupport] = useState(false);
   const [arrayJobCount, setArrayJobCount] = useState(0);
   const [invalidParams, setInvalidParams] = useState<number[]>([]);
-  const [formattedOrganisations, setFormattedOrganisations] = useState<
-    { label: string; value: string }[]
-  >([]);
-  const [selectedOrganisation, setSelectedOrganisation] = useState("");
   const authContext = useAuthContext();
   const token = authContext.getToken();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (currentJob) {
@@ -138,7 +131,7 @@ const CreateJobTypeInterface = ({ standalone }: props): JSX.Element => {
     }
   );
 
-  const updateJobType = (): void => {
+  const _updateJobType = (): void => {
     const _invalidParams = validateParameters(parameters);
     setInvalidParams(_invalidParams);
 
@@ -351,31 +344,15 @@ const CreateJobTypeInterface = ({ standalone }: props): JSX.Element => {
                 ))}
               </>
             )}
-
-            {standalone && formattedOrganisations.length !== 0 && (
-              <div className="w-full flex flex-col justify-center items-center gap-2">
-                <Label>Select an Organisation for this JobType</Label>
-                <Combobox
-                  items={formattedOrganisations}
-                  value={selectedOrganisation}
-                  setValue={setSelectedOrganisation}
-                  itemTypeName="Organisation"
-                />
-              </div>
-            )}
           </div>
         </CardContent>
         <CardFooter className="justify-center p-4">
           <Button
-            disabled={
-              jobTypeName === "" ||
-              jobTypeDescription === "" ||
-              (standalone && selectedOrganisation === "")
-            }
+            disabled={jobTypeName === "" || jobTypeDescription === ""}
             className="bg-transparent border border-uol text-uol hover:bg-uol hover:text-white"
-            onClick={() => updateJobType()}
+            onClick={() => _updateJobType()}
           >
-            Create Job Type
+            Update Job Type
           </Button>
         </CardFooter>
       </Card>
@@ -383,17 +360,17 @@ const CreateJobTypeInterface = ({ standalone }: props): JSX.Element => {
   );
 };
 
-const CreateJobType = ({ standalone }: props): JSX.Element => {
+const UpdateJobType = ({ standalone }: props): JSX.Element => {
   return standalone ? (
     <div className="flex flex-col w-full min-h-screen">
       <Nav />
       <div className="p-2">
-        <CreateJobTypeInterface standalone />
+        <UpdateJobTypeInterface standalone />
       </div>
     </div>
   ) : (
-    <CreateJobTypeInterface />
+    <UpdateJobTypeInterface />
   );
 };
 
-export default CreateJobType;
+export default UpdateJobType;

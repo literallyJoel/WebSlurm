@@ -15,18 +15,25 @@ class JobTypes
     //===========================================================================//
     //=============================Helper Functions=============================//
     //=========================================================================//
-    private function getJobTypes($id = null)
+    private function getJobTypes($id = null, $userId = null)
     {
         $pdo = new PDO(DB_CONN);
 
         $query = "SELECT jt.jobTypeId, jt.jobTypeName, jt.jobTypeDescription, jt.script, jt.userId AS createdBy, 
-            jt.hasFileUpload, jt.arrayJobSupport, jt.hasOutputFile, jt.arrayJobCount, u.userName as createdByName, jtp.paramName, 
-            jtp.paramType, jtp.defaultValue FROM jobTypes jt LEFT JOIN Users u ON jt.userId = u.userId LEFT JOIN 
-            jobTypeParams jtp ON jt.jobTypeId = jtp.jobTypeID";
+        jt.hasFileUpload, jt.arrayJobSupport, jt.hasOutputFile, jt.arrayJobCount, u.userName as createdByName, jtp.paramName, 
+        jtp.paramType, jtp.defaultValue FROM jobTypes jt LEFT JOIN Users u ON jt.userId = u.userId LEFT JOIN 
+        jobTypeParams jtp ON jt.jobTypeId = jtp.jobTypeID";
+        if ($userId) {
+            $query .= " INNER JOIN organisationJobTypes ojt ON jt.jobTypeId = ojt.jobTypeId
+                    INNER JOIN organisationUsers ou ON ojt.organisationId = ou.organisationId AND ou.userId = :userId";
+        }
         $query .= $id ? " WHERE jt.jobTypeId = :jobTypeId" : "";
         $getJobTypesStmt = $pdo->prepare($query);
         if ($id) {
             $getJobTypesStmt->bindParam(":jobTypeId", $id);
+        }
+        if ($userId) {
+            $getJobTypesStmt->bindParam(":userId", $userId);
         }
         $ok = $getJobTypesStmt->execute();
         if (!$ok) {
@@ -77,6 +84,7 @@ class JobTypes
         return array_values($result);
     }
 
+
     private function validateJobType(...$params): bool
     {
         //Loops through the parameters and does some checks based on type
@@ -115,17 +123,24 @@ class JobTypes
         $tokenData = $request->getAttribute("tokenData");
         $userId = $tokenData->userId;
         $body = json_decode($request->getBody());
-
+        $role = intval($tokenData->role);
         $jobTypeName = $body->jobTypeName;
         $jobTypeDescription = $body->jobTypeDescription;
         $script = $body->script;
         $parameters = $body->parameters;
         $arrayJobSupport = $body->arrayJobSupport;
         $hasFileUpload = $body->hasFileUpload;
-        $hasOutputFle = $body->hasOutputFile;
+        $hasOutputFile = $body->hasOutputFile;
         $outputCount = $body->outputCount ?? 0;
         $arrayJobCount = $body->arrayJobCount ?? 0;
         $organisationId = $body->organisationId ?? null;
+
+        $organisations = new Organisations();
+        if (($role !== 1) && (!$organisationId || $organisations->_getUserRole($userId, $organisationId) < 1)
+        ) {
+            $response->getBody()->write("Unauthorized");
+            return $response->withStatus(401);
+        }
 
         if (!$this->validateJobType($jobTypeName, $script, $parameters, $arrayJobSupport, $hasFileUpload, $hasOutputFile, $outputCount, $arrayJobCount, $jobTypeDescription)) {
             $response->getBody()->write("Bad Request");
@@ -159,11 +174,11 @@ VALUES (:jobTypeName, :jobTypeDescription, :script, :userId, :hasOutputFile, :ou
             }
 
             $jobTypeId = $pdo->lastInsertId();
-            $paramStmt = $pdo->prepare("INSERT INTO jobTypeParams (paramName, paramType, defaultValue, jobTypeId) VALUE (:paramName, :paramType, :defaultValue, :jobTypeId)");
+            $paramStmt = $pdo->prepare("INSERT INTO jobTypeParams (paramName, paramType, defaultValue, jobTypeId) VALUES (:paramName, :paramType, :defaultValue, :jobTypeId)");
             foreach ($parameters as $param) {
                 $paramStmt->bindParam(":paramName", $param->name);
                 $paramStmt->bindParam(":paramType", $param->type);
-                $paramStmt->bindParam(":jobnTypeId", $jobTypeId);
+                $paramStmt->bindParam(":jobTypeId", $jobTypeId);
                 $defaultValue = strval($param->defaultVal);
                 $paramStmt->bindParam(":defaultValue", $defaultValue);
                 if (!$paramStmt->execute()) {
@@ -201,7 +216,12 @@ VALUES (:jobTypeName, :jobTypeDescription, :script, :userId, :hasOutputFile, :ou
     public function getJobType(Request $request, Response $response, array $args): Response
     {
         $jobTypeId = $args["jobTypeId"] ?? null;
-        $jobTypes = $this->getJobTypes($jobTypeId);
+        $tokenData = $request->getAttribute("tokenData");
+        $role = intval($tokenData->role);
+        $userId = $tokenData->userId;
+
+
+        $jobTypes = $role === 1 ? $this->getJobTypes($jobTypeId) : $this->getJobTypes($jobTypeId, $userId);
 
         if ($jobTypes === null) {
             $response->getBody()->write("Internal Server Error");
@@ -222,6 +242,7 @@ VALUES (:jobTypeName, :jobTypeDescription, :script, :userId, :hasOutputFile, :ou
         $userId = $tokenData->userId;
         $body = json_decode($request->getBody());
         $name = $body->jobTypeName;
+        $role = intval($body->role);
         $description = $body->jobTypeDescription;
         $script = $body->script;
         $hasOutputFile = $body->hasOutputFile;
@@ -229,21 +250,39 @@ VALUES (:jobTypeName, :jobTypeDescription, :script, :userId, :hasOutputFile, :ou
         $arrayJobSupport = $body->arrayJobSupport;
         $arrayJobCount = $body->arrayJobCount ?? 0;
         $parameters = $body->parameters ?? [];
+        $pdo = new PDO(DB_CONN);
 
+        try {
+            $getOrgStmt = $pdo->prepare("SELECT organisationId from organisationJobTypes WHERE jobTypeId = :jobTypeId");
+            $getOrgStmt->bindParam(":jobTypeId", $jobTypeId);
+            if (!$getOrgStmt->execute()) {
+                throw new Error("Failed to get organisation associated with job type with ID $jobTypeId for user with ID $userId: " . print_r($getOrgStmt->errorInfo(), true));
+            }
+        } catch (Exception $e) {
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $organisationId = $getOrgStmt->fetchColumn();
+        $organisations = new Organisations();
+        if ($role !== 1 && $organisations->_getUserRole($userId, $organisationId) === 0) {
+            $response->getBody()->write("Unauthorized");
+            return $response->withStatus(401);
+        }
         if (!$this->validateJobType($jobTypeId, $name, $description, $script, $hasOutputFile, $hasFileUpload, $arrayJobSupport, $arrayJobCount, $parameters)) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
         }
 
 
-        $pdo = new PDO(DB_CONN);
         $pdo->beginTransaction();
 
         try {
             $deleteParamsStmt = $pdo->prepare("DELETE from jobTypeParams WHERE jobTypeId = :jobTypeId");
             $deleteParamsStmt->bindParam(":jobTypeId", $jobTypeId);
             if (!$deleteParamsStmt->execute()) {
-                throw new Error("Failed to udate job type with ID $jobTypeId for user with ID $userId. Failed to delete former parameters: " . print_r($deleteParamsStmt->errorInfo(), true));
+                throw new Error("Failed to update job type with ID $jobTypeId for user with ID $userId. Failed to delete former parameters: " . print_r($deleteParamsStmt->errorInfo(), true));
             }
 
             $updateJobTypeStmt = $pdo->prepare("UPDATE jobTypes SET jobTypeName = :jobTypeName, script = :script, jobTypeDescription = :jobTypeDescription, hasOutputFile = :hasOutputFile, outputCount = :outputCount, hasFileUpload = :hasFileUpload, arrayJobSupport = :arrayJobSupport, arrayJobCount = :arrayJobCount WHERE jobTypeId= :jobTypeId");
@@ -277,18 +316,44 @@ VALUES (:jobTypeName, :jobTypeDescription, :script, :userId, :hasOutputFile, :ou
     //===========================DeleteJobType===========================//
     //==========================Method: DELETE==========================//
     //=================Route: /api/jobtypes/{jobTypeId}================//
-    public function deleteById(Request $request, Response $response, array $args): Response
+    public function delete(Request $request, Response $response, array $args): Response
     {
         $tokenData = $request->getAttribute("tokenData");
         $userId = $tokenData->userId;
         $jobTypeId = $args["jobTypeId"] ?? null;
+        $role = intval($tokenData->role);
+        $pdo = new PDO(DB_CONN);
+        try{
+            $getUsrStmt = $pdo->prepare("SELECT userId FROM jobTypes WHERE jobTypeId = :jobTypeId");
+            $getUsrStmt->bindParam(":jobTypeId", $jobTypeId);
+            if(!$getUsrStmt->execute()){
+                throw new Error("Failed to get userId for jobType with ID $jobTypeId for user with ID $userId: " . print_r($getUsrStmt->errorInfo(), true));
+            }
 
+            $getOrgStmt = $pdo->prepare("SELECT organisationId from organisationJobTypes WHERE jobTypeId = :jobTypeId");
+            $getOrgStmt->bindParam(":jobTypeId", $jobTypeId);
+            if(!$getOrgStmt->execute()){
+                throw new Error("Failed to get organisationId associated with jobType with ID $jobTypeId for user with ID $userId" . print_r($getOrgStmt->errorInfo(), true));
+            }
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response ->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $organisations = new Organisations();
+        $ownerId = $getUsrStmt->fetchColumn();
+        $organisationId = $getOrgStmt->fetchColumn();
+        if($role !== 1 && $ownerId !== $userId && $organisations->_getUserRole($userId, $organisationId) !== 2){
+            $response->getBody()->write("Unauthorized");
+            return $response->withStatus(401);
+        }
         if (!$jobTypeId) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
         }
 
-        $pdo = new PDO(DB_CONN);
+
         $pdo->beginTransaction();
 
         try {

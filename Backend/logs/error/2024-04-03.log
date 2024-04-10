@@ -1,3 +1,0 @@
-{"date":"2024-04-03T12:03:40+01:00","type":"error","route":"Jobs\/scheduleSlurmJob","message":"Invalid Input Received: "}
-{"date":"2024-04-03T12:04:47+01:00","type":"error","route":"Jobs\/scheduleSlurmJob","message":"Invalid Input Received: "}
-{"date":"2024-04-03T14:49:43+01:00","type":"error","route":"Users\/sendPasswordEmail","message":"Failed to send temporary password email"}

@@ -17,6 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/shadui/ui/popover";
+import { ClassNameValue, twMerge } from "tailwind-merge";
 
 export type ComboBoxItem = { value: string; label: string };
 interface props {
@@ -24,8 +25,15 @@ interface props {
   itemTypeName: string;
   value: string;
   setValue: React.Dispatch<React.SetStateAction<string>>;
+  className?: ClassNameValue;
 }
-export function Combobox({ items, itemTypeName, value, setValue }: props) {
+export function Combobox({
+  items,
+  itemTypeName,
+  value,
+  setValue,
+  className,
+}: props) {
   const [open, setOpen] = React.useState(false);
 
   return (
@@ -35,7 +43,7 @@ export function Combobox({ items, itemTypeName, value, setValue }: props) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between"
+          className={twMerge("justify-between", className)}
         >
           {value
             ? items.find((item) => item.value === value)?.label

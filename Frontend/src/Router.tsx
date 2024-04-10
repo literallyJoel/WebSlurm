@@ -10,7 +10,7 @@ import Login from "./pages/auth/Login";
 import AdminSettings from "./pages/admin/settings/Settings";
 import CreateJobType from "./pages/jobTypes/CreateJobType";
 import JobTypes from "./pages/admin/settings/JobTypes/JobTypes";
-import { UpdateJobType } from "./pages/admin/settings/JobTypes/UpdateJobType";
+import UpdateJobType from "./pages/jobTypes/UpdateJobType";
 import CreateJob from "./pages/jobs/createJob/CreateJob";
 import Tus from "@uppy/tus";
 import Webcam from "@uppy/webcam";
@@ -175,6 +175,10 @@ const Router = () => {
       {
         path: "/jobtypes/create",
         element: withAuth(CreateJobType)({ standalone: true }),
+      },
+      {
+        path: "/jobtypes/:id",
+        element: withAuth(UpdateJobType)({ standalone: true }),
       },
     ],
     {

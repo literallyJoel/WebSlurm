@@ -34,6 +34,9 @@ import { Textarea } from "@/components/shadui/ui/textarea";
 import Uppy from "@uppy/core";
 import { Dashboard } from "@uppy/react";
 import { generateFileId } from "@/helpers/files";
+import { getUserOrganisations } from "@/helpers/organisations";
+import Noty from "noty";
+import { Combobox } from "@/components/shadui/ui/combobox";
 interface props {
   uppy: Uppy<Record<string, unknown>, Record<string, unknown>>;
   setFileId: React.Dispatch<React.SetStateAction<string | undefined>>;
@@ -68,7 +71,14 @@ const CreateJob = ({
   const [selectedJobTypeID, setSelectedJobTypeID] = useState<number>();
   const [selectedJobType, setSelectedJobType] = useState<JobType>();
   const [jobName, setJobName] = useState("");
-
+  //Stores the state of the job request so we know what page to display
+  const [requestState, setRequestState] = useState<0 | 1 | 2>(0);
+  //Stores the server response string for use on the creation success screen
+  const [serverResponse, setServerResponse] = useState("");
+  const [formattedOrganisations, setFormattedOrganisations] = useState<
+    { label: string; value: string }[]
+  >([]);
+  const [selectedOrganisation, setSelectedOrganisation] = useState("");
   useEffect(() => {
     async function updateUppyInfo() {
       if (selectedJobType && selectedJobType.arrayJobCount !== 0) {
@@ -103,10 +113,7 @@ const CreateJob = ({
       setFileId((await generateFileId(token)).fileId);
     }
   };
-  //Stores the state of the job request so we know what page to display
-  const [requestState, setRequestState] = useState<0 | 1 | 2>(0);
-  //Stores the server response string for use on the creation success screen
-  const [serverResponse, setServerResponse] = useState("");
+
   //Deals with updating the parameters array when a new job type is selected
   const handleJobTypeChange = (_selectedJobType: number): void => {
     //Updates the selected job type
@@ -181,6 +188,8 @@ const CreateJob = ({
         jobName: jobName,
         fileId: fileId,
         parameters: params,
+        organisationId:
+          selectedOrganisation === "" ? undefined : selectedOrganisation,
       };
       return createJob(toCreate, token);
     },
@@ -197,6 +206,28 @@ const CreateJob = ({
     }
   );
 
+  useQuery(
+    "getOrganisations",
+    () => {
+      return getUserOrganisations(token);
+    },
+    {
+      onSuccess: (data) => {
+        const formattedData = data.map((org) => ({
+          label: org.organisationName,
+          value: org.organisationId,
+        }));
+        setFormattedOrganisations(formattedData);
+      },
+      onError: () => {
+        new Noty({
+          text: "An error occured fetching your organisations. Please try again later.",
+          type: "error",
+          timeout: 5000,
+        }).show();
+      },
+    }
+  );
   //Removes the type identifier from the key and sends the job creation request
   const submitJob = (): void => {
     const formattedParams = userParams.map((param) => {
@@ -216,7 +247,7 @@ const CreateJob = ({
               <CardTitle>Create a New job</CardTitle>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
+              <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="job-type">Job Type</Label>
                   <Select onValueChange={(e) => handleJobTypeChange(Number(e))}>
@@ -337,7 +368,9 @@ const CreateJob = ({
                 )}
 
                 {selectedJobType?.hasFileUpload &&
-                  selectedJobType?.hasFileUpload !== undefined && (
+                  selectedJobType?.hasFileUpload !== undefined &&
+                  (selectedJobType?.hasFileUpload as unknown as string) !==
+                    "0" && (
                     <div className="p-2">
                       <Label
                         className="flex flex-col pb-2"
@@ -360,14 +393,24 @@ const CreateJob = ({
                       />
                     </div>
                   )}
-              </form>
+                <div className="w-full">
+                  <Label>Share with an organisation?</Label>
+                  <Combobox
+                    value={selectedOrganisation}
+                    setValue={setSelectedOrganisation}
+                    items={formattedOrganisations}
+                    itemTypeName="Organisation"
+                    className="w-full"
+                  />
+                </div>
+              </div>
             </CardContent>
 
             <CardFooter>
               <Button
                 disabled={
                   selectedJobType === undefined ||
-                  (selectedJobType.hasFileUpload && !isUploadComplete)
+                  (selectedJobType.hasFileUpload as unknown as string !== "0" && !isUploadComplete)
                 }
                 onClick={() => submitJob()}
               >

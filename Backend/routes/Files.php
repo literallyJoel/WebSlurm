@@ -223,6 +223,33 @@ class Files
         return $data;
     }
 
+    private function checkUserAccess($userId, $jobId){
+        $pdo = new PDO(DB_CONN);
+        $getUsrIdStmt = $pdo->prepare("SELECT userId FROM jobs WHERE jobId = :jobId");
+        $getUsrIdStmt->bindParam(":jobId", $jobId);
+        if(!$getUsrIdStmt->execute()){
+            throw new Error("Failed to get userId for job with ID $jobId: " . print_r($getUsrIdStmt->errorInfo(), true));
+        }
+
+        $createdBy = $getUsrIdStmt->fetchColumn();
+
+        if($createdBy !== $userId){
+            $getOrgIdStmt = $pdo->prepare("SELECT organisationId from organisationJobs WHERE jobId = :jobId");
+            $getOrgIdStmt->bindParam(":jobId", $jobId);
+            if(!$getOrgIdStmt->execute()){
+                throw new Error("Failed to get organisation ID for job with ID $jobId: " . print_r($getOrgIdStmt->errorInfo(), true));
+            }
+            $organisationId = $getOrgIdStmt->fetchColumn();
+
+            $Organisations = new Organisations();
+            if($Organisations->_getUserRole($userId, $organisationId) === -1){
+                return false;
+            }
+        }
+
+        return $createdBy;
+    }
+
 
     //===========================================================================//
     //=================================Routes===================================//
@@ -240,12 +267,25 @@ class Files
         $jobId = $args["jobId"] ?? null;
         $filePath = $args["filePath"] ?? null;
 
+        try {
+            $createdById = $this->checkUserAccess($userId, $jobId);
+            if(!$createdById){
+                $response->getBody()->write("Unauthorized");
+                return $response->withStatus(401);
+            }
+
+        } catch (Exception $e) {
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
         if (!$jobId || !$filePath) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(500);
         }
 
-        $fileInfo = $this->download($userId, $jobId, urldecode($filePath), "in");
+        $fileInfo = $this->download($createdById, $jobId, urldecode($filePath), "in");
 
         if (!$fileInfo) {
             $response->getBody()->write("Internal Server Error");
@@ -265,7 +305,19 @@ class Files
         $userId = $tokenData->userId;
         $jobId = $args["jobId"] ?? null;
 
-        $folderPath = __DIR__ . "/../usr/in/$userId/$jobId";
+        try{
+            $createdById = $this->checkUserAccess($userId, $jobId);
+            if(!$createdById){
+                $response->getBody()->write("Unauthorized");
+                return $response->withStatus(401);
+            }
+        }catch(Exception $e){
+            error_log("ERR: " .  $e);
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+        $folderPath = __DIR__ . "/../usr/in/$createdById/$jobId";
         $fileTree = $this->getFileTree($folderPath);
         if (!$fileTree) {
             $response->getBody()->write("Internal Server Error");
@@ -288,12 +340,19 @@ class Files
         $jobId = $args["jobId"] ?? null;
         $filePath = $args["filePath"] ?? null;
 
+        try{
+            $createdById = $this->checkUserAccess($userId, $jobId);
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(401);
+        }
         if (!$jobId || !$filePath) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
         }
 
-        $fileInfo = $this->download($userId, $jobId, urldecode($filePath), "out");
+        $fileInfo = $this->download($createdById, $jobId, urldecode($filePath), "out");
         error_log(print_r($fileInfo, true));
         if (!$fileInfo) {
             $response->getBody()->write("Internal Server Error");
@@ -314,7 +373,18 @@ class Files
         $userId = $tokenData->userId;
         $jobId = $args["jobId"] ?? null;
 
-        $folderPath = __DIR__ . "/../usr/out/$userId/$jobId";
+        try{
+            $createdById = $this->checkUserAccess($userId, $jobId);
+            if(!$createdById){
+                $response->getBody()->write("Unauthorized");
+                return $response->withStatus(401);
+            }
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+        $folderPath = __DIR__ . "/../usr/out/$createdById/$jobId";
         $fileTree = $this->getFileTree($folderPath);
         if (!$fileTree) {
             $response->getBody()->write("Internal Server Error");

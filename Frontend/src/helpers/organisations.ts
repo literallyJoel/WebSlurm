@@ -109,12 +109,14 @@ export const getOrganisationUsers = async (
   organisationId: string,
   userId?: string
 ): Promise<OrganisationUser[]> => {
-  let endpoint = `${apiEndpoint}/organisations/${organisationId}/users`;
-  endpoint = userId ? `${endpoint}/${userId}` : endpoint;
-
-  const response = await fetch(endpoint, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetch(
+    `${apiEndpoint}/organisations/${organisationId}/users/get`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: userId ? JSON.stringify({ userId }) : undefined,
+    }
+  );
 
   if (!response.ok) {
     return Promise.reject(new Error(response.statusText));
@@ -130,12 +132,14 @@ export const getOrganisationAdmins = async (
   organisationId: string,
   userId?: string
 ): Promise<OrganisationUser[]> => {
-  let endpoint = `${apiEndpoint}/organisations/${organisationId}/admins`;
-  endpoint = userId ? `${endpoint}/${userId}` : endpoint;
-
-  const response = await fetch(endpoint, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetch(
+    `${apiEndpoint}/organisations/${organisationId}/admins`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: userId ? JSON.stringify({ userId }) : undefined,
+    }
+  );
 
   if (!response.ok) {
     return Promise.reject(new Error(response.statusText));
@@ -150,12 +154,14 @@ export const getOrganisationModerators = async (
   organisationId: string,
   userId?: string
 ): Promise<OrganisationUser[]> => {
-  let endpoint = `${apiEndpoint}/organisations/${organisationId}/moderators`;
-  endpoint = userId ? `${endpoint}/${userId}` : endpoint;
-
-  const response = await fetch(endpoint, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await fetch(
+    `${apiEndpoint}/organisations/${organisationId}/moderators`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: userId ? JSON.stringify({ userId }) : undefined,
+    }
+  );
 
   if (!response.ok) {
     return Promise.reject(new Error(response.statusText));

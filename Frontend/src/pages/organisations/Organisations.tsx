@@ -22,10 +22,10 @@ const Organisations = (): JSX.Element => {
   });
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen">
       <Nav />
-      <div className="flex h-screen w-full text-center">
-        <nav className="w-80 bg-gray-100 overflow-y-auto dark:bg-gray-800 border-r dark:border-gray-700 h-full px-6 py-4">
+      <div className="flex min-h-screen w-full text-center">
+        <nav className="w-80 bg-gray-100 overflow-y-auto dark:bg-gray-800 border-r dark:border-gray-700 h-[100wh] px-6 py-4">
           <div className="flex justify-between">
             <h1 className="text-xl font-bold mb-4 w-full">
               Your Organisations
@@ -52,7 +52,7 @@ const Organisations = (): JSX.Element => {
           <Outlet />
         </main>
       </div>
-    </>
+    </div>
   );
 };
 

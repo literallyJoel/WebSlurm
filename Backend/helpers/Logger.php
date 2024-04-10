@@ -68,7 +68,7 @@
                 "date" => (new DateTime())->format(DateTimeInterface::ATOM),
                 "type" => "error",
                 "route" => $route,
-                "message" => $messageOrError instanceOf Error ? $messageOrError->getMessage() : $messageOrError,
+                "message" => print_r($messageOrError, true),
             ];
 
             error_log("[error][{$log["date"]}][{$log["route"]}] | {$log["message"]}");

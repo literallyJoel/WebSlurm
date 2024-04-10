@@ -9,10 +9,11 @@ import {
 } from "@/components/shadui/ui/dropdown-menu";
 import { Button } from "@/components/shadui/ui/button";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import { useMutation } from "react-query";
-import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery } from "react-query";
+import { useNavigate, useParams } from "react-router-dom";
 import Noty from "noty";
 import { JobType, deleteJobType } from "@/helpers/jobTypes";
+import { getOrganisationAdmins } from "@/helpers/organisations";
 export const columns = (refetch: Function) => {
   const column: ColumnDef<JobType>[] = [
     {
@@ -51,6 +52,11 @@ export const columns = (refetch: Function) => {
         const jobType = row.original;
         const token = useAuthContext().getToken();
         const navigate = useNavigate();
+        const user = useAuthContext().getUser();
+        const { organisationId } = useParams();
+        const { data: isAdmin } = useQuery("isAdmin", () => {
+          return getOrganisationAdmins(token, organisationId!, user.id);
+        });
 
         const _deleteJobType = useMutation(
           "deleteJobType",
@@ -88,21 +94,20 @@ export const columns = (refetch: Function) => {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
                   className="cursor-pointer"
-                  onClick={() =>
-                    navigate(`/admin/jobtypes/${jobType.jobTypeId}`)
-                  }
+                  onClick={() => navigate(`/jobtypes/${jobType.jobTypeId}`)}
                 >
                   Edit Job Type
                 </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  onClick={() => _deleteJobType.mutate()}
-                  className="cursor-pointer"
-                >
-                  Delete Job Type
-                </DropdownMenuItem>
+                {(isAdmin?.length !== 0 || user.id === jobType.createdBy) && (
+                  <DropdownMenuItem
+                    onClick={() => _deleteJobType.mutate()}
+                    className="cursor-pointer"
+                  >
+                    Delete Job Type
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </>
