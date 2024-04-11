@@ -21,6 +21,7 @@ import { useMutation } from "react-query";
 import { Editor } from "@monaco-editor/react";
 import { IoCloseCircle } from "react-icons/io5";
 import { IoMdDownload } from "react-icons/io";
+import Tooltip from "../Tooltip";
 
 type FileData = _FileData & {
   parentId?: string;
@@ -329,24 +330,28 @@ export const FileViewer = React.memo(({ tree, type, jobId, token }: props) => {
             {fileContent.name}
           </div>
 
-          <IoMdDownload
-            className="w-6 h-6 text-uol cursor-pointer hover:text-uol/90"
-            onClick={() => {
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(
-                new Blob([fileContent.content], {
-                  type: "text/plain",
-                })
-              );
-              a.download = fileContent.name;
-              a.click();
-            }}
-          />
+          <Tooltip text="Download">
+            <IoMdDownload
+              className="w-6 h-6 text-uol cursor-pointer hover:text-uol/90"
+              onClick={() => {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(
+                  new Blob([fileContent.content], {
+                    type: "text/plain",
+                  })
+                );
+                a.download = fileContent.name;
+                a.click();
+              }}
+            />
+          </Tooltip>
 
-          <IoCloseCircle
-            className="w-6 h-6 text-red-500 cursor-pointer hover:text-red-500/90"
-            onClick={() => setFileContent(undefined)}
-          />
+          <Tooltip text="Close Editor">
+            <IoCloseCircle
+              className="w-6 h-6 text-red-500 cursor-pointer hover:text-red-500/90"
+              onClick={() => setFileContent(undefined)}
+            />
+          </Tooltip>
         </div>
         <Editor value={fileContent.content} height={300} />
       </>

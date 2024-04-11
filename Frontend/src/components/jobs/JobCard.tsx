@@ -34,7 +34,7 @@ const JobCard = ({ job }: props): JSX.Element => {
 
   return (
     <div className="w-full flex flex-col  p-1 border border-gray-600 rounded-md shadow-md">
-      <div className="flex flex-row justify-between">
+      <div className="flex flex-row justify-between pl-1 pr-1">
         <div>
           <Tooltip text="ID">
             <Badge className="justify-center" variant="default">
@@ -50,7 +50,10 @@ const JobCard = ({ job }: props): JSX.Element => {
         </div>
         <div>
           <Tooltip text="Created By">
-            <Badge className="justify-center" variant="outline">
+            <Badge
+              className="justify-center border-slate-400"
+              variant="outline"
+            >
               {job.createdByName}
             </Badge>
           </Tooltip>

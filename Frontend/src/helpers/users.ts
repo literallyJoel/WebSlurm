@@ -188,3 +188,54 @@ export const validatePassword = (password: string) => {
   //Ensures password is at least 8 characters, contains a letter, a numer, and a special char.
   return /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/.test(password);
 };
+
+export const makeUserAdmin = async (
+  token: string,
+  userId: string
+): Promise<Response> => {
+  const response = await fetch(`${apiEndpoint}/users/role`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ userId: userId, role: 1 }),
+  });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  return response;
+};
+
+export const removeUserAdmin = async (
+  token: string,
+  userId: string
+): Promise<Response> => {
+  const response = await fetch(`${apiEndpoint}/users/role`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ userId: userId, role: 0 }),
+  });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  return response;
+};
+
+export const resetUserPassword = async (
+  token: string,
+  userId: string
+): Promise<Response> => {
+  const response = await fetch(`${apiEndpoint}/users/reset`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ userId: userId }),
+  });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  return response;
+};

@@ -1,10 +1,11 @@
 import { useQuery } from "react-query";
 import { Button } from "@/components/shadui/ui/button";
 import { FaPlus } from "react-icons/fa";
-import UserCard from "@/components/users/UserCard";
 import { Link } from "react-router-dom";
 import { getAllUsers, getUserCount } from "@/helpers/users";
 import { useAuthContext } from "@/providers/AuthProvider";
+import { DataTable } from "@/components/Table/data-table";
+import { columns } from "@/components/Table/columns/users";
 
 const Users = (): JSX.Element => {
   const authContext = useAuthContext();
@@ -12,9 +13,7 @@ const Users = (): JSX.Element => {
   const allUsers = useQuery("getAllUsers", () => {
     return getAllUsers(token);
   });
-  const userCount = useQuery("getUserCount", () => {
-    return getUserCount(token);
-  });
+
   return (
     <div className="w-full flex flex-col">
       <span className="text-2xl text-uol font-bold">Users</span>
@@ -26,19 +25,11 @@ const Users = (): JSX.Element => {
         </Link>
       </div>
 
-      <div className="grid grid-cols-4">
-        {allUsers.data?.map((user) => {
-          return (
-            <UserCard
-              key={user.userId}
-              id={`${user.userId}`}
-              name={user.userName}
-              role={user.role}
-              userCount={userCount.data?.count}
-            />
-          );
-        })}
-      </div>
+      {allUsers.data && (
+        <div className="w-full h-full">
+          <DataTable columns={columns(allUsers.refetch)} data={allUsers.data} />
+        </div>
+      )}
     </div>
   );
 };

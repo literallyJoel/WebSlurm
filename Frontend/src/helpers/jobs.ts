@@ -54,8 +54,16 @@ export const getJobs = async (token: string): Promise<Job[]> => {
     return Promise.reject(new Error(response.statusText));
   }
 
-  const jobs = await response.json();
-  return Array.isArray(jobs) ? jobs : [jobs];
+  const jobResponse = await response.json();
+  if (Array.isArray(jobResponse)) {
+    const jobs = jobResponse.filter((job, index) => {
+      let jobIds = jobResponse.map((job) => job.jobId);
+      return jobIds.indexOf(job.jobId) === index;
+    });
+    return jobs;
+  }
+
+  return [jobResponse];
 };
 
 export const getCompletedJobs = async (
@@ -72,8 +80,16 @@ export const getCompletedJobs = async (
   if (!response.ok) {
     return Promise.reject(new Error(response.statusText));
   }
-  const jobs = await response.json();
-  return Array.isArray(jobs) ? jobs : [jobs];
+  const jobResponse = await response.json();
+  if (Array.isArray(jobResponse)) {
+    const jobs = jobResponse.filter((job, index) => {
+      let jobIds = jobResponse.map((job) => job.jobId);
+      return jobIds.indexOf(job.jobId) === index;
+    });
+    return jobs;
+  }
+
+  return [jobResponse];
 };
 
 export const getFailedJobs = async (
@@ -90,9 +106,16 @@ export const getFailedJobs = async (
   if (!response.ok) {
     return Promise.reject(new Error(response.statusText));
   }
+  const jobResponse = await response.json();
+  if (Array.isArray(jobResponse)) {
+    const jobs = jobResponse.filter((job, index) => {
+      let jobIds = jobResponse.map((job) => job.jobId);
+      return jobIds.indexOf(job.jobId) === index;
+    });
+    return jobs;
+  }
 
-  const jobs = await response.json();
-  return Array.isArray(jobs) ? jobs : [jobs];
+  return [jobResponse];
 };
 
 export const getRunningJobs = async (
@@ -109,8 +132,16 @@ export const getRunningJobs = async (
   if (!response.ok) {
     return Promise.reject(new Error(response.statusText));
   }
-  const jobs = await response.json();
-  return Array.isArray(jobs) ? jobs : [jobs];
+  const jobResponse = await response.json();
+  if (Array.isArray(jobResponse)) {
+    const jobs = jobResponse.filter((job, index) => {
+      let jobIds = jobResponse.map((job) => job.jobId);
+      return jobIds.indexOf(job.jobId) === index;
+    });
+    return jobs;
+  }
+
+  return [jobResponse];
 };
 
 export const getJob = async (
