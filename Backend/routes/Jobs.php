@@ -230,14 +230,14 @@ class Jobs
         if ($hasOutputFile) {
             $outputCount = $jobType["outputCount"] ?? 0;
             $outputVars = [];
-            for ($i = 0; i < $outputCount; $i++) {
+            for ($i = 0; $i < $outputCount; $i++) {
                 $outputVars[] = "out$i=" . $dirs["out"] . "out$i";
             }
 
             $outputVars = implode("\n", $outputVars);
             $scriptArr = explode("\n", $modified);
             array_splice($scriptArr, 4, 0, $outputVars);
-            $modified = implode("\n", $modified);
+            $modified = implode("\n", $scriptArr);
         }
         //Append job completion script
         $url = APP_URI . "/api/jobs/" . $jobId . "/markcomplete";

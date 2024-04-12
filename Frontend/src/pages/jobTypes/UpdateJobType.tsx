@@ -73,19 +73,29 @@ const UpdateJobTypeInterface = ({ standalone }: props): JSX.Element => {
       }
 
       if (currentJob.hasOutputFile) {
-        setHasOutputFiles(currentJob.hasOutputFile);
+        setHasOutputFiles(
+          (currentJob.hasOutputFile as unknown as string) === "1"
+        );
       }
 
       if (currentJob.hasFileUpload) {
-        setHasFileUpload(currentJob.hasFileUpload);
+        setHasFileUpload(
+          (currentJob.hasFileUpload as unknown as string) === "1"
+        );
       }
 
       if (currentJob.arrayJobSupport) {
-        setArrayJobSupport(currentJob.arrayJobSupport);
+        setArrayJobSupport(
+          (currentJob.arrayJobSupport as unknown as string) === "1"
+        );
       }
 
       if (currentJob.arrayJobCount) {
         setArrayJobCount(currentJob.arrayJobCount);
+      }
+
+      if(currentJob.outputCount) {
+        setOutputCount(currentJob.outputCount);
       }
     }
   }, [currentJob]);

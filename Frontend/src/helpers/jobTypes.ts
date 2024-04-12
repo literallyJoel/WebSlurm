@@ -35,6 +35,7 @@ export type JobType = {
   hasOutputFile: boolean;
   arrayJobSupport: boolean;
   arrayJobCount: number;
+  outputCount: number;
 };
 export const isParameterType = (str: string): str is ParameterType => {
   return ["String", "Number", "Boolean", "Undefined"].includes(str);

@@ -19,7 +19,7 @@ class JobTypes
     {
         $pdo = new PDO(DB_CONN);
 
-        $query = "SELECT jt.jobTypeId, jt.jobTypeName, jt.jobTypeDescription, jt.script, jt.userId AS createdBy, 
+        $query = "SELECT jt.jobTypeId, jt.jobTypeName, jt.outputCount, jt.jobTypeDescription, jt.script, jt.userId AS createdBy, 
         jt.hasFileUpload, jt.arrayJobSupport, jt.hasOutputFile, jt.arrayJobCount, u.userName as createdByName, jtp.paramName, 
         jtp.paramType, jtp.defaultValue FROM jobTypes jt LEFT JOIN Users u ON jt.userId = u.userId LEFT JOIN 
         jobTypeParams jtp ON jt.jobTypeId = jtp.jobTypeID";
@@ -67,7 +67,8 @@ class JobTypes
                     'hasFileUpload' => $row['hasFileUpload'],
                     'hasOutputFile' => $row['hasOutputFile'],
                     'arrayJobSupport' => $row['arrayJobSupport'],
-                    'arrayJobCount' => $row['arrayJobCount']
+                    'arrayJobCount' => $row['arrayJobCount'],
+                    'outputCount' => $row['outputCount']
                 ];
             }
 
@@ -248,6 +249,7 @@ VALUES (:jobTypeName, :jobTypeDescription, :script, :userId, :hasOutputFile, :ou
         $hasOutputFile = $body->hasOutputFile;
         $hasFileUpload = $body->hasFileUpload;
         $arrayJobSupport = $body->arrayJobSupport;
+        $outputCount = $body->outputCount;
         $arrayJobCount = $body->arrayJobCount ?? 0;
         $parameters = $body->parameters ?? [];
         $pdo = new PDO(DB_CONN);
