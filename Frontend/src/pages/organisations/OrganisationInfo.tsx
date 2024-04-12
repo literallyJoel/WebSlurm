@@ -11,7 +11,7 @@ import {
 
 import { DataTable } from "@/components/Table/data-table";
 import { columns as jobTypeColumns } from "@/components/Table/columns/jobtypes";
-import { columns as userColumns } from "@/components/Table/columns/organisations";
+import { columns as userColumns } from "@/components/Table/columns/organisationUsers";
 import { Input } from "@/components/shadui/ui/input";
 import {
   Select,
@@ -172,7 +172,10 @@ const OrganisationInfo = (): JSX.Element => {
       {jobTypes && (
         <div className="w-full flex flex-col  max-h-[50vh] justify-center overflow-y-auto border">
           <div className="text-xl font-bold p-5 pt-6">Job Types</div>
-          <DataTable columns={jobTypeColumns(refetchUsers)} data={jobTypes} />
+          <DataTable
+            columns={jobTypeColumns(refetchJobTypes)}
+            data={jobTypes}
+          />
         </div>
       )}
     </div>

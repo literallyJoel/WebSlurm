@@ -1,3 +1,5 @@
 Backend/data/
 Backend/config/
 Backend/logs/
+Backend/usr/
+Backend/vendor

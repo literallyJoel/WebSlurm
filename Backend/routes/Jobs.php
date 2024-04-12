@@ -300,12 +300,14 @@ JOIN jobTypes ON jobs.jobTypeId = jobTypes.jobTypeId
 LEFT JOIN organisationJobs ON jobs.jobId = organisationJobs.jobId 
 LEFT JOIN organisationUsers ON organisationJobs.organisationId = organisationUsers.organisationId
 LEFT JOIN users ON jobs.userId = users.userId
-WHERE jobs.userId = :userId OR organisationUsers.userId = :userId
+WHERE (jobs.userId = :userId OR organisationUsers.userId = :userId
 ";
 
             if (!empty($organisationIds)) {
                 $orgPlaceholders = implode(',', array_fill(0, count($organisationIds), '?'));
-                $query .= " OR (organisationJobs.organisationId IN ($orgPlaceholders))";
+                $query .= " OR organisationJobs.organisationId IN ($orgPlaceholders))";
+            }else{
+                $query .= ")";
             }
 
             if ($jobId) {
@@ -322,11 +324,13 @@ WHERE jobs.userId = :userId OR organisationUsers.userId = :userId
                         $query .= " AND jobComplete = 2";
                         break;
                 }
-
+                
                 if ($limit) {
                     $query .= " LIMIT :limit";
                 }
             }
+
+            Logger::debug($query, "THISONE");
 
             $getJobsStmt = $pdo->prepare($query);
             if (!$getJobsStmt) {

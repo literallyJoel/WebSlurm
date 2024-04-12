@@ -111,6 +111,20 @@ class Users
         }
     }
 
+    private function sendResetEmail($name, $email, $password){
+        $mailTemplate = file_get_contents(RESET_PASS_EMAIL_TEMPLATE);
+        $mailTemplate = str_replace("{{name}}", $name, $mailTemplate);
+        $mailTemplate = str_replace("{{password}}", $password, $mailTemplate);
+
+        $headers = "MIME-Version: 1.0\r\n";
+        $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
+        if(mail($email, RESET_PASS_EMAIL_SUBJECT, $mailTemplate, $headers)){
+            Logger::debug("Password reset email sent.", "Users/sendResetEmail");
+        }else{
+            Logger::error("Failed to send reset password email", "Users/sendResetEmail");
+        }
+    }
+
 
     //Gets users, either all or with the provided ID
     private function getUsers($userId = null)
@@ -144,6 +158,91 @@ class Users
     //=================================Routes===================================//
     //=========================================================================//
 
+    //==========================Reset Password============================//
+    //===========================Method: POST============================//
+    //======================Route: /api/users/reset=====================//
+    public function resetPassword(Request $request, Response $response): Response{
+        $tokenData = $request->getAttribute("tokenData");
+        $userId = $tokenData->userId;
+        $body = json_decode($request->getBody());
+        $userToReset = $body->userId;
+
+
+        try{
+            $pdo = new PDO(DB_CONN);
+            $getEmailStmt = $pdo->prepare("SELECT userEmail, userName from Users WHERE userId = :userId");
+            $getEmailStmt->bindParam(":userId", $userToReset);
+            if(!$getEmailStmt->execute()){
+                throw new Error("Failed to reset password for user with ID $userToReset on request of user with ID $userId. Failed to get user email: " . print_r($getEmailStmt->errorInfo(), true));
+            }
+            $userEmail = $getEmailStmt->fetchColumn();
+            $userName = $getEmailStmt->fetchColumn(1);
+
+            if(!$userEmail){
+                $response->getBody()->write("Bad Request");
+                return $response->withStatus(400);
+            }
+
+            $newPassword = hash("sha512", $this->generatePassword());
+
+            $updatePasswordStmt = $pdo->prepare("UPDATE users SET userPWHash = :userPWHash WHERE userId = :userId");
+            $updatePasswordStmt->bindParam(":userPWHash", $newPassword);
+            $updatePasswordStmt->bindParam(":userId", $userId);
+
+            if(!$updatePasswordStmt->execute()){
+                throw new Error("Failed to rset password for user with ID $userToReset at request of usre with ID $userId: " . print_r($updatePasswordStmt->errorInfo(), true));
+            }
+
+            $this->sendResetEmail($userName, $userEmail, $newPassword);
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $response->getBody()->write("OK");
+        return $response->withStatus(200);
+
+    }
+    //==============================Set Role==============================//
+    //============================Method: PUT============================//
+    //=======================Route: /api/users/role=====================//
+    public function setRole(Request $request, Response $response): Response{
+        $tokenData=$request->getAttribute("tokenData");
+        $userRole = intval($tokenData->role);
+        $userId = $tokenData->role;
+
+        $body = json_decode($request->getBody());
+        $userToChange = $body->userId;
+        $roleToGive = $body->role;
+
+        if($userRole !== 1) {
+            $response->getBody()->write("Unauthorized");
+            return $response->withStatus(401);
+        }
+
+        if(!$userToChange || ($roleToGive !== 1&& $roleToGive !== 0)){
+            $response->getBody()->write("Bad Request");
+            return $response->withStatus(400);
+        }
+
+        try{
+            $pdo = new PDO(DB_CONN);
+            $setRoleStmt = $pdo->prepare("UPDATE users SET role = :role WHERE userId = :userId");
+            $setRoleStmt->bindParam(":role", $roleToGive);
+            $setRoleStmt->bindParam(":userId", $userToChange);
+            if(!$setRoleStmt->execute()){
+                throw new Error("Failed to update role with user ID $userToChange to role $roleToGive for user with ID $userId: " . print_r($setRoleStmt->errorInfo(), true));
+            }
+        }catch(Exception $e){
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            return $response->withStatus(500);
+        }
+
+        $response->getBody()->write("Record Updated");
+        return $response->withStatus(200);
+    }
     //===============================Count================================//
     //============================Method: GET============================//
     //======================Route: /api/users/count=====================//

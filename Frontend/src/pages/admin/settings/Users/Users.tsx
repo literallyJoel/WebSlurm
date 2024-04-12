@@ -2,7 +2,7 @@ import { useQuery } from "react-query";
 import { Button } from "@/components/shadui/ui/button";
 import { FaPlus } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import { getAllUsers, getUserCount } from "@/helpers/users";
+import { getAllUsers } from "@/helpers/users";
 import { useAuthContext } from "@/providers/AuthProvider";
 import { DataTable } from "@/components/Table/data-table";
 import { columns } from "@/components/Table/columns/users";

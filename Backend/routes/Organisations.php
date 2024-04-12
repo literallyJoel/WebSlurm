@@ -170,6 +170,8 @@ class Organisations
                 $query .= " WHERE organisationId = :organisationId";
             }
 
+
+
             $pdo = new PDO(DB_CONN);
             $getOrgStmt = $pdo->prepare($query);
 
@@ -186,7 +188,7 @@ class Organisations
             return $response->withStatus(500);
         }
 
-        $organisations = $getOrgStmt->fetch(PDO::FETCH_ASSOC);
+        $organisations = $getOrgStmt->fetchAll(PDO::FETCH_ASSOC);
         $response->getBody()->write(json_encode($organisations));
         return $response->withStatus(200);
     }
@@ -257,7 +259,7 @@ class Organisations
         $pdo = new PDO(DB_CONN);
         $pdo->beginTransaction();
         try {
-            $cleanupUsrStmt = $pdo->prepare("DELETE FROM userOrganisations WHERE organisationId = :organisationId");
+            $cleanupUsrStmt = $pdo->prepare("DELETE FROM organisationUsers WHERE organisationId = :organisationId");
             $cleanupJobTypesStmt = $pdo->prepare("DELETE FROM organisationJobTypes WHERE organisationId = :organisationId");
             $cleanupJobsStmt = $pdo->prepare("DELETE FROM organisationJobs WHERE organisationId = :organisationId");
             $deleteOrgStmt = $pdo->prepare("DELETE FROM organisations WHERE organisationId = :organisationId");

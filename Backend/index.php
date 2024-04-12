@@ -111,15 +111,16 @@ $app->group("/api", function (App $app) {
         $app->get("[/{userId}]", "Users:getUser")->add(new RequiresAuthentication());
 
         $app->post("[/]", "Users:create")->add(new RequiresAdmin());
+        $app->post("/reset", "Users:resetPassword")->add(new RequiresAdmin());
 
-
+        $app->put("/role", "Users:setRole")->add(new RequiresAdmin());
         $app->put("[/{userId}]", "Users:update")->add(new RequiresAuthentication());
 
         $app->delete("[/{userId}]", "Users:delete")->add(new RequiresAuthentication());
     });
 
     $app->group("/organisations", function (App $app) {
-        $app->get("/{organisationId}", "Organisations:getOrganisation")->add(new RequiresAuthentication());
+        $app->get("[/{organisationId}]", "Organisations:getOrganisation")->add(new RequiresAuthentication());
         $app->get("/{organisationId}/jobtypes", "Organisations:getOrganisationJobTypes")->add(new RequiresAuthentication());
 
 
