@@ -12,11 +12,11 @@ import {
   CardFooter,
 } from "@/components/shadui/ui/card";
 import { useMutation, useQuery } from "react-query";
-import { validateEmail } from "@/helpers/users";
+import { selfServiceReset, validateEmail } from "@/helpers/users";
 import { getShouldSetup } from "@/helpers/setup";
 import { Link } from "react-router-dom";
 import SetupFlow from "@/pages/SetupFlow";
-
+import Noty from "noty";
 interface props {
   isExpired?: boolean;
 }
@@ -67,6 +67,35 @@ const Login = ({ isExpired }: props): JSX.Element => {
       );
     }
   };
+  const resetPassword = useMutation(
+    `reset${email}password`,
+    () => {
+      return selfServiceReset(email);
+    },
+    {
+      onSuccess: () => {
+        new Noty({
+          text: "If the email exists in our system, you will receive an email with a temporary password.",
+          type: "success",
+          timeout: 4000,
+        }).show();
+      },
+      onError: () => {
+        new Noty({
+          text: "Something went wrong. Please try again later.",
+          type: "error",
+          timeout: 4000,
+        }).show();
+      },
+    }
+  );
+  const _resetPassword = () => {
+    if (!validateEmail(email)) {
+      setIsEmailValid(false);
+    } else {
+      resetPassword.mutate(); 
+    }
+  };
 
   if (shouldSetup === undefined) {
     return (
@@ -98,7 +127,6 @@ const Login = ({ isExpired }: props): JSX.Element => {
       </div>
     );
   } else if (shouldSetup) {
-    // return <CreateAccount isSetup={true} />;
     return <SetupFlow />;
   } else {
     return (
@@ -157,7 +185,14 @@ const Login = ({ isExpired }: props): JSX.Element => {
                   />
                 </div>
               </div>
-
+              <div className="text-xs pt-2 text-blue-600">
+                <Button
+                  onClick={() => _resetPassword()}
+                  className="bg-transparent p-0 hover:bg-transparent text-blue-600 hover:text-blue-600/80"
+                >
+                  Forgot password?
+                </Button>
+              </div>
               <div className="w-full p-4 flex flex-col items-center">
                 <Button
                   className="w-5/12 border-uol border-2 rounded-xl shadow-2xl hover:text=white hover:bg-uol hover:shadow-inner"

@@ -239,3 +239,18 @@ export const resetUserPassword = async (
 
   return response;
 };
+
+export const selfServiceReset = async (
+  userEmail: string
+): Promise<Response> => {
+  const response = await fetch(`${apiEndpoint}/users/reset/self`, {
+    method: "POST",
+    body: JSON.stringify({ userEmail }),
+  });
+
+  if (!response.ok) {
+    return Promise.reject(new Error(response.statusText));
+  }
+
+  return response;
+};
