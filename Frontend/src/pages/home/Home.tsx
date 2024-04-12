@@ -89,14 +89,19 @@ const Home = (): JSX.Element => {
             failedJobs={failedJobs ?? []}
           />
         </div>
+        <div className="w-full flex flex-row justify-center items-center p-2">
+          <Link to="/jobs">
+            <Button className="bg-uol">View All Jobs</Button>
+          </Link>
+        </div>
         <div className="flex flex-row justify-center gap-2 items-center">
           <Link to="/jobs/create">
-            <Button className="bg-uol">Create new Job</Button>
+            <Button className="bg-uol min-w-44">Create new Job</Button>
           </Link>
 
           {isUserPrivelleged && (
             <Link to="/jobtypes/create">
-              <Button className="bg-uol">Create new Job Type</Button>
+              <Button className="bg-uol min-w-44">Create new Job Type</Button>
             </Link>
           )}
         </div>

@@ -78,9 +78,11 @@ const TaskView = ({
         </div>
 
         <div className="pt-4">
-          <Link to="/jobs?filter=completed">
-            <Button variant="outline">View all Completed Jobs</Button>
-          </Link>
+          {completedJobs.length !== 0 && (
+            <Link to="/jobs?filter=completed">
+              <Button variant="outline">View all Completed Jobs</Button>
+            </Link>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -101,9 +103,11 @@ const TaskView = ({
           ))}
         </div>
         <div className="pt-4">
-          <Link to="/jobs?filter=failed">
-            <Button variant="outline">View all Failed Jobs</Button>
-          </Link>
+          {failedJobs.length !== 0 && (
+            <Link to="/jobs?filter=failed">
+              <Button variant="outline">View all Failed Jobs</Button>
+            </Link>
+          )}
         </div>
       </CardContent>
     </Card>
