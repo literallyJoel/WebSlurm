@@ -65,7 +65,7 @@ const CreateJob = ({
   const jobTypes = useQuery("allJobTypes", () => {
     return getJobTypes(token);
   });
-
+  const user = useAuthContext().getUser();
   //Stores the parameters for the job, the selected job type, and name respectively.
   const [userParams, setUserParams] = useState<JobParameter[]>([]);
   const [selectedJobTypeID, setSelectedJobTypeID] = useState<number>();
@@ -79,6 +79,16 @@ const CreateJob = ({
     { label: string; value: string }[]
   >([]);
   const [selectedOrganisation, setSelectedOrganisation] = useState("");
+
+  useEffect(() => {
+    if (jobName === "" && selectedJobType) {
+      setJobName(
+        `${selectedJobType.jobTypeName}-${
+          user.name
+        }-${new Date().toLocaleDateString("en-gb")}`
+      );
+    }
+  }, [selectedJobType]);
   useEffect(() => {
     async function updateUppyInfo() {
       if (selectedJobType && selectedJobType.arrayJobCount !== 0) {
@@ -410,7 +420,9 @@ const CreateJob = ({
               <Button
                 disabled={
                   selectedJobType === undefined ||
-                  (selectedJobType.hasFileUpload as unknown as string !== "0" && !isUploadComplete)
+                  ((selectedJobType.hasFileUpload as unknown as string) !==
+                    "0" &&
+                    !isUploadComplete)
                 }
                 onClick={() => submitJob()}
               >
