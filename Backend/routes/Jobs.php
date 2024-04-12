@@ -209,7 +209,7 @@ class Jobs
                         $scriptArr = explode("\n", $modified);
                         for ($i = 0; $i < count($extractedFiles); $i++) {
                             $toAdd = "file$i=$extractDir/file$i";
-                            array_splice($scriptArr, 4, 0, $toAdd);
+                            array_splice($scriptArr, 3, 0, $toAdd);
                         }
 
                         $modified = implode("\n", $scriptArr);
@@ -220,7 +220,7 @@ class Jobs
                 } else {
                     $toAdd = "file0=" . $dirs["in"] . "$jobId/$fileId";
                     $scriptArr = explode("\n", $modified);
-                    array_splice($scriptArr, 4, 0, $toAdd);
+                    array_splice($scriptArr, 3, 0, $toAdd);
                     $modified = implode("\n", $scriptArr);
                 }
             }

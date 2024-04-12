@@ -243,7 +243,7 @@ VALUES (:jobTypeName, :jobTypeDescription, :script, :userId, :hasOutputFile, :ou
         $userId = $tokenData->userId;
         $body = json_decode($request->getBody());
         $name = $body->jobTypeName;
-        $role = intval($body->role);
+        $role = intval($tokenData->role);
         $description = $body->jobTypeDescription;
         $script = $body->script;
         $hasOutputFile = $body->hasOutputFile;
