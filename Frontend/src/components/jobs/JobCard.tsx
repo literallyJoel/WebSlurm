@@ -15,7 +15,7 @@ const JobCard = ({ job }: props): JSX.Element => {
           Running since{" "}
           {new Date(
             job.jobStartTime ? job.jobStartTime * 1000 : 0
-          ).toLocaleDateString("en-GB")}
+          ).toLocaleString("en-GB")}
         </div>
       );
     } else if (Number(job.jobComplete) === 1) {

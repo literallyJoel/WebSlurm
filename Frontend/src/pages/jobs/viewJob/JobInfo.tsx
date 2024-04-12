@@ -80,8 +80,8 @@ const JobInfo = (): JSX.Element => {
                 <Spinner />
                 Running since{" "}
                 {new Date(
-                  jobInfo.jobCompleteTime ? jobInfo.jobCompleteTime * 1000 : 0
-                ).toLocaleDateString("en-GB")}
+                  jobInfo.jobStartTime ? jobInfo.jobStartTime * 1000 : 0
+                ).toLocaleString("en-GB")}
               </div>
             ) : Number(jobInfo.jobComplete) === 1 ? (
               <div className="p-2 text-sm">
