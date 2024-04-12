@@ -107,12 +107,13 @@ $app->group("/api", function (App $app) {
     });
 
     $app->group("/users", function (App $app) {
+        $app->post("/reset/self", "Users:selfServiceReset");
         $app->get("/count", "Users:getCount")->add(new RequiresAdmin());
         $app->get("[/{userId}]", "Users:getUser")->add(new RequiresAuthentication());
 
         $app->post("[/]", "Users:create")->add(new RequiresAdmin());
-        $app->post("/reset", "Users:resetPassword")->add(new RequiresAdmin());
 
+        $app->post("/reset", "Users:resetPassword")->add(new RequiresAdmin());
         $app->put("/role", "Users:setRole")->add(new RequiresAdmin());
         $app->put("[/{userId}]", "Users:update")->add(new RequiresAuthentication());
 

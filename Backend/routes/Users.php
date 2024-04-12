@@ -111,16 +111,17 @@ class Users
         }
     }
 
-    private function sendResetEmail($name, $email, $password){
+    private function sendResetEmail($name, $email, $password)
+    {
         $mailTemplate = file_get_contents(RESET_PASS_EMAIL_TEMPLATE);
         $mailTemplate = str_replace("{{name}}", $name, $mailTemplate);
         $mailTemplate = str_replace("{{password}}", $password, $mailTemplate);
 
         $headers = "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: text/html; charset=ISO-8859-1\r\n";
-        if(mail($email, RESET_PASS_EMAIL_SUBJECT, $mailTemplate, $headers)){
+        if (mail($email, RESET_PASS_EMAIL_SUBJECT, $mailTemplate, $headers)) {
             Logger::debug("Password reset email sent.", "Users/sendResetEmail");
-        }else{
+        } else {
             Logger::error("Failed to send reset password email", "Users/sendResetEmail");
         }
     }
@@ -158,43 +159,103 @@ class Users
     //=================================Routes===================================//
     //=========================================================================//
 
+    //=====================Reset Password (Self-Service)====================//
+    //==========================Method:POST================================//
+    //===================Route: /api/users/reset/self=====================//
+    public function selfServiceReset(Request $request, Response $response): Response
+    {
+        $body = json_decode($request->getBody());
+        $userEmail = $body->userEmail ?? null;
+
+        if (!$userEmail) {
+            $response->getBody()->write("Bad Request");
+            return $response->withStatus(400);
+        }
+
+        $pdo = new PDO(DB_CONN);
+        $pdo->beginTransaction();
+        try {
+            $getUserIdStmt = $pdo->prepare("SELECT userId, userName FROM users WHERE userEmail = :userEmail");
+            $getUserIdStmt->bindParam(":userEmail", $userEmail);
+
+            if (!$getUserIdStmt->execute()) {
+                throw new Error("Failed to reset user password. Failed to get ID from email: " . print_r($getUserIdStmt->errorInfo(), true));
+            }
+
+            $userId = $getUserIdStmt->fetchColumn(0);
+            $userName = $getUserIdStmt->fetchColumn(1);
+
+            //We return OK if not found to prevent this endpoint being used to find valid emails
+            if (!$userId) {
+
+                $response->getBody()->write("OK");
+                return $response->withStatus(200);
+            }
+
+            $newPassword = $this->generatePassword();
+            $hashedPassword = hash("sha512", $newPassword);
+            $hashedPassword = password_hash("$hashedPassword", PASSWORD_BCRYPT);
+            $updatePasswordStmt = $pdo->prepare("UPDATE USERS set userPWHash = :userPWHash WHERE userId = :userId");
+            $updatePasswordStmt->bindParam(":userPWHash", $hashedPassword);
+            $updatePasswordStmt->bindParam(":userId", $userId);
+            if (!$updatePasswordStmt->execute()) {
+                throw new Error("Failed to reset password for user with ID $userId: " . print_r($updatePasswordStmt->errorInfo(), true));
+            }
+
+            $this->sendResetEmail($userName, $userEmail, $newPassword);
+
+            if(!$pdo->commit()){
+                throw new Error("Failed to reset password for user with ID $userId. Failed to commit: " . print_r($pdo->errorInfo(), true));
+            }
+        } catch (Exception $e) {
+            Logger::error($e, $request->getRequestTarget());
+            $response->getBody()->write("Internal Server Error");
+            $pdo->rollBack();
+            return $response->withStatus(500);
+        }
+
+        $response->getBody()->write("OK");
+        return $response->withStatus(200);
+    }
     //==========================Reset Password============================//
     //===========================Method: POST============================//
     //======================Route: /api/users/reset=====================//
-    public function resetPassword(Request $request, Response $response): Response{
+    public function resetPassword(Request $request, Response $response): Response
+    {
         $tokenData = $request->getAttribute("tokenData");
         $userId = $tokenData->userId;
         $body = json_decode($request->getBody());
         $userToReset = $body->userId;
 
 
-        try{
+        try {
             $pdo = new PDO(DB_CONN);
             $getEmailStmt = $pdo->prepare("SELECT userEmail, userName from Users WHERE userId = :userId");
             $getEmailStmt->bindParam(":userId", $userToReset);
-            if(!$getEmailStmt->execute()){
+            if (!$getEmailStmt->execute()) {
                 throw new Error("Failed to reset password for user with ID $userToReset on request of user with ID $userId. Failed to get user email: " . print_r($getEmailStmt->errorInfo(), true));
             }
             $userEmail = $getEmailStmt->fetchColumn();
             $userName = $getEmailStmt->fetchColumn(1);
 
-            if(!$userEmail){
+            if (!$userEmail) {
                 $response->getBody()->write("Bad Request");
                 return $response->withStatus(400);
             }
 
-            $newPassword = hash("sha512", $this->generatePassword());
-
+            $unhashed = $this->generatePassword();
+            $newPassword = hash("sha512", $unhashed);
+            $newPassword = password_hash($newPassword, PASSWORD_BCRYPT);
             $updatePasswordStmt = $pdo->prepare("UPDATE users SET userPWHash = :userPWHash WHERE userId = :userId");
             $updatePasswordStmt->bindParam(":userPWHash", $newPassword);
             $updatePasswordStmt->bindParam(":userId", $userId);
 
-            if(!$updatePasswordStmt->execute()){
+            if (!$updatePasswordStmt->execute()) {
                 throw new Error("Failed to rset password for user with ID $userToReset at request of usre with ID $userId: " . print_r($updatePasswordStmt->errorInfo(), true));
             }
 
-            $this->sendResetEmail($userName, $userEmail, $newPassword);
-        }catch(Exception $e){
+            $this->sendResetEmail($userName, $userEmail, $unhashed);
+        } catch (Exception $e) {
             Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
@@ -207,8 +268,9 @@ class Users
     //==============================Set Role==============================//
     //============================Method: PUT============================//
     //=======================Route: /api/users/role=====================//
-    public function setRole(Request $request, Response $response): Response{
-        $tokenData=$request->getAttribute("tokenData");
+    public function setRole(Request $request, Response $response): Response
+    {
+        $tokenData = $request->getAttribute("tokenData");
         $userRole = intval($tokenData->role);
         $userId = $tokenData->role;
 
@@ -216,25 +278,25 @@ class Users
         $userToChange = $body->userId;
         $roleToGive = $body->role;
 
-        if($userRole !== 1) {
+        if ($userRole !== 1) {
             $response->getBody()->write("Unauthorized");
             return $response->withStatus(401);
         }
 
-        if(!$userToChange || ($roleToGive !== 1&& $roleToGive !== 0)){
+        if (!$userToChange || ($roleToGive !== 1 && $roleToGive !== 0)) {
             $response->getBody()->write("Bad Request");
             return $response->withStatus(400);
         }
 
-        try{
+        try {
             $pdo = new PDO(DB_CONN);
             $setRoleStmt = $pdo->prepare("UPDATE users SET role = :role WHERE userId = :userId");
             $setRoleStmt->bindParam(":role", $roleToGive);
             $setRoleStmt->bindParam(":userId", $userToChange);
-            if(!$setRoleStmt->execute()){
+            if (!$setRoleStmt->execute()) {
                 throw new Error("Failed to update role with user ID $userToChange to role $roleToGive for user with ID $userId: " . print_r($setRoleStmt->errorInfo(), true));
             }
-        }catch(Exception $e){
+        } catch (Exception $e) {
             Logger::error($e, $request->getRequestTarget());
             $response->getBody()->write("Internal Server Error");
             return $response->withStatus(500);
