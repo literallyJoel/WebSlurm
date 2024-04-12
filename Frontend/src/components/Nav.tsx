@@ -20,7 +20,7 @@ const Nav = (): JSX.Element => {
         <div
           className={`${
             user.id === "" && user.id === "" && "hidden"
-          } flex space-x-4 relative`}
+          } flex space-x-4 relative mr-16`}
         >
           <RiAccountCircleFill
             className="text-white hover:text-slate-400 cursor-pointer"
